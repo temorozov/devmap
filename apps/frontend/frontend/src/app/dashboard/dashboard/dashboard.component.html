@@ -1,0 +1,85 @@
+<div class="dashboard-layout">
+    <header class="topbar">
+        <div class="logo-area">
+            <span class="material-icons logo-icon">account_tree</span>
+            <h2>Skill Tree</h2>
+        </div>
+        <div class="actions">
+            <button class="btn-secondary" (click)="logout()">
+                <span class="material-icons">logout</span>
+                <span>Logout</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="content">
+        <div class="header-row">
+            <h1>Your Skill Trees</h1>
+            <button class="btn-primary" (click)="showCreateModal = true">
+                <span class="material-icons">add</span>
+                <span>New Tree</span>
+            </button>
+        </div>
+
+        <div *ngIf="loading" class="loading-state">
+            <span class="material-icons spinning">refresh</span>
+            <p>Loading your trees...</p>
+        </div>
+
+        <div *ngIf="!loading && trees.length === 0" class="empty-state glass-panel">
+            <span class="material-icons">park</span>
+            <h3>No skill trees yet</h3>
+            <p>Create your first tree to start mapping your skills.</p>
+            <button class="btn-primary" (click)="showCreateModal = true">
+                <span class="material-icons">add</span>
+                <span>Create Tree</span>
+            </button>
+        </div>
+
+        <div class="trees-grid" *ngIf="!loading && trees.length > 0">
+            <div class="tree-card glass-panel" *ngFor="let tree of trees" (click)="openTree(tree.id)">
+
+                <div class="card-content">
+                    <div class="icon-wrapper">
+                        <span class="material-icons">account_tree</span>
+                    </div>
+                    <h3>{{ tree.title }}</h3>
+                    <p class="date">Updated {{ tree.updatedAt | date:'mediumDate' }}</p>
+                </div>
+
+                <div class="card-actions">
+                    <button type="button" class="action-btn share-btn" (click)="copyShareLink($event, tree.sharedToken)"
+                        title="Copy Public Link">
+                        <span class="material-icons">share</span>
+                    </button>
+                    <button type="button" class="action-btn delete-btn" (click)="deleteTree($event, tree.id)"
+                        title="Delete Tree">
+                        <span class="material-icons">delete</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Create Modal -->
+<div class="modal-overlay" *ngIf="showCreateModal" (click)="showCreateModal = false">
+    <div class="modal-content glass-panel" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+            <h3>Create New Skill Tree</h3>
+            <button class="close-btn" (click)="showCreateModal = false">
+                <span class="material-icons">close</span>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="input-group">
+                <input type="text" [(ngModel)]="newTreeTitle" placeholder="e.g., Frontend Mastery, Learning Japanese..."
+                    (keyup.enter)="createTree()" autofocus>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-secondary" (click)="showCreateModal = false">Cancel</button>
+            <button class="btn-primary" [disabled]="!newTreeTitle.trim()" (click)="createTree()">Create</button>
+        </div>
+    </div>
+</div>

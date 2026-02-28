@@ -1,0 +1,46 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String?  @unique
+  passwordHash String?
+  isGuest      Boolean  @default(false)
+  trees        Tree[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Tree {
+  id          String   @id @default(uuid())
+  title       String
+  sharedToken String?  @unique
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nodes       Node[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Node {
+  id          String   @id @default(uuid())
+  treeId      String
+  tree        Tree     @relation(fields: [treeId], references: [id], onDelete: Cascade)
+  parentId    String?
+  parent      Node?    @relation("NodeConnections", fields: [parentId], references: [id])
+  children    Node[]   @relation("NodeConnections")
+  title       String
+  description String?
+  icon        String?
+  positionX   Float
+  positionY   Float
+  progress    Int      @default(0) // 0 to 100
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

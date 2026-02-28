@@ -1,0 +1,39 @@
+<div class="login-container">
+    <div class="login-box glass-panel">
+        <div class="logo-area">
+            <span class="material-icons logo-icon">account_tree</span>
+            <h1>Skill Tree</h1>
+        </div>
+
+        <p class="subtitle">Visualize your growth, master your craft.</p>
+
+        <form (ngSubmit)="onSubmit()" class="login-form">
+            <div class="input-group">
+                <span class="material-icons">email</span>
+                <input type="email" name="email" [(ngModel)]="email" placeholder="Email address" required
+                    autocomplete="off">
+            </div>
+
+            <div class="input-group">
+                <span class="material-icons">lock</span>
+                <input type="password" name="password" [(ngModel)]="password" placeholder="Password" required>
+            </div>
+
+            <div *ngIf="error" class="error-msg">{{ error }}</div>
+
+            <button type="submit" class="btn-primary" [disabled]="loading || !email || !password">
+                <span *ngIf="!loading">Sign In</span>
+                <span *ngIf="loading" class="material-icons spinning">refresh</span>
+            </button>
+        </form>
+
+        <div class="divider">
+            <span>or</span>
+        </div>
+
+        <button type="button" class="btn-secondary" (click)="continueAsGuest()" [disabled]="loading">
+            <span>Continue as Guest</span>
+            <span class="material-icons">arrow_forward</span>
+        </button>
+    </div>
+</div>
