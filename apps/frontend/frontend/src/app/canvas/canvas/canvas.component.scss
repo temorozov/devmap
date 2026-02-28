@@ -22,12 +22,40 @@
     .left-section {
         display: flex;
         align-items: center;
-        gap: 1rem;
+        gap: 1.5rem;
 
         h2 {
             font-size: 1.1rem;
             font-weight: 600;
             margin: 0;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            padding-right: 1.5rem;
+        }
+    }
+
+    .tree-progress {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+
+        .progress-bar-container {
+            width: 150px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--accent-color);
+            transition: width 0.3s ease;
+        }
+
+        span {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 600;
         }
     }
 
@@ -121,6 +149,7 @@
     stroke: var(--border-color);
     stroke-width: 3;
     transition: all 0.3s ease;
+    stroke-linecap: round;
 
     &.completed {
         stroke: var(--success-color);
@@ -142,26 +171,35 @@
 
     .node-icon {
         fill: var(--text-main);
-        font-size: 28px;
+        font-size: 32px;
         font-family: 'Material Icons';
-        /* important for SVG text rendering */
-        transition: transform 0.2s ease;
+        transition: transform 0.2s ease, fill 0.2s ease;
     }
 
-    .node-title {
+    .node-title-hover {
         fill: var(--text-main);
-        font-size: 12px;
+        font-size: 14px;
         font-weight: 500;
         pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
     }
 
-    .progress-bg {
-        fill: rgba(255, 255, 255, 0.1);
+    .progress-ring-bg {
+        fill: none;
+        stroke: rgba(255, 255, 255, 0.1);
+        stroke-width: 4;
     }
 
-    .progress-fill {
-        fill: var(--accent-color);
-        transition: width 0.3s ease;
+    .progress-ring-fill {
+        fill: none;
+        stroke: var(--accent-color);
+        stroke-width: 4;
+        transition: stroke-dashoffset 0.4s ease;
+        stroke-linecap: round;
+        transform: rotate(-90deg);
+        transform-origin: 0 0;
     }
 
     .link-handle {
@@ -173,7 +211,7 @@
 
         &:hover {
             fill: var(--accent-hover);
-            r: 8;
+            r: 10;
         }
     }
 
@@ -184,6 +222,10 @@
         }
 
         .link-handle {
+            opacity: 1;
+        }
+
+        .node-title-hover {
             opacity: 1;
         }
     }
@@ -209,8 +251,8 @@
             stroke: var(--success-color);
         }
 
-        .progress-fill {
-            fill: var(--success-color);
+        .progress-ring-fill {
+            stroke: var(--success-color);
         }
 
         .node-icon {
@@ -219,12 +261,63 @@
     }
 }
 
+/* Tooltip overlay via foreignObject */
+.node-tooltip {
+    overflow: visible;
+
+    .tooltip-content {
+        background: rgba(15, 23, 42, 0.9);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 0.75rem;
+        color: var(--text-main);
+        text-align: center;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(10px);
+        animation: fadeIn 0.15s ease-out;
+
+        h4 {
+            margin: 0 0 0.5rem 0;
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+
+        .desc {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin: 0 0 0.5rem 0;
+            line-height: 1.3;
+        }
+
+        .level-badge {
+            display: inline-block;
+            background: rgba(59, 130, 246, 0.2);
+            color: var(--accent-color);
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 /* Properties Panel */
 .properties-panel {
     position: absolute;
     top: 5.5rem;
     right: -350px;
-    /* hidden by default */
     width: 320px;
     max-height: calc(100vh - 7rem);
     background: var(--glass-bg);
@@ -274,6 +367,7 @@
     }
 
     input[type="text"],
+    input[type="number"],
     textarea {
         width: 100%;
         background: rgba(0, 0, 0, 0.2);
@@ -294,22 +388,49 @@
         resize: vertical;
         min-height: 80px;
     }
+}
 
-    .help-link {
-        font-size: 0.75rem;
+.icon-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.icon-select-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:hover {
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text-main);
+    }
+
+    &.active {
+        border-color: var(--accent-color);
         color: var(--accent-color);
-        text-decoration: none;
-        align-self: flex-start;
-
-        &:hover {
-            text-decoration: underline;
-        }
+        background: rgba(59, 130, 246, 0.1);
     }
 }
 
-.range-slider {
-    width: 100%;
-    accent-color: var(--accent-color);
+.row-group {
+    flex-direction: row;
+    gap: 1rem;
+
+    .half-width {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
 }
 
 .mt-4 {

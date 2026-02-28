@@ -5,7 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 export class NodesService {
     constructor(private prisma: PrismaService) { }
 
-    async create(userId: string, createNodeDto: { treeId: string; parentId?: string; title: string; description?: string; icon?: string; positionX: number; positionY: number }) {
+    async create(userId: string, createNodeDto: { treeId: string; parentId?: string; title: string; description?: string; icon?: string; positionX: number; positionY: number; level?: number; maxLevel?: number }) {
         const tree = await this.prisma.tree.findFirst({ where: { id: createNodeDto.treeId, userId } });
         if (!tree) throw new UnauthorizedException('Tree access denied');
 

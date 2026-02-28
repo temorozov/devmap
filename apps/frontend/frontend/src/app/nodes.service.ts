@@ -11,6 +11,8 @@ export interface SkillNode {
   positionX: number;
   positionY: number;
   progress: number;
+  level?: number;
+  maxLevel?: number;
   createdAt: string;
   updatedAt: string;
 }

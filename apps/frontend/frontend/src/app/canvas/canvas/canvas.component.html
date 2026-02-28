@@ -1,5 +1,5 @@
 <div class="canvas-layout">
-    <!-- Minimal Header -->
+    <!-- Minimal Header & Tree Progress -->
     <header class="canvas-header glass-panel">
         <div class="left-section">
             <button class="icon-btn" (click)="router.navigate(['/dashboard'])" title="Back to Dashboard">
@@ -9,11 +9,17 @@
             <div *ngIf="loading" class="loading-indicator">
                 <span class="material-icons spinning">refresh</span>
             </div>
+            <div class="tree-progress" *ngIf="!loading">
+                <div class="progress-bar-container" title="Branch Mastery">
+                    <div class="progress-fill" [style.width.%]="totalProgress"></div>
+                </div>
+                <span>{{ totalProgress }}%</span>
+            </div>
         </div>
         <div class="right-section">
             <div *ngIf="isLinking" class="linking-indicator">
                 <span class="pulse-dot"></span>
-                <span>Select target node</span>
+                <span>Select child skill above</span>
                 <button class="btn-secondary small" (click)="cancelLinking()">Cancel</button>
             </div>
             <button class="btn-primary" (click)="addNode()">
@@ -46,39 +52,52 @@
             <g class="connections-layer">
                 <ng-container *ngFor="let node of nodes">
                     <path *ngIf="node.parentId && getParentNode(node.parentId) as parent" class="connection-line"
-                        [class.completed]="node.progress === 100 && parent.progress === 100"
-                        [attr.d]="'M ' + (parent.positionX + 60) + ' ' + (parent.positionY + 80) + ' C ' + (parent.positionX + 60) + ' ' + (parent.positionY + 140) + ', ' + (node.positionX + 60) + ' ' + (node.positionY - 60) + ', ' + (node.positionX + 60) + ' ' + node.positionY" />
+                        [class.completed]="node.level === (node.maxLevel || 5) && parent.level === (parent.maxLevel || 5)"
+                        [attr.d]="'M ' + parent.positionX + ' ' + (parent.positionY - 40) + ' C ' + parent.positionX + ' ' + (parent.positionY - 100) + ', ' + node.positionX + ' ' + (node.positionY + 100) + ', ' + node.positionX + ' ' + (node.positionY + 40)" />
                 </ng-container>
             </g>
 
             <!-- Nodes Layer -->
             <g class="nodes-layer">
                 <g *ngFor="let node of nodes" class="skill-node" [class.selected]="selectedNode?.id === node.id"
-                    [class.completed]="node.progress === 100"
+                    [class.completed]="node.level === (node.maxLevel || 5)"
                     [attr.transform]="'translate(' + node.positionX + ',' + node.positionY + ')'"
-                    (mousedown)="onNodeMouseDown($event, node)">
+                    (mousedown)="onNodeMouseDown($event, node)" (click)="onNodeClick($event, node)"
+                    (contextmenu)="onNodeContextMenu($event, node)" (mouseenter)="hoveredNode = node"
+                    (mouseleave)="hoveredNode = null">
 
-                    <!-- Base Card -->
-                    <rect class="node-bg" width="120" height="80" rx="12" />
+                    <!-- Base Circle -->
+                    <circle class="node-bg" cx="0" cy="0" r="40" />
 
-                    <!-- Progress Bar Background & Fill -->
-                    <rect class="progress-bg" x="10" y="65" width="100" height="4" rx="2" />
-                    <rect class="progress-fill" x="10" y="65" [attr.width]="node.progress" height="4" rx="2" />
+                    <!-- Circular Progress Ring (circumference = 251.32) -->
+                    <circle class="progress-ring-bg" cx="0" cy="0" r="40" />
+                    <circle class="progress-ring-fill" cx="0" cy="0" r="40" stroke-dasharray="251.32"
+                        [attr.stroke-dashoffset]="251.32 - (251.32 * (node.level || 0) / (node.maxLevel || 5))" />
 
                     <!-- Icon -->
-                    <text class="material-icons node-icon" x="60" y="35" text-anchor="middle"
-                        dominant-baseline="central">
-                        {{ node.icon || 'extension' }}
+                    <text class="material-icons node-icon" x="0" y="0" text-anchor="middle" dominant-baseline="central">
+                        {{ node.icon || 'star' }}
                     </text>
 
-                    <!-- Title -->
-                    <text class="node-title" x="60" y="55" text-anchor="middle">
-                        {{ node.title | slice:0:15 }}{{ node.title.length > 15 ? '...' : '' }}
-                    </text>
-
-                    <!-- Link Handle (Bottom) -->
-                    <circle class="link-handle" cx="60" cy="80" r="6"
+                    <!-- Link Handle (Top of Node, as it grows upwards) -->
+                    <circle class="link-handle" cx="0" cy="-40" r="8"
                         (mousedown)="startLinking(node); $event.stopPropagation()" title="Drag from here to connect" />
+
+                    <!-- Native tooltip and text for hover -->
+                    <title>{{ node.title }} - Lvl {{ node.level || 0 }} / {{ node.maxLevel || 5 }}</title>
+                    <text class="node-title-hover" x="0" y="60" text-anchor="middle" pointer-events="none">
+                        {{ node.title }}
+                    </text>
+
+                    <!-- SVG ForeignObject Tooltip below node -->
+                    <foreignObject x="-90" y="75" width="180" height="auto" class="node-tooltip"
+                        *ngIf="hoveredNode?.id === node.id" pointer-events="none">
+                        <div xmlns="http://www.w3.org/1999/xhtml" class="tooltip-content glass-panel">
+                            <h4>{{ node.title }}</h4>
+                            <p class="desc" *ngIf="node.description">{{ node.description }}</p>
+                            <div class="level-badge">Lvl {{ node.level || 0 }} / {{ node.maxLevel || 5 }}</div>
+                        </div>
+                    </foreignObject>
                 </g>
             </g>
         </svg>
@@ -100,10 +119,14 @@
             </div>
 
             <div class="form-group">
-                <label>Material Icon Name</label>
-                <input type="text" [(ngModel)]="editNodeData.icon" (change)="saveNodeProperties()"
-                    placeholder="e.g., star, code, verified">
-                <a href="https://fonts.google.com/icons" target="_blank" class="help-link">Find icons</a>
+                <label>Icon</label>
+                <div class="icon-grid">
+                    <button *ngFor="let icon of availableIcons" class="icon-select-btn"
+                        [class.active]="editNodeData.icon === icon.name"
+                        (click)="editNodeData.icon = icon.name; saveNodeProperties()" [title]="icon.label">
+                        <span class="material-icons">{{ icon.name }}</span>
+                    </button>
+                </div>
             </div>
 
             <div class="form-group">
@@ -111,10 +134,16 @@
                 <textarea [(ngModel)]="editNodeData.description" (change)="saveNodeProperties()" rows="3"></textarea>
             </div>
 
-            <div class="form-group">
-                <label>Progress: {{ editNodeData.progress }}%</label>
-                <input type="range" min="0" max="100" [(ngModel)]="editNodeData.progress"
-                    (change)="saveNodeProperties()" class="range-slider">
+            <div class="form-group row-group">
+                <div class="half-width">
+                    <label>Level</label>
+                    <input type="number" min="0" [max]="editNodeData.maxLevel || 5" [(ngModel)]="editNodeData.level"
+                        (change)="saveNodeProperties()">
+                </div>
+                <div class="half-width">
+                    <label>Max Level</label>
+                    <input type="number" min="1" [(ngModel)]="editNodeData.maxLevel" (change)="saveNodeProperties()">
+                </div>
             </div>
 
             <div class="actions mt-4">
@@ -122,6 +151,11 @@
                     <span class="material-icons">delete</span> Delete Node
                 </button>
             </div>
+
+            <p class="hint-text mt-4 text-xs text-muted text-center"
+                style="color: var(--text-muted); font-size: 0.8rem; margin-top: 1rem;">
+                Left-Click to level up. Shift-Click to downgrade. Right-Click for properties.
+            </p>
         </div>
     </aside>
 </div>

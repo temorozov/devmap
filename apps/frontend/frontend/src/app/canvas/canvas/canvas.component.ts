@@ -45,6 +45,18 @@ export class CanvasComponent implements OnInit {
   editNodeData: Partial<SkillNode> = {};
   isLinking = false;
   linkSourceNode: SkillNode | null = null;
+  hasMovedNode = false;
+  hoveredNode: SkillNode | null = null;
+
+  availableIcons = [
+    { name: 'fitness_center', label: 'Gym' },
+    { name: 'code', label: 'Code' },
+    { name: 'sports_esports', label: 'Chess/Game' },
+    { name: 'menu_book', label: 'Book' },
+    { name: 'lightbulb', label: 'Idea' },
+    { name: 'brush', label: 'Art' },
+    { name: 'star', label: 'Star' }
+  ];
 
   @ViewChild('svgCanvas') svgCanvas!: ElementRef<SVGSVGElement>;
 
@@ -107,14 +119,15 @@ export class CanvasComponent implements OnInit {
 
       this.dragStart = { x: event.clientX, y: event.clientY };
     } else if (this.isDraggingNode && this.draggedNode) {
+      this.hasMovedNode = true;
       // Calculate new position based on SVG coordinates
       const pt = this.svgCanvas.nativeElement.createSVGPoint();
       pt.x = event.clientX;
       pt.y = event.clientY;
       const svgP = pt.matrixTransform(this.svgCanvas.nativeElement.getScreenCTM()?.inverse());
 
-      this.draggedNode.positionX = svgP.x - 60; // Offset by node half-width
-      this.draggedNode.positionY = svgP.y - 40; // Offset by node half-height
+      this.draggedNode.positionX = svgP.x; // Now centered, no offset needed since circle cx is 0 inside group
+      this.draggedNode.positionY = svgP.y;
     }
   }
 
@@ -162,15 +175,46 @@ export class CanvasComponent implements OnInit {
       return;
     }
 
+    // Only allow drag if left clicking and not editing progress slider directly inside node
+    if (event.button === 0 && (event.target as HTMLElement).tagName.toLowerCase() !== 'input') {
+      this.isDraggingNode = true;
+      this.hasMovedNode = false;
+      this.draggedNode = node;
+    }
+  }
+
+  onNodeClick(event: MouseEvent, node: SkillNode) {
+    if (this.hasMovedNode) return;
+    event.stopPropagation();
+
+    const maxLvl = node.maxLevel || 5;
+    let currLvl = node.level || 0;
+
+    if (event.shiftKey) {
+      currLvl = Math.max(0, currLvl - 1);
+    } else {
+      currLvl = Math.min(maxLvl, currLvl + 1);
+    }
+
+    if (node.level !== currLvl) {
+      node.level = currLvl;
+      node.progress = (currLvl / maxLvl) * 100;
+      this.nodesService.updateNode(node.id, { level: currLvl, progress: node.progress }).subscribe();
+      if (this.selectedNode?.id === node.id) {
+        this.editNodeData.level = currLvl;
+      }
+    }
+  }
+
+  onNodeContextMenu(event: MouseEvent, node: SkillNode) {
+    if (this.hasMovedNode) return;
+    event.preventDefault(); // Prevent default browser context menu
+    event.stopPropagation();
+
+    // Open properties instead of downgrading
     this.selectedNode = node;
     this.editNodeData = { ...node };
     this.showProperties = true;
-
-    // Only allow drag if not editing progress slider directly inside node
-    if ((event.target as HTMLElement).tagName.toLowerCase() !== 'input') {
-      this.isDraggingNode = true;
-      this.draggedNode = node;
-    }
   }
 
   addNode() {
@@ -179,10 +223,12 @@ export class CanvasComponent implements OnInit {
       treeId: this.tree?.id,
       title: 'New Skill',
       description: 'Describe this skill...',
-      icon: 'star',
+      icon: 'code',
+      level: 0,
+      maxLevel: 5,
       progress: 0,
-      positionX: this.viewBox.x + this.viewBox.w / 2 - 60,
-      positionY: this.viewBox.y + this.viewBox.h / 2 - 40,
+      positionX: this.viewBox.x + this.viewBox.w / 2,
+      positionY: this.viewBox.y + this.viewBox.h / 2 - 100, // Appears higher, promoting upward growth
     };
 
     this.nodesService.createNode(newNode).subscribe(node => {
@@ -216,7 +262,14 @@ export class CanvasComponent implements OnInit {
   }
 
   saveNodeProperties() {
-    if (!this.selectedNode) return;
+    if (!this.selectedNode || !this.editNodeData) return;
+
+    // Recalculate progress if maxLevel changed
+    const maxLvl = this.editNodeData.maxLevel || 5;
+    let lvl = this.editNodeData.level || 0;
+    if (lvl > maxLvl) lvl = maxLvl;
+    this.editNodeData.level = lvl;
+    this.editNodeData.progress = (lvl / maxLvl) * 100;
 
     this.nodesService.updateNode(this.selectedNode.id, this.editNodeData).subscribe(updated => {
       const idx = this.nodes.findIndex(n => n.id === updated.id);
@@ -250,4 +303,16 @@ export class CanvasComponent implements OnInit {
   get viewBoxString(): string {
     return `${this.viewBox.x} ${this.viewBox.y} ${this.viewBox.w} ${this.viewBox.h}`;
   }
+
+  get totalProgress(): number {
+    if (!this.nodes || this.nodes.length === 0) return 0;
+    let totalLevel = 0;
+    let totalMaxLevel = 0;
+    for (const node of this.nodes) {
+      totalLevel += node.level || 0;
+      totalMaxLevel += node.maxLevel || 5;
+    }
+    return totalMaxLevel === 0 ? 0 : Math.round((totalLevel / totalMaxLevel) * 100);
+  }
 }
+
