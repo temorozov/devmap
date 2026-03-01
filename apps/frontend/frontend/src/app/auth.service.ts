@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, tap } from 'rxjs';
+import { BehaviorSubject, tap, map } from 'rxjs';
 import { Router } from '@angular/router';
 
 @Injectable({
@@ -13,6 +13,13 @@ export class AuthService {
 
   private authStatus = new BehaviorSubject<boolean>(!!localStorage.getItem('token'));
   authStatus$ = this.authStatus.asObservable();
+
+  private user = new BehaviorSubject<any>(this.decodeToken(localStorage.getItem('token')));
+  user$ = this.user.asObservable();
+
+  isGuest$ = this.user$.pipe(
+    map(user => !!user?.isGuest)
+  );
 
   login(credentials: { email: string; password: string }) {
     return this.http.post<{ access_token: string, user: any }>(`${this.apiUrl}/login`, credentials)
@@ -56,11 +63,24 @@ export class AuthService {
   logout() {
     localStorage.removeItem('token');
     this.authStatus.next(false);
+    this.user.next(null);
     this.router.navigate(['/login']);
   }
 
   private setToken(token: string) {
     localStorage.setItem('token', token);
     this.authStatus.next(true);
+    this.user.next(this.decodeToken(token));
+  }
+
+  private decodeToken(token: string | null) {
+    if (!token) return null;
+    try {
+      const payload = token.split('.')[1];
+      const decoded = JSON.parse(atob(payload));
+      return decoded;
+    } catch (e) {
+      return null;
+    }
   }
 }

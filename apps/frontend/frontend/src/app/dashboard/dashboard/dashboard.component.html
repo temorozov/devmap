@@ -5,10 +5,20 @@
             <h2>Skill Tree</h2>
         </div>
         <div class="actions">
-            <button class="btn-secondary" (click)="logout()">
+            <button *ngIf="!(isGuest$ | async)" class="btn-secondary" (click)="logout()">
                 <span class="material-icons">logout</span>
                 <span>Logout</span>
             </button>
+            <div *ngIf="isGuest$ | async" class="guest-actions">
+                <a routerLink="/login" class="btn-secondary">
+                    <span class="material-icons">login</span>
+                    <span>Login</span>
+                </a>
+                <a routerLink="/register" class="btn-primary">
+                    <span class="material-icons">person_add</span>
+                    <span>Register</span>
+                </a>
+            </div>
         </div>
     </header>
 

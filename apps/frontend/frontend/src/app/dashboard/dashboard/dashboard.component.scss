@@ -29,9 +29,22 @@
     }
 
     .actions {
-        .btn-secondary {
+        display: flex;
+        gap: 0.75rem;
+
+        .guest-actions {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .btn-secondary,
+        .btn-primary {
             padding: 0.4rem 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
             font-size: 0.9rem;
+            text-decoration: none;
         }
     }
 }

@@ -1,14 +1,14 @@
 import { Component, inject, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, AsyncPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { TreesService, Tree } from '../../trees.service';
 import { AuthService } from '../../auth.service';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss'],
 })
@@ -21,6 +21,7 @@ export class DashboardComponent implements OnInit {
   loading = true;
   showCreateModal = false;
   newTreeTitle = '';
+  isGuest$ = this.authService.isGuest$;
 
   ngOnInit() {
     this.loadTrees();
