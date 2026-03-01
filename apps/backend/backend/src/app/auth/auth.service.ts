@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
@@ -22,6 +22,54 @@ export class AuthService {
             }
         }
         return null;
+    }
+
+    async registerUser(email: string, pass: string): Promise<any> {
+        const existingUser = await this.prisma.user.findUnique({ where: { email } });
+        if (existingUser) {
+            throw new ConflictException('User already exists');
+        }
+
+        const salt = await bcrypt.genSalt();
+        const passwordHash = await bcrypt.hash(pass, salt);
+
+        const user = await this.prisma.user.create({
+            data: { email, passwordHash },
+        });
+
+        const payload = { sub: user.id, isGuest: user.isGuest };
+        return {
+            access_token: this.jwtService.sign(payload),
+            user: { id: user.id, email: user.email, name: user.name, isGuest: user.isGuest },
+        };
+    }
+
+    async validateGoogleUser(profile: { googleId: string; email: string; name: string }): Promise<any> {
+        let user = profile.googleId ? await this.prisma.user.findFirst({ where: { googleId: profile.googleId } }) : null;
+
+        if (!user && profile.email) {
+            user = await this.prisma.user.findUnique({ where: { email: profile.email } });
+            if (user) {
+                // Link account
+                user = await this.prisma.user.update({
+                    where: { email: profile.email },
+                    data: { googleId: profile.googleId, name: user.name || profile.name },
+                });
+            }
+        }
+
+        if (!user) {
+            // Create new account
+            user = await this.prisma.user.create({
+                data: {
+                    googleId: profile.googleId,
+                    email: profile.email,
+                    name: profile.name,
+                },
+            });
+        }
+
+        return user;
     }
 
     async login(user: any) {

@@ -25,6 +25,22 @@ export class AuthService {
       );
   }
 
+  register(credentials: { email: string; password: string }) {
+    return this.http.post<{ access_token: string, user: any }>(`${this.apiUrl}/register`, credentials)
+      .pipe(
+        tap(response => {
+          if (response.access_token) {
+            this.setToken(response.access_token);
+          }
+        })
+      );
+  }
+
+  handleOAuthToken(token: string) {
+    this.setToken(token);
+    this.router.navigate(['/dashboard']);
+  }
+
   guestLogin() {
     return this.http.post<{ access_token: string, user: any, treeId: string }>(`${this.apiUrl}/guest`, {})
       .pipe(

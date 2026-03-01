@@ -7,25 +7,36 @@
 
         <p class="subtitle">Visualize your growth, master your craft.</p>
 
-        <form (ngSubmit)="onSubmit()" class="login-form">
+        <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
             <div class="input-group">
                 <span class="material-icons">email</span>
-                <input type="email" name="email" [(ngModel)]="email" placeholder="Email address" required
-                    autocomplete="off">
+                <input type="email" formControlName="email" placeholder="Email address" autocomplete="off">
             </div>
 
             <div class="input-group">
                 <span class="material-icons">lock</span>
-                <input type="password" name="password" [(ngModel)]="password" placeholder="Password" required>
+                <input type="password" formControlName="password" placeholder="Password">
             </div>
 
             <div *ngIf="error" class="error-msg">{{ error }}</div>
 
-            <button type="submit" class="btn-primary" [disabled]="loading || !email || !password">
+            <button type="submit" class="btn-primary" [disabled]="loading || loginForm.invalid">
                 <span *ngIf="!loading">Sign In</span>
                 <span *ngIf="loading" class="material-icons spinning">refresh</span>
             </button>
         </form>
+
+        <div class="signup-link">
+            Don't have an account? <a routerLink="/register">Register</a>
+        </div>
+
+        <div class="divider">
+            <span>or continue with</span>
+        </div>
+
+        <button type="button" class="btn-google" (click)="loginWithGoogle()" [disabled]="loading">
+            <span>Google</span>
+        </button>
 
         <div class="divider">
             <span>or</span>

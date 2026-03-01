@@ -1,38 +1,54 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { AuthService } from '../../auth.service';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule],
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss'],
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
   authService = inject(AuthService);
   router = inject(Router);
+  route = inject(ActivatedRoute);
+  private fb = inject(FormBuilder);
 
-  email = '';
-  password = '';
+  loginForm = this.fb.group({
+    email: ['', [Validators.required, Validators.email]],
+    password: ['', Validators.required]
+  });
+
   loading = false;
   error = '';
 
+  ngOnInit() {
+    this.route.queryParams.subscribe(params => {
+      const token = params['token'];
+      if (token) {
+        this.authService.handleOAuthToken(token);
+      }
+    });
+  }
+
   onSubmit() {
-    if (!this.email || !this.password) return;
+    if (this.loginForm.invalid) return;
     this.loading = true;
     this.error = '';
 
-    this.authService.login({ email: this.email, password: this.password }).subscribe({
+    const { email, password } = this.loginForm.value;
+
+    this.authService.login({ email: email!, password: password! }).subscribe({
       next: () => {
         this.loading = false;
         this.router.navigate(['/dashboard']);
       },
       error: (err) => {
         this.loading = false;
-        this.error = 'Invalid credentials';
+        this.error = err.error?.message || 'Invalid credentials';
       }
     });
   }
@@ -49,5 +65,9 @@ export class LoginComponent {
         this.error = 'Guest login failed';
       }
     });
+  }
+
+  loginWithGoogle() {
+    window.location.href = '/api/auth/google';
   }
 }
