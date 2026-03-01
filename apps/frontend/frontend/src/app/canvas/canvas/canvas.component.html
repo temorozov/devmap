@@ -33,7 +33,7 @@
     <main class="workspace">
         <svg #svgCanvas class="skill-svg" [attr.viewBox]="viewBoxString" (mousedown)="onMouseDown($event)"
             (mousemove)="onMouseMove($event)" (mouseup)="onMouseUp()" (mouseleave)="onMouseUp()"
-            (wheel)="onWheel($event)" [class.grabbing]="isDraggingCanvas">
+            (wheel)="onWheel($event)" (contextmenu)="onCanvasContextMenu($event)" [class.grabbing]="isDraggingCanvas">
 
             <!-- Grid Background Pattern -->
             <defs>
@@ -50,11 +50,16 @@
 
             <!-- Connections / Links Layer -->
             <g class="connections-layer">
+                <!-- Existing complete connections -->
                 <ng-container *ngFor="let node of nodes">
                     <path *ngIf="node.parentId && getParentNode(node.parentId) as parent" class="connection-line"
                         [class.completed]="node.level === (node.maxLevel || 5) && parent.level === (parent.maxLevel || 5)"
                         [attr.d]="'M ' + parent.positionX + ' ' + (parent.positionY - 40) + ' C ' + parent.positionX + ' ' + (parent.positionY - 100) + ', ' + node.positionX + ' ' + (node.positionY + 100) + ', ' + node.positionX + ' ' + (node.positionY + 40)" />
                 </ng-container>
+
+                <!-- Currently drawn line during drag to link -->
+                <path *ngIf="isLinking && linkSourceNode" class="connection-line linking"
+                    [attr.d]="'M ' + linkSourceNode.positionX + ' ' + (linkSourceNode.positionY - 40) + ' C ' + linkSourceNode.positionX + ' ' + (linkSourceNode.positionY - 100) + ', ' + mousePosition.x + ' ' + (mousePosition.y + 100) + ', ' + mousePosition.x + ' ' + mousePosition.y" />
             </g>
 
             <!-- Nodes Layer -->
@@ -64,7 +69,7 @@
                     [attr.transform]="'translate(' + node.positionX + ',' + node.positionY + ')'"
                     (mousedown)="onNodeMouseDown($event, node)" (click)="onNodeClick($event, node)"
                     (contextmenu)="onNodeContextMenu($event, node)" (mouseenter)="hoveredNode = node"
-                    (mouseleave)="hoveredNode = null">
+                    (mouseleave)="hoveredNode = null" (mouseup)="onNodeMouseUp($event, node)">
 
                     <!-- Base Circle -->
                     <circle class="node-bg" cx="0" cy="0" r="40" />
@@ -81,7 +86,8 @@
 
                     <!-- Link Handle (Top of Node, as it grows upwards) -->
                     <circle class="link-handle" cx="0" cy="-40" r="8"
-                        (mousedown)="startLinking(node); $event.stopPropagation()" title="Drag from here to connect" />
+                        (mousedown)="startLinking($event, node); $event.stopPropagation()"
+                        title="Drag from here to connect" />
 
                     <!-- Native tooltip and text for hover -->
                     <title>{{ node.title }} - Lvl {{ node.level || 0 }} / {{ node.maxLevel || 5 }}</title>
@@ -115,7 +121,7 @@
         <div class="panel-body" *ngIf="selectedNode">
             <div class="form-group">
                 <label>Title</label>
-                <input type="text" [(ngModel)]="editNodeData.title" (change)="saveNodeProperties()">
+                <input type="text" [(ngModel)]="editNodeData.title" (ngModelChange)="saveNodeProperties()">
             </div>
 
             <div class="form-group">
@@ -131,18 +137,20 @@
 
             <div class="form-group">
                 <label>Description</label>
-                <textarea [(ngModel)]="editNodeData.description" (change)="saveNodeProperties()" rows="3"></textarea>
+                <textarea [(ngModel)]="editNodeData.description" (ngModelChange)="saveNodeProperties()"
+                    rows="3"></textarea>
             </div>
 
             <div class="form-group row-group">
                 <div class="half-width">
                     <label>Level</label>
                     <input type="number" min="0" [max]="editNodeData.maxLevel || 5" [(ngModel)]="editNodeData.level"
-                        (change)="saveNodeProperties()">
+                        (ngModelChange)="saveNodeProperties()">
                 </div>
                 <div class="half-width">
                     <label>Max Level</label>
-                    <input type="number" min="1" [(ngModel)]="editNodeData.maxLevel" (change)="saveNodeProperties()">
+                    <input type="number" min="1" [(ngModel)]="editNodeData.maxLevel"
+                        (ngModelChange)="saveNodeProperties()">
                 </div>
             </div>
 

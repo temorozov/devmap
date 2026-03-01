@@ -47,6 +47,7 @@ export class CanvasComponent implements OnInit {
   linkSourceNode: SkillNode | null = null;
   hasMovedNode = false;
   hoveredNode: SkillNode | null = null;
+  mousePosition = { x: 0, y: 0 };
 
   availableIcons = [
     { name: 'fitness_center', label: 'Gym' },
@@ -100,17 +101,26 @@ export class CanvasComponent implements OnInit {
   // --- Canvas Pan & Zoom ---
 
   onMouseDown(event: MouseEvent) {
-    // If clicking on SVG itself (not a node), start canvas pan
-    if ((event.target as HTMLElement).tagName.toLowerCase() === 'svg') {
-      this.isDraggingCanvas = true;
-      this.dragStart = { x: event.clientX, y: event.clientY };
-      this.selectedNode = null;
-      this.showProperties = false;
-    }
+    // If we reach here, we didn't click on a node (because node clicks stop propagation)
+    this.isDraggingCanvas = true;
+    this.dragStart = { x: event.clientX, y: event.clientY };
+    this.selectedNode = null;
+    this.showProperties = false;
+  }
+
+  onCanvasContextMenu(event: MouseEvent) {
+    event.preventDefault();
   }
 
   onMouseMove(event: MouseEvent) {
-    if (this.isDraggingCanvas) {
+    const pt = this.svgCanvas.nativeElement.createSVGPoint();
+    pt.x = event.clientX;
+    pt.y = event.clientY;
+    const svgP = pt.matrixTransform(this.svgCanvas.nativeElement.getScreenCTM()?.inverse());
+
+    if (this.isLinking) {
+      this.mousePosition = { x: svgP.x, y: svgP.y };
+    } else if (this.isDraggingCanvas) {
       const dx = (event.clientX - this.dragStart.x) * (this.viewBox.w / window.innerWidth);
       const dy = (event.clientY - this.dragStart.y) * (this.viewBox.h / window.innerHeight);
 
@@ -121,11 +131,6 @@ export class CanvasComponent implements OnInit {
     } else if (this.isDraggingNode && this.draggedNode) {
       this.hasMovedNode = true;
       // Calculate new position based on SVG coordinates
-      const pt = this.svgCanvas.nativeElement.createSVGPoint();
-      pt.x = event.clientX;
-      pt.y = event.clientY;
-      const svgP = pt.matrixTransform(this.svgCanvas.nativeElement.getScreenCTM()?.inverse());
-
       this.draggedNode.positionX = svgP.x; // Now centered, no offset needed since circle cx is 0 inside group
       this.draggedNode.positionY = svgP.y;
     }
@@ -141,6 +146,9 @@ export class CanvasComponent implements OnInit {
         positionY: this.draggedNode.positionY
       }).subscribe();
       this.draggedNode = null;
+    }
+    if (this.isLinking) {
+      this.cancelLinking();
     }
   }
 
@@ -169,10 +177,11 @@ export class CanvasComponent implements OnInit {
 
   onNodeMouseDown(event: MouseEvent, node: SkillNode) {
     event.stopPropagation();
-    if (this.isLinking && this.linkSourceNode && this.linkSourceNode.id !== node.id) {
-      // Complete link
-      this.completeLink(node);
-      return;
+
+    // Prevent default browser drag/selection behaviors which can lock the UI
+    // and prevent right-click context menus from appearing, especially after double-clicks (like double downgrading).
+    if ((event.target as HTMLElement).tagName.toLowerCase() !== 'input') {
+      event.preventDefault();
     }
 
     // Only allow drag if left clicking and not editing progress slider directly inside node
@@ -207,9 +216,12 @@ export class CanvasComponent implements OnInit {
   }
 
   onNodeContextMenu(event: MouseEvent, node: SkillNode) {
-    if (this.hasMovedNode) return;
     event.preventDefault(); // Prevent default browser context menu
     event.stopPropagation();
+
+    // Disable any active dragging state since right click cancels dragging logically anyway
+    this.isDraggingNode = false;
+    this.hasMovedNode = false;
 
     // Open properties instead of downgrading
     this.selectedNode = node;
@@ -239,9 +251,25 @@ export class CanvasComponent implements OnInit {
     });
   }
 
-  startLinking(node: SkillNode) {
+  startLinking(event: MouseEvent, node: SkillNode) {
+    // Only left click
+    if (event.button !== 0) return;
     this.isLinking = true;
     this.linkSourceNode = node;
+
+    // Set initial mouse position
+    const pt = this.svgCanvas.nativeElement.createSVGPoint();
+    pt.x = event.clientX;
+    pt.y = event.clientY;
+    const svgP = pt.matrixTransform(this.svgCanvas.nativeElement.getScreenCTM()?.inverse());
+    this.mousePosition = { x: svgP.x, y: svgP.y };
+  }
+
+  onNodeMouseUp(event: MouseEvent, node: SkillNode) {
+    if (this.isLinking && this.linkSourceNode && this.linkSourceNode.id !== node.id) {
+      event.stopPropagation();
+      this.completeLink(node);
+    }
   }
 
   completeLink(targetNode: SkillNode) {
@@ -249,7 +277,13 @@ export class CanvasComponent implements OnInit {
     const sourceNode = this.linkSourceNode;
     this.linkSourceNode = null;
 
-    if (!sourceNode) return;
+    if (!sourceNode || sourceNode.id === targetNode.id) return;
+
+    // Check cycle: if the target is already a parent of the source node
+    if (sourceNode.parentId === targetNode.id) {
+      alert("Нельзя привязать навык к своему родителю!");
+      return;
+    }
 
     // Set targetNode's parent to sourceNode
     targetNode.parentId = sourceNode.id;
@@ -261,6 +295,8 @@ export class CanvasComponent implements OnInit {
     this.linkSourceNode = null;
   }
 
+  saveTimeout: any;
+
   saveNodeProperties() {
     if (!this.selectedNode || !this.editNodeData) return;
 
@@ -271,13 +307,24 @@ export class CanvasComponent implements OnInit {
     this.editNodeData.level = lvl;
     this.editNodeData.progress = (lvl / maxLvl) * 100;
 
-    this.nodesService.updateNode(this.selectedNode.id, this.editNodeData).subscribe(updated => {
-      const idx = this.nodes.findIndex(n => n.id === updated.id);
-      if (idx !== -1) {
-        this.nodes[idx] = updated;
-        this.selectedNode = updated;
-      }
-    });
+    // Apply locally to selected node for immediate visual update
+    Object.assign(this.selectedNode, this.editNodeData);
+
+    const idx = this.nodes.findIndex(n => n.id === this.selectedNode?.id);
+    if (idx !== -1) {
+      this.nodes[idx] = this.selectedNode;
+    }
+
+    if (this.saveTimeout) {
+      clearTimeout(this.saveTimeout);
+    }
+
+    this.saveTimeout = setTimeout(() => {
+      if (!this.selectedNode) return;
+      this.nodesService.updateNode(this.selectedNode.id, this.editNodeData).subscribe(updated => {
+        // Optionally sync any backend-specific generated fields
+      });
+    }, 500);
   }
 
   deleteNode() {
