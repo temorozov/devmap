@@ -16,6 +16,7 @@
                 <span>{{ totalProgress }}%</span>
             </div>
         </div>
+
         <div class="right-section">
             <div *ngIf="isLinking" class="linking-indicator">
                 <span class="pulse-dot"></span>
@@ -28,6 +29,11 @@
             </button>
         </div>
     </header>
+
+    <!-- Activity Calendar -->
+    <div class="calendar-panel glass-panel" *ngIf="tree && tree.activities">
+        <app-activity-calendar [activities]="tree.activities"></app-activity-calendar>
+    </div>
 
     <!-- SVG Workspace -->
     <main class="workspace">
@@ -121,7 +127,8 @@
         <div class="panel-body" *ngIf="selectedNode">
             <div class="form-group">
                 <label>Title</label>
-                <input type="text" [(ngModel)]="editNodeData.title" (ngModelChange)="saveNodeProperties()">
+                <input type="text" [(ngModel)]="editNodeData.title" (ngModelChange)="saveNodeProperties()"
+                    (keydown.enter)="showProperties = false">
             </div>
 
             <div class="form-group">
@@ -137,8 +144,8 @@
 
             <div class="form-group">
                 <label>Description</label>
-                <textarea [(ngModel)]="editNodeData.description" (ngModelChange)="saveNodeProperties()"
-                    rows="3"></textarea>
+                <textarea [(ngModel)]="editNodeData.description" (ngModelChange)="saveNodeProperties()" rows="3"
+                    (keydown.enter)="showProperties = false; $event.preventDefault()"></textarea>
             </div>
 
             <div class="form-group row-group">

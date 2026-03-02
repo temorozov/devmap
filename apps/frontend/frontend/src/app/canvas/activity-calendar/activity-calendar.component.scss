@@ -1,0 +1,87 @@
+.calendar-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.months-header {
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    color: var(--text-main);
+    text-transform: uppercase;
+}
+
+.calendar-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.week-row {
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+}
+
+.day-labels {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.4);
+    font-weight: 600;
+
+    span {
+        width: 18px;
+        text-align: center;
+    }
+}
+
+.day-square {
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    background-color: rgba(255, 255, 255, 0.03);
+    /* Default level-0, even dimmer */
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    cursor: pointer;
+
+    &.fade {
+        opacity: 0.15;
+    }
+
+    &:hover {
+        transform: translateY(-2px) scale(1.1);
+        z-index: 10;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.6);
+        border-color: rgba(255, 255, 255, 0.2);
+        opacity: 1;
+    }
+
+    /* Green levels */
+    &.level-1 {
+        background-color: rgba(16, 185, 129, 0.2);
+        border: 1px solid rgba(16, 185, 129, 0.1);
+    }
+
+    &.level-2 {
+        background-color: rgba(16, 185, 129, 0.5);
+        border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+
+    &.level-3 {
+        background-color: rgba(16, 185, 129, 0.8);
+        border: 1px solid rgba(16, 185, 129, 0.4);
+        box-shadow: 0 0 8px rgba(16, 185, 129, 0.3);
+    }
+
+    &.level-4 {
+        background-color: #10b981;
+        /* solid green */
+        border: 1px solid #34d399;
+        /* lighter green edge */
+        box-shadow: 0 0 12px rgba(16, 185, 129, 0.6);
+    }
+}

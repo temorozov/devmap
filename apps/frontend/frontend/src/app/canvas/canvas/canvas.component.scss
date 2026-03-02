@@ -66,6 +66,16 @@
     }
 }
 
+.calendar-panel {
+    position: absolute;
+    top: 5.5rem;
+    left: 1rem;
+    z-index: 9;
+    padding: 0.75rem 1.25rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
 .icon-btn {
     background: transparent;
     border: none;

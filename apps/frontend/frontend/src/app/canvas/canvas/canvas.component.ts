@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { TreesService, Tree } from '../../trees.service';
 import { NodesService, SkillNode } from '../../nodes.service';
 import { BehaviorSubject, Subject, takeUntil } from 'rxjs';
+import { ActivityCalendarComponent } from '../activity-calendar/activity-calendar.component';
 
 interface ViewBox {
   x: number;
@@ -16,7 +17,7 @@ interface ViewBox {
 @Component({
   selector: 'app-canvas',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ActivityCalendarComponent],
   templateUrl: './canvas.component.html',
   styleUrls: ['./canvas.component.scss'],
 })

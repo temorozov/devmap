@@ -9,6 +9,7 @@ export interface Tree {
   createdAt: string;
   updatedAt: string;
   nodes?: any[];
+  activities?: { date: string; count: number }[];
 }
 
 @Injectable({

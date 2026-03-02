@@ -26,7 +26,7 @@ export class TreesService {
     async findOne(userId: string, id: string) {
         const tree = await this.prisma.tree.findFirst({
             where: { id, userId },
-            include: { nodes: true }
+            include: { nodes: true, activities: true }
         });
         if (!tree) throw new NotFoundException('Tree not found');
         return tree;
@@ -35,7 +35,7 @@ export class TreesService {
     async findBySharedToken(token: string) {
         const tree = await this.prisma.tree.findUnique({
             where: { sharedToken: token },
-            include: { nodes: true }
+            include: { nodes: true, activities: true }
         });
         if (!tree) throw new NotFoundException('Shared tree not found');
         return tree;

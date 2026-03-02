@@ -1,0 +1,20 @@
+<div class="calendar-wrapper">
+    <div class="months-header">
+        <span *ngFor="let month of months" [style.grid-column-end]="'span ' + month.colSpan">
+            {{ month.label }}
+        </span>
+    </div>
+    <div class="calendar-grid">
+        <!-- Weekday headers -->
+        <div class="week-row day-labels">
+            <span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span>
+        </div>
+        <!-- We use rows for weeks and columns for days to match traditional calendar -->
+        <div class="week-row" *ngFor="let week of weeks">
+            <div class="day-square" *ngFor="let day of week" [class]="getColorClass(day.count)"
+                [class.fade]="!day.isCurrentMonth"
+                [attr.title]="day.count + ' contributions on ' + (day.date | date:'mediumDate')">
+            </div>
+        </div>
+    </div>
+</div>
