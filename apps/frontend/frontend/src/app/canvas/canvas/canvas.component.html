@@ -106,7 +106,7 @@
                         *ngIf="hoveredNode?.id === node.id" pointer-events="none">
                         <div xmlns="http://www.w3.org/1999/xhtml" class="tooltip-content glass-panel">
                             <h4>{{ node.title }}</h4>
-                            <p class="desc" *ngIf="node.description">{{ node.description }}</p>
+                            <p class="desc" *ngIf="node.description" [innerHTML]="node.description | linkify"></p>
                             <div class="level-badge">Lvl {{ node.level || 0 }} / {{ node.maxLevel || 5 }}</div>
                         </div>
                     </foreignObject>
@@ -145,7 +145,10 @@
             <div class="form-group">
                 <label>Description</label>
                 <textarea [(ngModel)]="editNodeData.description" (ngModelChange)="saveNodeProperties()" rows="3"
+                    placeholder="Description is optional..."
                     (keydown.enter)="showProperties = false; $event.preventDefault()"></textarea>
+                <div *ngIf="editNodeData.description" class="description-preview mt-2 p-2 border rounded bg-dark"
+                    [innerHTML]="editNodeData.description | linkify"></div>
             </div>
 
             <div class="form-group row-group">

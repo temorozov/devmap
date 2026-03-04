@@ -19,6 +19,7 @@ export class TreesService {
     async findAllByUser(userId: string) {
         return this.prisma.tree.findMany({
             where: { userId },
+            include: { activities: true },
             orderBy: { createdAt: 'desc' }
         });
     }

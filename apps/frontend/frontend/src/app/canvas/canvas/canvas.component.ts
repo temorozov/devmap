@@ -6,6 +6,7 @@ import { TreesService, Tree } from '../../trees.service';
 import { NodesService, SkillNode } from '../../nodes.service';
 import { BehaviorSubject, Subject, takeUntil } from 'rxjs';
 import { ActivityCalendarComponent } from '../activity-calendar/activity-calendar.component';
+import { LinkifyPipe } from '../../shared/pipes/linkify.pipe';
 
 interface ViewBox {
   x: number;
@@ -17,7 +18,7 @@ interface ViewBox {
 @Component({
   selector: 'app-canvas',
   standalone: true,
-  imports: [CommonModule, FormsModule, ActivityCalendarComponent],
+  imports: [CommonModule, FormsModule, ActivityCalendarComponent, LinkifyPipe],
   templateUrl: './canvas.component.html',
   styleUrls: ['./canvas.component.scss'],
 })
@@ -235,7 +236,7 @@ export class CanvasComponent implements OnInit {
     const newNode: Partial<SkillNode> = {
       treeId: this.tree?.id,
       title: 'New Skill',
-      description: 'Describe this skill...',
+      description: '',
       icon: 'code',
       level: 0,
       maxLevel: 5,

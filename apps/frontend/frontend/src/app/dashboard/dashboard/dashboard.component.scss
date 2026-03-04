@@ -143,6 +143,8 @@
 
     .card-content {
         flex: 1;
+        display: flex;
+        flex-direction: column;
 
         .icon-wrapper {
             width: 48px;
@@ -169,6 +171,40 @@
         .date {
             font-size: 0.85rem;
             color: var(--text-muted);
+            margin-bottom: 1rem;
+        }
+
+        .calendar-preview {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.75rem;
+            margin-top: auto; // push it to bottom if card expands
+
+            // Override calendar styles to be smaller and fit inside card
+            ::ng-deep {
+                .calendar-wrapper {
+                    gap: 4px;
+                }
+
+                .months-header {
+                    font-size: 11px;
+                }
+
+                .day-square {
+                    width: 12px;
+                    height: 12px;
+                    border-radius: 3px;
+                }
+
+                .day-labels {
+                    font-size: 9px;
+
+                    span {
+                        width: 12px;
+                    }
+                }
+            }
         }
     }
 

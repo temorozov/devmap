@@ -41,7 +41,6 @@ export class NodesService {
 
         const result = await this.prisma.node.delete({ where: { id } });
         await this.recordActivity(node.treeId);
-        await this.recordActivity(node.treeId);
         return result;
     }
 
