@@ -170,6 +170,13 @@
     }
 }
 
+.selection-box {
+    fill: rgba(59, 130, 246, 0.1);
+    stroke: var(--accent-color);
+    stroke-width: 1;
+    stroke-dasharray: 4;
+}
+
 /* Skill Nodes */
 .skill-node {
     cursor: pointer;
@@ -243,7 +250,7 @@
         }
     }
 
-    &.selected {
+    &.selected, &.multi-selected {
         .node-bg {
             stroke: var(--accent-color);
             filter: url(#glow);
@@ -498,23 +505,34 @@
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(4px);
+    background: rgba(0, 0, 0, 0.75);
+    /* Removed backdrop-filter because blurring a massive SVG canvas with hundreds of items destroys FPS */
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 100;
+    animation: fadeIn 0.15s ease-out;
 }
 
 .modal-content {
-    background: var(--glass-bg);
+    background: var(--bg-card);
     border: 1px solid var(--border-color);
     border-radius: 12px;
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
     overflow: hidden;
+    will-change: transform, opacity;
 
     .panel-header {
         background: rgba(0, 0, 0, 0.2);
+    }
+}
+
+.modal-actions {
+    display: flex;
+    gap: 1rem;
+    
+    button {
+        flex: 1;
     }
 }
 

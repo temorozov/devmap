@@ -39,8 +39,16 @@ export class CanvasComponent implements OnInit {
 
   // Node interaction state
   selectedNode: SkillNode | null = null;
+  selectedNodes: Set<string> = new Set();
   isDraggingNode = false;
   draggedNode: SkillNode | null = null;
+  initialNodePositions: Map<string, {x: number, y: number}> = new Map();
+  dragStartSvg: {x: number, y: number} | null = null;
+
+  // Selection state
+  isSelecting = false;
+  selectionStart: { x: number, y: number } | null = null;
+  selectionBox: ViewBox | null = null;
 
   // Create / Edit state
   showProperties = false;
@@ -145,11 +153,25 @@ export class CanvasComponent implements OnInit {
 
   onMouseDown(event: MouseEvent) {
     // If we reach here, we didn't click on a node (because node clicks stop propagation)
-    this.isDraggingCanvas = true;
-    this.dragStart = { x: event.clientX, y: event.clientY };
     this.selectedNode = null;
     this.showProperties = false;
     this.editingDescription = false;
+    
+    if (event.button === 0) {
+      if (!event.ctrlKey && !event.metaKey) {
+        this.selectedNodes.clear();
+      }
+      this.isSelecting = true;
+      const pt = this.svgCanvas.nativeElement.createSVGPoint();
+      pt.x = event.clientX;
+      pt.y = event.clientY;
+      const svgP = pt.matrixTransform(this.svgCanvas.nativeElement.getScreenCTM()?.inverse());
+      this.selectionStart = { x: svgP.x, y: svgP.y };
+      this.selectionBox = { x: svgP.x, y: svgP.y, w: 0, h: 0 };
+    } else if (event.button === 1 || event.button === 2) {
+      this.isDraggingCanvas = true;
+      this.dragStart = { x: event.clientX, y: event.clientY };
+    }
   }
 
   onCanvasContextMenu(event: MouseEvent) {
@@ -164,6 +186,28 @@ export class CanvasComponent implements OnInit {
 
     if (this.isLinking) {
       this.mousePosition = { x: svgP.x, y: svgP.y };
+    } else if (this.isSelecting && this.selectionStart && this.selectionBox) {
+      const currentX = svgP.x;
+      const currentY = svgP.y;
+      this.selectionBox.x = Math.min(this.selectionStart.x, currentX);
+      this.selectionBox.y = Math.min(this.selectionStart.y, currentY);
+      this.selectionBox.w = Math.abs(currentX - this.selectionStart.x);
+      this.selectionBox.h = Math.abs(currentY - this.selectionStart.y);
+
+      if (!event.ctrlKey && !event.metaKey) {
+        this.selectedNodes.clear();
+      }
+      
+      this.nodes.forEach(node => {
+        if (
+          node.positionX >= this.selectionBox!.x &&
+          node.positionX <= this.selectionBox!.x + this.selectionBox!.w &&
+          node.positionY >= this.selectionBox!.y &&
+          node.positionY <= this.selectionBox!.y + this.selectionBox!.h
+        ) {
+          this.selectedNodes.add(node.id);
+        }
+      });
     } else if (this.isDraggingCanvas) {
       const dx = (event.clientX - this.dragStart.x) * (this.viewBox.w / window.innerWidth);
       const dy = (event.clientY - this.dragStart.y) * (this.viewBox.h / window.innerHeight);
@@ -172,24 +216,46 @@ export class CanvasComponent implements OnInit {
       this.viewBox.y -= dy;
 
       this.dragStart = { x: event.clientX, y: event.clientY };
-    } else if (this.isDraggingNode && this.draggedNode) {
+    } else if (this.isDraggingNode && this.draggedNode && this.dragStartSvg) {
       this.hasMovedNode = true;
-      // Calculate new position based on SVG coordinates
-      this.draggedNode.positionX = svgP.x; // Now centered, no offset needed since circle cx is 0 inside group
-      this.draggedNode.positionY = svgP.y;
+      const dx = svgP.x - this.dragStartSvg.x;
+      const dy = svgP.y - this.dragStartSvg.y;
+
+      this.nodes.forEach(n => {
+        if (this.selectedNodes.has(n.id)) {
+          const initialPos = this.initialNodePositions.get(n.id);
+          if (initialPos) {
+            n.positionX = initialPos.x + dx;
+            n.positionY = initialPos.y + dy;
+          }
+        }
+      });
     }
   }
 
   onMouseUp() {
     this.isDraggingCanvas = false;
+    
+    if (this.isSelecting) {
+      this.isSelecting = false;
+      this.selectionBox = null;
+      this.selectionStart = null;
+    }
+
     if (this.isDraggingNode && this.draggedNode) {
       this.isDraggingNode = false;
-      // Save new position
-      this.nodesService.updateNode(this.draggedNode.id, {
-        positionX: this.draggedNode.positionX,
-        positionY: this.draggedNode.positionY
-      }).subscribe();
+      // Save new position for ALL selected nodes
+      this.nodes.forEach(n => {
+        if (this.selectedNodes.has(n.id)) {
+          this.nodesService.updateNode(n.id, {
+            positionX: n.positionX,
+            positionY: n.positionY
+          }).subscribe();
+        }
+      });
       this.draggedNode = null;
+      this.dragStartSvg = null;
+      this.initialNodePositions.clear();
     }
     if (this.isLinking) {
       this.cancelLinking();
@@ -233,6 +299,30 @@ export class CanvasComponent implements OnInit {
       this.isDraggingNode = true;
       this.hasMovedNode = false;
       this.draggedNode = node;
+      
+      const pt = this.svgCanvas.nativeElement.createSVGPoint();
+      pt.x = event.clientX;
+      pt.y = event.clientY;
+      const svgP = pt.matrixTransform(this.svgCanvas.nativeElement.getScreenCTM()?.inverse());
+      this.dragStartSvg = { x: svgP.x, y: svgP.y };
+
+      const isMultiSelect = event.ctrlKey || event.metaKey;
+      if (!this.selectedNodes.has(node.id)) {
+        if (!isMultiSelect) {
+          this.selectedNodes.clear();
+        }
+        this.selectedNodes.add(node.id);
+      } else if (isMultiSelect) {
+        this.selectedNodes.delete(node.id);
+        this.isDraggingNode = false;
+      }
+
+      this.initialNodePositions.clear();
+      this.nodes.forEach(n => {
+        if (this.selectedNodes.has(n.id)) {
+          this.initialNodePositions.set(n.id, { x: n.positionX, y: n.positionY });
+        }
+      });
     }
   }
 

@@ -74,7 +74,16 @@
 
             <!-- Nodes Layer -->
             <g class="nodes-layer">
+                <!-- Selection Box -->
+                <rect *ngIf="isSelecting && selectionBox" 
+                      [attr.x]="selectionBox.x" 
+                      [attr.y]="selectionBox.y" 
+                      [attr.width]="selectionBox.w" 
+                      [attr.height]="selectionBox.h" 
+                      class="selection-box" />
+
                 <g *ngFor="let node of nodes" class="skill-node" [class.selected]="selectedNode?.id === node.id"
+                    [class.multi-selected]="selectedNodes.has(node.id)"
                     [class.completed]="node.level === (node.maxLevel || 5)"
                     [attr.transform]="'translate(' + node.positionX + ',' + node.positionY + ')'"
                     (mousedown)="onNodeMouseDown($event, node)" (click)="onNodeClick($event, node)"
@@ -189,7 +198,7 @@
 
     <!-- AI Prompt Modal -->
     <div class="modal-overlay" *ngIf="showAiPrompt">
-        <div class="modal-content glass-panel" style="max-width: 500px; width: 90%;">
+        <div class="modal-content" style="max-width: 500px; width: 90%;">
             <div class="panel-header">
                 <h3>Generate Skill Tree</h3>
                 <button class="icon-btn" (click)="showAiPrompt = false" [disabled]="isGenerating">
@@ -201,7 +210,7 @@
                 <div class="form-group">
                     <textarea class="desc-textarea" [(ngModel)]="aiPrompt" rows="4" placeholder="Enter your prompt..."></textarea>
                 </div>
-                <div class="actions mt-4 gap-2 flex justify-end">
+                <div class="modal-actions mt-4">
                     <button class="btn-secondary" (click)="showAiPrompt = false" [disabled]="isGenerating">Cancel</button>
                     <button class="btn-primary" (click)="generateWithAi()" [disabled]="isGenerating || !aiPrompt.trim()">
                         <span class="material-icons" [class.spinning]="isGenerating">{{ isGenerating ? 'refresh' : 'auto_awesome' }}</span>
