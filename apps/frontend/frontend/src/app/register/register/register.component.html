@@ -23,13 +23,17 @@
                 <input type="password" formControlName="confirmPassword" placeholder="Confirm Password">
             </div>
 
+            <div *ngIf="successMsg" class="success-msg" style="color: #22c55e; background: rgba(34, 197, 94, 0.1); padding: 10px; border-radius: 6px; margin-bottom: 1rem; border: 1px solid rgba(34, 197, 94, 0.2); text-align: center;">
+                {{ successMsg }}
+            </div>
+
             <div *ngIf="error" class="error-msg">{{ error }}</div>
             <div *ngIf="registerForm.errors?.['mismatch'] && registerForm.get('confirmPassword')?.touched"
                 class="error-msg">
                 Passwords do not match.
             </div>
 
-            <button type="submit" class="btn-primary" [disabled]="loading || registerForm.invalid">
+            <button type="submit" class="btn-primary" [disabled]="loading || registerForm.invalid || successMsg !== ''">
                 <span *ngIf="!loading">Create Account</span>
                 <span *ngIf="loading" class="material-icons spinning">refresh</span>
             </button>

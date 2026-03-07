@@ -76,6 +76,39 @@ export class CanvasComponent implements OnInit {
   aiPrompt = '';
   isGenerating = false;
 
+  // Tree Title Edit State
+  isEditingTreeTitle = false;
+  editTreeTitleData = '';
+
+  startEditingTreeTitle() {
+    if (!this.tree) return;
+    this.editTreeTitleData = this.tree.title;
+    this.isEditingTreeTitle = true;
+    setTimeout(() => {
+      const input = document.querySelector('.title-input') as HTMLInputElement;
+      if (input) {
+        input.focus();
+        input.select();
+      }
+    }, 0);
+  }
+
+  saveTreeTitle() {
+    if (!this.isEditingTreeTitle || !this.tree) return;
+    const newTitle = this.editTreeTitleData.trim();
+    if (newTitle && newTitle !== this.tree.title) {
+      this.tree.title = newTitle;
+      this.treesService.updateTree(this.tree.id, newTitle).subscribe({
+        error: (err) => console.error('Failed to update tree title', err)
+      });
+    }
+    this.isEditingTreeTitle = false;
+  }
+
+  cancelEditingTreeTitle() {
+    this.isEditingTreeTitle = false;
+  }
+
   openAiPrompt() {
     this.showAiPrompt = true;
     this.aiPrompt = '';

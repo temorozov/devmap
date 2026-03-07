@@ -24,6 +24,7 @@ export class RegisterComponent {
 
     loading = false;
     error = '';
+    successMsg = '';
 
     passwordMatchValidator(g: any) {
         return g.get('password').value === g.get('confirmPassword').value
@@ -39,9 +40,14 @@ export class RegisterComponent {
         const { email, password } = this.registerForm.value;
 
         this.authService.register({ email: email!, password: password! }).subscribe({
-            next: () => {
+            next: (res: any) => {
                 this.loading = false;
-                this.router.navigate(['/dashboard']);
+                if (res?.message) {
+                    this.successMsg = res.message;
+                    this.registerForm.reset();
+                } else {
+                    this.router.navigate(['/dashboard']);
+                }
             },
             error: (err) => {
                 this.loading = false;

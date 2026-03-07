@@ -35,6 +35,18 @@ export class AuthController {
         }
     }
 
+    @Post('confirm-email')
+    async confirmEmail(@Body('token') token: string) {
+        if (!token) {
+            return { status: 400, message: 'Token is required' };
+        }
+        try {
+            return await this.authService.confirmEmail(token);
+        } catch (error: any) {
+            return { status: HttpStatus.BAD_REQUEST, message: error.message };
+        }
+    }
+
     @Get('google')
     @UseGuards(AuthGuard('google'))
     async googleAuth(@Req() req: ExpressRequest) {

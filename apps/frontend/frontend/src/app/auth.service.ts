@@ -33,7 +33,7 @@ export class AuthService {
   }
 
   register(credentials: { email: string; password: string }) {
-    return this.http.post<{ access_token: string, user: any }>(`${this.apiUrl}/register`, credentials)
+    return this.http.post<{ access_token?: string, user?: any, message?: string }>(`${this.apiUrl}/register`, credentials)
       .pipe(
         tap(response => {
           if (response.access_token) {
@@ -41,6 +41,10 @@ export class AuthService {
           }
         })
       );
+  }
+
+  confirmEmail(token: string) {
+    return this.http.post<{ message: string }>(`${this.apiUrl}/confirm-email`, { token });
   }
 
   handleOAuthToken(token: string) {

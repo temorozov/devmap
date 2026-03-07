@@ -5,7 +5,21 @@
             <button class="icon-btn" (click)="router.navigate(['/dashboard'])" title="Back to Dashboard">
                 <span class="material-icons">arrow_back</span>
             </button>
-            <h2 *ngIf="tree">{{ tree.title }}</h2>
+            <div *ngIf="tree" class="title-container">
+                <ng-container *ngIf="!isEditingTreeTitle">
+                    <h2>{{ tree.title }}</h2>
+                    <button class="icon-btn edit-title-btn" (click)="startEditingTreeTitle()" title="Rename Tree">
+                        <span class="material-icons">edit</span>
+                    </button>
+                </ng-container>
+                <ng-container *ngIf="isEditingTreeTitle">
+                    <input type="text" [(ngModel)]="editTreeTitleData" 
+                        (keydown.enter)="saveTreeTitle()" 
+                        (keydown.escape)="cancelEditingTreeTitle()" 
+                        (blur)="saveTreeTitle()"
+                        class="title-input">
+                </ng-container>
+            </div>
             <div *ngIf="loading" class="loading-indicator">
                 <span class="material-icons spinning">refresh</span>
             </div>
