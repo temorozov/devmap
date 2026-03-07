@@ -42,4 +42,8 @@ export class TreesService {
   deleteTree(id: string) {
     return this.http.delete(`${this.apiUrl}/${id}`);
   }
+
+  generateTree(id: string, prompt: string) {
+    return this.http.post<any[]>(`${this.apiUrl}/${id}/generate`, { prompt });
+  }
 }

@@ -23,6 +23,10 @@
                 <span>Select child skill above</span>
                 <button class="btn-secondary small" (click)="cancelLinking()">Cancel</button>
             </div>
+            <button class="btn-primary" (click)="openAiPrompt()" [disabled]="isGenerating">
+                <span class="material-icons" [class.spinning]="isGenerating">{{ isGenerating ? 'refresh' : 'auto_awesome' }}</span>
+                <span>{{ isGenerating ? 'Generating...' : 'AI Generate' }}</span>
+            </button>
             <button class="btn-primary" (click)="addNode()">
                 <span class="material-icons">add</span>
                 <span>Add Skill</span>
@@ -52,8 +56,8 @@
                 </filter>
             </defs>
 
-            <rect width="100%" height="100%" fill="url(#grid)" />
-
+            <!-- We set the rect to cover a massive infinite area centered around the origin -->
+            <rect x="-50000" y="-50000" width="100000" height="100000" fill="url(#grid)" />
             <!-- Connections / Links Layer -->
             <g class="connections-layer">
                 <!-- Existing complete connections -->
@@ -119,7 +123,7 @@
     <aside class="properties-panel glass-panel" [class.open]="showProperties">
         <div class="panel-header">
             <h3>Node Properties</h3>
-            <button class="icon-btn" (click)="showProperties = false">
+            <button class="icon-btn" (click)="showProperties = false; editingDescription = false">
                 <span class="material-icons">close</span>
             </button>
         </div>
@@ -128,7 +132,7 @@
             <div class="form-group">
                 <label>Title</label>
                 <input type="text" [(ngModel)]="editNodeData.title" (ngModelChange)="saveNodeProperties()"
-                    (keydown.enter)="showProperties = false">
+                    (keydown.enter)="showProperties = false; editingDescription = false">
             </div>
 
             <div class="form-group">
@@ -144,11 +148,17 @@
 
             <div class="form-group">
                 <label>Description</label>
-                <textarea [(ngModel)]="editNodeData.description" (ngModelChange)="saveNodeProperties()" rows="3"
-                    placeholder="Description is optional..."
-                    (keydown.enter)="showProperties = false; $event.preventDefault()"></textarea>
-                <div *ngIf="editNodeData.description" class="description-preview mt-2 p-2 border rounded bg-dark"
-                    [innerHTML]="editNodeData.description | linkify"></div>
+                <textarea *ngIf="editingDescription" class="desc-textarea" [(ngModel)]="editNodeData.description"
+                    (ngModelChange)="saveNodeProperties()" rows="4" placeholder="Description is optional..."
+                    (blur)="editingDescription = false"
+                    (keydown.enter)="showProperties = false; editingDescription = false; $event.preventDefault()"></textarea>
+                <div *ngIf="!editingDescription" class="description-preview p-2 border rounded bg-dark"
+                    style="min-height: 94px; cursor: text; white-space: pre-wrap; word-break: break-word;"
+                    (click)="startEditDescription($event)">
+                    <span *ngIf="editNodeData.description" [innerHTML]="editNodeData.description | linkify"></span>
+                    <span *ngIf="!editNodeData.description" style="color: var(--text-muted); opacity: 0.7;">Description
+                        is optional... (Click to edit)</span>
+                </div>
             </div>
 
             <div class="form-group row-group">
@@ -176,4 +186,29 @@
             </p>
         </div>
     </aside>
+
+    <!-- AI Prompt Modal -->
+    <div class="modal-overlay" *ngIf="showAiPrompt">
+        <div class="modal-content glass-panel" style="max-width: 500px; width: 90%;">
+            <div class="panel-header">
+                <h3>Generate Skill Tree</h3>
+                <button class="icon-btn" (click)="showAiPrompt = false" [disabled]="isGenerating">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            <div class="panel-body mt-4">
+                <p class="text-muted mb-4">Describe the path or topic you want to learn (e.g., "English learning path using movies").</p>
+                <div class="form-group">
+                    <textarea class="desc-textarea" [(ngModel)]="aiPrompt" rows="4" placeholder="Enter your prompt..."></textarea>
+                </div>
+                <div class="actions mt-4 gap-2 flex justify-end">
+                    <button class="btn-secondary" (click)="showAiPrompt = false" [disabled]="isGenerating">Cancel</button>
+                    <button class="btn-primary" (click)="generateWithAi()" [disabled]="isGenerating || !aiPrompt.trim()">
+                        <span class="material-icons" [class.spinning]="isGenerating">{{ isGenerating ? 'refresh' : 'auto_awesome' }}</span>
+                        <span>{{ isGenerating ? 'Generating...' : 'Generate' }}</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>

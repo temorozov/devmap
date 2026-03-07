@@ -13,6 +13,12 @@ export class TreesController {
     }
 
     @UseGuards(JwtAuthGuard)
+    @Post(':id/generate')
+    generate(@Request() req: any, @Param('id') id: string, @Body() body: { prompt: string }) {
+        return this.treesService.generateSkillTree(req.user.id, id, body.prompt);
+    }
+
+    @UseGuards(JwtAuthGuard)
     @Get()
     findAll(@Request() req: any) {
         return this.treesService.findAllByUser(req.user.id);

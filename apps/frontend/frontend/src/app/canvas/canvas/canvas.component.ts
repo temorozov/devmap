@@ -46,10 +46,51 @@ export class CanvasComponent implements OnInit {
   showProperties = false;
   editNodeData: Partial<SkillNode> = {};
   isLinking = false;
+  editingDescription = false;
   linkSourceNode: SkillNode | null = null;
   hasMovedNode = false;
   hoveredNode: SkillNode | null = null;
   mousePosition = { x: 0, y: 0 };
+
+  startEditDescription(event: MouseEvent) {
+    if ((event.target as HTMLElement).tagName.toLowerCase() === 'a') {
+      return;
+    }
+    this.editingDescription = true;
+    setTimeout(() => {
+      const ta = document.querySelector('.desc-textarea') as HTMLTextAreaElement;
+      if (ta) ta.focus();
+    }, 0);
+  }
+
+  // AI Generation State
+  showAiPrompt = false;
+  aiPrompt = '';
+  isGenerating = false;
+
+  openAiPrompt() {
+    this.showAiPrompt = true;
+    this.aiPrompt = '';
+  }
+
+  generateWithAi() {
+    if (!this.tree || !this.aiPrompt.trim()) return;
+    this.isGenerating = true;
+    
+    this.treesService.generateTree(this.tree.id, this.aiPrompt).subscribe({
+      next: (newNodes) => {
+        // Create a new array reference to trigger change detection
+        this.nodes = [...this.nodes, ...newNodes];
+        this.isGenerating = false;
+        this.showAiPrompt = false;
+      },
+      error: (err) => {
+        console.error('Error generating tree', err);
+        alert('Failed to generate tree. Error: ' + JSON.stringify(err.error || err.message));
+        this.isGenerating = false;
+      }
+    });
+  }
 
   availableIcons = [
     { name: 'fitness_center', label: 'Gym' },
@@ -108,6 +149,7 @@ export class CanvasComponent implements OnInit {
     this.dragStart = { x: event.clientX, y: event.clientY };
     this.selectedNode = null;
     this.showProperties = false;
+    this.editingDescription = false;
   }
 
   onCanvasContextMenu(event: MouseEvent) {
@@ -229,6 +271,7 @@ export class CanvasComponent implements OnInit {
     this.selectedNode = node;
     this.editNodeData = { ...node };
     this.showProperties = true;
+    this.editingDescription = false;
   }
 
   addNode() {
@@ -250,6 +293,7 @@ export class CanvasComponent implements OnInit {
       this.selectedNode = node;
       this.editNodeData = { ...node };
       this.showProperties = true;
+      this.editingDescription = false;
     });
   }
 
