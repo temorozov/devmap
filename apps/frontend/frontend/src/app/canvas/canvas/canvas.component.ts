@@ -4,9 +4,11 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { TreesService, Tree } from '../../trees.service';
 import { NodesService, SkillNode } from '../../nodes.service';
-import { BehaviorSubject, Subject, takeUntil } from 'rxjs';
+import { BehaviorSubject, Subject, takeUntil, take } from 'rxjs';
 import { ActivityCalendarComponent } from '../activity-calendar/activity-calendar.component';
 import { LinkifyPipe } from '../../shared/pipes/linkify.pipe';
+import { AuthService } from '../../auth.service';
+import { DialogService } from '../../shared/services/dialog.service';
 
 interface ViewBox {
   x: number;
@@ -27,6 +29,10 @@ export class CanvasComponent implements OnInit {
   router = inject(Router);
   treesService = inject(TreesService);
   nodesService = inject(NodesService);
+  authService = inject(AuthService);
+  dialogService = inject(DialogService);
+
+  isGuest$ = this.authService.isGuest$;
 
   tree: Tree | null = null;
   nodes: SkillNode[] = [];
@@ -110,26 +116,35 @@ export class CanvasComponent implements OnInit {
   }
 
   openAiPrompt() {
-    this.showAiPrompt = true;
-    this.aiPrompt = '';
+    this.isGuest$.pipe(take(1)).subscribe(isGuest => {
+      if (isGuest) {
+        this.dialogService.alert('AI features are not available for guests.');
+        return;
+      }
+      this.showAiPrompt = true;
+      this.aiPrompt = '';
+    });
   }
 
   generateWithAi() {
-    if (!this.tree || !this.aiPrompt.trim()) return;
-    this.isGenerating = true;
-    
-    this.treesService.generateTree(this.tree.id, this.aiPrompt).subscribe({
-      next: (newNodes) => {
-        // Create a new array reference to trigger change detection
-        this.nodes = [...this.nodes, ...newNodes];
-        this.isGenerating = false;
-        this.showAiPrompt = false;
-      },
-      error: (err) => {
-        console.error('Error generating tree', err);
-        alert('Failed to generate tree. Error: ' + JSON.stringify(err.error || err.message));
-        this.isGenerating = false;
-      }
+    this.isGuest$.pipe(take(1)).subscribe(isGuest => {
+      if (isGuest) return;
+      if (!this.tree || !this.aiPrompt.trim()) return;
+      this.isGenerating = true;
+      
+      this.treesService.generateTree(this.tree.id, this.aiPrompt).subscribe({
+        next: (newNodes) => {
+          // Create a new array reference to trigger change detection
+          this.nodes = [...this.nodes, ...newNodes];
+          this.isGenerating = false;
+          this.showAiPrompt = false;
+        },
+        error: (err) => {
+          console.error('Error generating tree', err);
+          this.dialogService.alert('Failed to generate tree. Error: ' + JSON.stringify(err.error || err.message));
+          this.isGenerating = false;
+        }
+      });
     });
   }
 
@@ -450,7 +465,7 @@ export class CanvasComponent implements OnInit {
 
     // Check cycle: if the target is already a parent of the source node
     if (sourceNode.parentId === targetNode.id) {
-      alert("Нельзя привязать навык к своему родителю!");
+      this.dialogService.alert("Нельзя привязать навык к своему родителю!");
       return;
     }
 
@@ -496,9 +511,9 @@ export class CanvasComponent implements OnInit {
     }, 500);
   }
 
-  deleteNode() {
+  async deleteNode() {
     if (!this.selectedNode) return;
-    if (confirm('Delete this node?')) {
+    if (await this.dialogService.confirm('Delete this node?')) {
       this.nodesService.deleteNode(this.selectedNode.id).subscribe(() => {
         this.nodes = this.nodes.filter(n => n.id !== this.selectedNode?.id);
         // Also remove parentId references loosely in UI since DB cascades or sets null

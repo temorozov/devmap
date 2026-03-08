@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, ForbiddenException } from '@nestjs/common';
 import { TreesService } from './trees.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
@@ -15,6 +15,9 @@ export class TreesController {
     @UseGuards(JwtAuthGuard)
     @Post(':id/generate')
     generate(@Request() req: any, @Param('id') id: string, @Body() body: { prompt: string }) {
+        if (req.user?.isGuest) {
+            throw new ForbiddenException('Guest users cannot use AI features.');
+        }
         return this.treesService.generateSkillTree(req.user.id, id, body.prompt);
     }
 

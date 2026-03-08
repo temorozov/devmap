@@ -37,7 +37,7 @@
                 <span>Select child skill above</span>
                 <button class="btn-secondary small" (click)="cancelLinking()">Cancel</button>
             </div>
-            <button class="btn-primary" (click)="openAiPrompt()" [disabled]="isGenerating">
+            <button class="btn-primary" (click)="openAiPrompt()" [disabled]="isGenerating || (isGuest$ | async)" [title]="(isGuest$ | async) ? 'AI features are not available for guests' : ''">
                 <span class="material-icons" [class.spinning]="isGenerating">{{ isGenerating ? 'refresh' : 'auto_awesome' }}</span>
                 <span>{{ isGenerating ? 'Generating...' : 'AI Generate' }}</span>
             </button>

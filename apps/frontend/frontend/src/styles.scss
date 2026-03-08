@@ -44,10 +44,18 @@ body {
   justify-content: center;
   gap: 0.5rem;
   
-  &:hover {
+  &:hover:not(:disabled) {
     background-color: var(--accent-hover);
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  }
+
+  &:disabled {
+    background-color: rgba(59, 130, 246, 0.4); /* Faded accent color */
+    color: rgba(255, 255, 255, 0.5); /* Faded text */
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
   }
 }
 

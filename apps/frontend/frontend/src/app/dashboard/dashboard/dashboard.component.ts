@@ -5,6 +5,7 @@ import { Router, RouterModule } from '@angular/router';
 import { TreesService, Tree } from '../../trees.service';
 import { AuthService } from '../../auth.service';
 import { ActivityCalendarComponent } from '../../canvas/activity-calendar/activity-calendar.component';
+import { DialogService } from '../../shared/services/dialog.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -17,6 +18,7 @@ export class DashboardComponent implements OnInit {
   treesService = inject(TreesService);
   authService = inject(AuthService);
   router = inject(Router);
+  dialogService = inject(DialogService);
 
   trees: Tree[] = [];
   loading = true;
@@ -55,9 +57,9 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  deleteTree(event: Event, id: string) {
+  async deleteTree(event: Event, id: string) {
     event.stopPropagation();
-    if (confirm('Are you sure you want to delete this tree?')) {
+    if (await this.dialogService.confirm('Are you sure you want to delete this tree?')) {
       this.treesService.deleteTree(id).subscribe({
         next: () => {
           this.trees = this.trees.filter(t => t.id !== id);
@@ -74,6 +76,6 @@ export class DashboardComponent implements OnInit {
     event.stopPropagation();
     const url = `${window.location.origin}/tree/${token}`;
     navigator.clipboard.writeText(url);
-    alert('Share link copied to clipboard!');
+    this.dialogService.alert('Share link copied to clipboard!');
   }
 }
