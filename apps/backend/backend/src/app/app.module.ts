@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -9,7 +10,13 @@ import { NodesModule } from './nodes/nodes.module';
 import { EmailModule } from './email/email.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, TreesModule, NodesModule, EmailModule],
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: process.env.NODE_ENV === 'production' ? '.env.production' : '.env',
+    }),
+    PrismaModule, AuthModule, TreesModule, NodesModule, EmailModule
+  ],
   controllers: [AppController],
   providers: [AppService],
 })

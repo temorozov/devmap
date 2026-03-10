@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { environment } from '../environments/environment';
 import { BehaviorSubject, tap, map } from 'rxjs';
 import { Router } from '@angular/router';
 
@@ -9,7 +10,7 @@ import { Router } from '@angular/router';
 export class AuthService {
   private http = inject(HttpClient);
   private router = inject(Router);
-  private apiUrl = '/api/auth';
+  private apiUrl = `${environment.apiUrl}/auth`;
 
   private authStatus = new BehaviorSubject<boolean>(!!localStorage.getItem('token'));
   authStatus$ = this.authStatus.asObservable();
