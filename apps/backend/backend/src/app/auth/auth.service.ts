@@ -18,9 +18,6 @@ export class AuthService {
         if (user && user.passwordHash) {
             const isMatch = await bcrypt.compare(pass, user.passwordHash);
             if (isMatch) {
-                if (!user.isEmailConfirmed) {
-                    throw new UnauthorizedException('Please confirm your email address before logging in.');
-                }
                 // eslint-disable-next-line @typescript-eslint/no-unused-vars
                 const { passwordHash, ...result } = user;
                 return result;
@@ -37,23 +34,16 @@ export class AuthService {
 
         const salt = await bcrypt.genSalt();
         const passwordHash = await bcrypt.hash(pass, salt);
-        const emailConfirmationToken = randomBytes(32).toString('hex');
 
         const user = await this.prisma.user.create({
             data: { 
                 email, 
                 passwordHash,
-                isEmailConfirmed: false,
-                emailConfirmationToken
+                isEmailConfirmed: true,
             },
         });
 
-        await this.emailService.sendConfirmationEmail(email, emailConfirmationToken);
-
-        return {
-            status: 200,
-            message: 'Registration successful. Please check your email to confirm your account.',
-        };
+        return this.login(user);
     }
 
     async confirmEmail(token: string) {

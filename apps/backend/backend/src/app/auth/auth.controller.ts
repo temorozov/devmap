@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Request, Get, HttpCode, HttpStatus, Req, Res } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Request, Get, HttpCode, HttpStatus, Req, Res, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { AuthGuard } from '@nestjs/passport';
@@ -13,7 +13,7 @@ export class AuthController {
     async login(@Body() req: any) {
         const user = await this.authService.validateUser(req.email, req.password);
         if (!user) {
-            return { status: 401, message: 'Invalid credentials' };
+            throw new UnauthorizedException('Invalid credentials');
         }
         return this.authService.login(user);
     }
@@ -26,25 +26,17 @@ export class AuthController {
     @Post('register')
     async register(@Body() req: any) {
         if (!req.email || !req.password) {
-            return { status: 400, message: 'Email and password are required' };
+            throw new BadRequestException('Email and password are required');
         }
-        try {
-            return await this.authService.registerUser(req.email, req.password);
-        } catch (error: any) {
-            return { status: HttpStatus.CONFLICT, message: error.message };
-        }
+        return await this.authService.registerUser(req.email, req.password);
     }
 
     @Post('confirm-email')
     async confirmEmail(@Body('token') token: string) {
         if (!token) {
-            return { status: 400, message: 'Token is required' };
+            throw new BadRequestException('Token is required');
         }
-        try {
-            return await this.authService.confirmEmail(token);
-        } catch (error: any) {
-            return { status: HttpStatus.BAD_REQUEST, message: error.message };
-        }
+        return await this.authService.confirmEmail(token);
     }
 
     @Get('google')
