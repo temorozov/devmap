@@ -31,8 +31,8 @@
             </div>
         </div>
 
-        <div class="right-section">
-            <div *ngIf="isLinking" class="linking-indicator">
+        <div class="right-section desktop-actions">
+            <div *ngIf="interactionState === 'linking'" class="linking-indicator">
                 <span class="pulse-dot"></span>
                 <span>Select child skill above</span>
                 <button class="btn-secondary small" (click)="cancelLinking()">Cancel</button>
@@ -55,9 +55,11 @@
 
     <!-- SVG Workspace -->
     <main class="workspace">
-        <svg #svgCanvas class="skill-svg" [attr.viewBox]="viewBoxString" (mousedown)="onMouseDown($event)"
-            (mousemove)="onMouseMove($event)" (mouseup)="onMouseUp()" (mouseleave)="onMouseUp()"
-            (wheel)="onWheel($event)" (contextmenu)="onCanvasContextMenu($event)" [class.grabbing]="isDraggingCanvas">
+        <svg #svgCanvas class="skill-svg" [attr.viewBox]="viewBoxString"
+            (pointerdown)="onCanvasPointerDown($event)" (pointermove)="onPointerMove($event)"
+            (pointerup)="onPointerUp($event)" (pointercancel)="onPointerCancel($event)"
+            (wheel)="onWheel($event)" (contextmenu)="onCanvasContextMenu($event)"
+            [class.grabbing]="interactionState === 'panning'">
 
             <!-- Grid Background Pattern -->
             <defs>
@@ -82,14 +84,14 @@
                 </ng-container>
 
                 <!-- Currently drawn line during drag to link -->
-                <path *ngIf="isLinking && linkSourceNode" class="connection-line linking"
+                <path *ngIf="interactionState === 'linking' && linkSourceNode" class="connection-line linking"
                     [attr.d]="'M ' + linkSourceNode.positionX + ' ' + (linkSourceNode.positionY - 40) + ' C ' + linkSourceNode.positionX + ' ' + (linkSourceNode.positionY - 100) + ', ' + mousePosition.x + ' ' + (mousePosition.y + 100) + ', ' + mousePosition.x + ' ' + mousePosition.y" />
             </g>
 
             <!-- Nodes Layer -->
             <g class="nodes-layer">
                 <!-- Selection Box -->
-                <rect *ngIf="isSelecting && selectionBox" 
+                <rect *ngIf="interactionState === 'selecting' && selectionBox" 
                       [attr.x]="selectionBox.x" 
                       [attr.y]="selectionBox.y" 
                       [attr.width]="selectionBox.w" 
@@ -100,9 +102,9 @@
                     [class.multi-selected]="selectedNodes.has(node.id)"
                     [class.completed]="node.level === (node.maxLevel || 5)"
                     [attr.transform]="'translate(' + node.positionX + ',' + node.positionY + ')'"
-                    (mousedown)="onNodeMouseDown($event, node)" (click)="onNodeClick($event, node)"
+                    (pointerdown)="onNodePointerDown($event, node)"
                     (contextmenu)="onNodeContextMenu($event, node)" (mouseenter)="hoveredNode = node"
-                    (mouseleave)="hoveredNode = null" (mouseup)="onNodeMouseUp($event, node)">
+                    (mouseleave)="hoveredNode = null">
 
                     <!-- Base Circle -->
                     <circle class="node-bg" cx="0" cy="0" r="40" />
@@ -118,20 +120,17 @@
                     </text>
 
                     <!-- Link Handle (Top of Node, as it grows upwards) -->
-                    <circle class="link-handle" cx="0" cy="-40" r="8"
-                        (mousedown)="startLinking($event, node); $event.stopPropagation()"
-                        title="Drag from here to connect" />
+                    <circle class="link-handle-hit-area" cx="0" cy="-40" r="20" fill="transparent"
+                        (pointerdown)="startLinkingPointer($event, node)" title="Drag from here to connect" />
+                    <circle class="link-handle" cx="0" cy="-40" r="8" pointer-events="none" />
 
-                    <!-- Native tooltip and text for hover -->
+                    <!-- Native tooltip -->
                     <title>{{ node.title }} - Lvl {{ node.level || 0 }} / {{ node.maxLevel || 5 }}</title>
-                    <text class="node-title-hover" x="0" y="60" text-anchor="middle" pointer-events="none">
-                        {{ node.title }}
-                    </text>
 
-                    <!-- SVG ForeignObject Tooltip below node -->
-                    <foreignObject x="-90" y="75" width="180" height="auto" class="node-tooltip"
-                        *ngIf="hoveredNode?.id === node.id" pointer-events="none">
-                        <div xmlns="http://www.w3.org/1999/xhtml" class="tooltip-content glass-panel">
+                    <!-- SVG Node Details Card (Visible on Hover or Selection) -->
+                    <foreignObject x="-90" y="50" width="180" height="200" class="node-details-card" pointer-events="none"
+                        [class.visible]="(hoveredNode ? hoveredNode.id : selectedNode?.id) === node.id">
+                        <div xmlns="http://www.w3.org/1999/xhtml" class="details-content glass-panel">
                             <h4>{{ node.title }}</h4>
                             <p class="desc" *ngIf="node.description" [innerHTML]="node.description | linkify"></p>
                             <div class="level-badge">Lvl {{ node.level || 0 }} / {{ node.maxLevel || 5 }}</div>
@@ -143,7 +142,7 @@
     </main>
 
     <!-- Properties Panel -->
-    <aside class="properties-panel glass-panel" [class.open]="showProperties">
+    <aside class="properties-panel glass-panel" [class.open]="showProperties" (pointerdown)="$event.stopPropagation()">
         <div class="panel-header">
             <h3>Node Properties</h3>
             <button class="icon-btn" (click)="showProperties = false; editingDescription = false">
@@ -208,6 +207,12 @@
                 Left-Click to level up. Shift-Click to downgrade. Right-Click for properties.
             </p>
         </div>
+        
+        <div class="panel-footer sticky-footer" *ngIf="selectedNode">
+            <button class="btn-primary" style="width: 100%; min-height: 44px; display: flex; justify-content: center;" (click)="closeProperties()">
+                <span class="material-icons">check</span> Save Details
+            </button>
+        </div>
     </aside>
 
     <!-- AI Prompt Modal -->
@@ -233,5 +238,22 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- Mobile Action Bar (Separate from Header) -->
+    <div class="mobile-action-bar glass-panel">
+        <div *ngIf="interactionState === 'linking'" class="linking-indicator">
+            <span class="pulse-dot"></span>
+            <span>Link nodes</span>
+            <button class="btn-secondary small" (click)="cancelLinking()">Cancel</button>
+        </div>
+        <button class="btn-primary" (click)="openAiPrompt()" [disabled]="isGenerating || (isGuest$ | async)">
+            <span class="material-icons" [class.spinning]="isGenerating">{{ isGenerating ? 'refresh' : 'auto_awesome' }}</span>
+            <span>AI</span>
+        </button>
+        <button class="btn-primary" (click)="addNode()">
+            <span class="material-icons">add</span>
+            <span>Skill</span>
+        </button>
     </div>
 </div>

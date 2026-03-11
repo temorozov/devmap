@@ -39,32 +39,48 @@ export class CanvasComponent implements OnInit {
   loading = true;
 
   // View state
-  viewBox: ViewBox = { x: 0, y: 0, w: 2000, h: 2000 };
-  isDraggingCanvas = false;
-  dragStart = { x: 0, y: 0 };
+  zoomLevel = 1; // 1 = 1 SVG unit per CSS pixel
+  viewBox: ViewBox = { x: 0, y: 0, w: window.innerWidth, h: window.innerHeight };
 
-  // Node interaction state
-  selectedNode: SkillNode | null = null;
+  // --- Interaction State Machine ---
+  interactionState: 'idle' | 'panning' | 'selecting' | 'dragging-node' | 'pinching' | 'linking' = 'idle';
+
+  // Pointer tracking
+  activePointers = new Map<number, PointerEvent>();
+  dragThresholdPassed = false;
+
+  // Interaction Data
+  dragStartScreen = { x: 0, y: 0 };
+  dragStartSvg: { x: number, y: number } | null = null;
   selectedNodes: Set<string> = new Set();
-  isDraggingNode = false;
   draggedNode: SkillNode | null = null;
-  initialNodePositions: Map<string, {x: number, y: number}> = new Map();
-  dragStartSvg: {x: number, y: number} | null = null;
-
-  // Selection state
-  isSelecting = false;
+  initialNodePositions = new Map<string, { x: number, y: number }>();
   selectionStart: { x: number, y: number } | null = null;
   selectionBox: ViewBox | null = null;
+  linkSourceNode: SkillNode | null = null;
+  mousePosition = { x: 0, y: 0 };
+
+  // Pinch Zoom Data
+  initialPinchDistance = 0;
+  initialViewBox = { x: 0, y: 0, w: 0, h: 0 };
+
+  // Double Tap Data
+  lastTapTime = 0;
+  lastTapNodeId: string | null = null;
+  animationFrameId: number | null = null;
 
   // Create / Edit state
   showProperties = false;
   editNodeData: Partial<SkillNode> = {};
-  isLinking = false;
   editingDescription = false;
-  linkSourceNode: SkillNode | null = null;
-  hasMovedNode = false;
+  selectedNode: SkillNode | null = null;
   hoveredNode: SkillNode | null = null;
-  mousePosition = { x: 0, y: 0 };
+
+  closeProperties() {
+    this.showProperties = false;
+    this.editingDescription = false;
+    this.selectedNode = null;
+  }
 
   startEditDescription(event: MouseEvent) {
     if ((event.target as HTMLElement).tagName.toLowerCase() === 'a') {
@@ -197,54 +213,163 @@ export class CanvasComponent implements OnInit {
     });
   }
 
-  // --- Canvas Pan & Zoom ---
+  // --- Pointer Events Engine ---
 
-  onMouseDown(event: MouseEvent) {
-    // If we reach here, we didn't click on a node (because node clicks stop propagation)
-    this.selectedNode = null;
-    this.showProperties = false;
-    this.editingDescription = false;
-    
-    if (event.button === 0) {
-      if (!event.ctrlKey && !event.metaKey) {
-        this.selectedNodes.clear();
-      }
-      this.isSelecting = true;
-      const pt = this.svgCanvas.nativeElement.createSVGPoint();
-      pt.x = event.clientX;
-      pt.y = event.clientY;
-      const svgP = pt.matrixTransform(this.svgCanvas.nativeElement.getScreenCTM()?.inverse());
-      this.selectionStart = { x: svgP.x, y: svgP.y };
-      this.selectionBox = { x: svgP.x, y: svgP.y, w: 0, h: 0 };
-    } else if (event.button === 1 || event.button === 2) {
-      this.isDraggingCanvas = true;
-      this.dragStart = { x: event.clientX, y: event.clientY };
-    }
+  private getSvgPoint(clientX: number, clientY: number): { x: number, y: number } {
+    const pt = this.svgCanvas.nativeElement.createSVGPoint();
+    pt.x = clientX;
+    pt.y = clientY;
+    const inverse = this.svgCanvas.nativeElement.getScreenCTM()?.inverse();
+    return inverse ? pt.matrixTransform(inverse) : pt;
   }
 
   onCanvasContextMenu(event: MouseEvent) {
     event.preventDefault();
   }
 
-  onMouseMove(event: MouseEvent) {
-    const pt = this.svgCanvas.nativeElement.createSVGPoint();
-    pt.x = event.clientX;
-    pt.y = event.clientY;
-    const svgP = pt.matrixTransform(this.svgCanvas.nativeElement.getScreenCTM()?.inverse());
+  onCanvasPointerDown(event: PointerEvent) {
+    if (this.showProperties || this.editingDescription) {
+      this.closeProperties();
+      return;
+    }
+    
+    (event.target as Element).setPointerCapture(event.pointerId);
+    this.activePointers.set(event.pointerId, event);
+    this.dragThresholdPassed = false;
+    this.selectedNode = null;
 
-    if (this.isLinking) {
-      this.mousePosition = { x: svgP.x, y: svgP.y };
-    } else if (this.isSelecting && this.selectionStart && this.selectionBox) {
-      const currentX = svgP.x;
-      const currentY = svgP.y;
-      this.selectionBox.x = Math.min(this.selectionStart.x, currentX);
-      this.selectionBox.y = Math.min(this.selectionStart.y, currentY);
-      this.selectionBox.w = Math.abs(currentX - this.selectionStart.x);
-      this.selectionBox.h = Math.abs(currentY - this.selectionStart.y);
-
-      if (!event.ctrlKey && !event.metaKey) {
-        this.selectedNodes.clear();
+    if (this.activePointers.size === 1) {
+      if (event.shiftKey) {
+        this.interactionState = 'selecting';
+        const svgP = this.getSvgPoint(event.clientX, event.clientY);
+        this.selectionStart = { x: svgP.x, y: svgP.y };
+        this.selectionBox = { x: svgP.x, y: svgP.y, w: 0, h: 0 };
+        if (!event.ctrlKey && !event.metaKey) this.selectedNodes.clear();
+      } else {
+        this.interactionState = 'panning';
+        this.dragStartScreen = { x: event.clientX, y: event.clientY };
       }
+    } else if (this.activePointers.size === 2) {
+      this.interactionState = 'pinching';
+      const pointers = Array.from(this.activePointers.values());
+      this.initialPinchDistance = Math.hypot(
+        pointers[0].clientX - pointers[1].clientX,
+        pointers[0].clientY - pointers[1].clientY
+      );
+      this.initialViewBox = { ...this.viewBox };
+    }
+  }
+
+  onNodePointerDown(event: PointerEvent, node: SkillNode) {
+    event.stopPropagation();
+    (event.target as Element).setPointerCapture(event.pointerId);
+    this.activePointers.set(event.pointerId, event);
+    this.dragThresholdPassed = false;
+    
+    if (event.button !== 0 && event.pointerType === 'mouse') return;
+    if ((event.target as HTMLElement).tagName.toLowerCase() === 'input') return;
+
+    this.interactionState = 'dragging-node';
+    this.draggedNode = node;
+    const svgP = this.getSvgPoint(event.clientX, event.clientY);
+    this.dragStartSvg = { x: svgP.x, y: svgP.y };
+    this.dragStartScreen = { x: event.clientX, y: event.clientY };
+
+    const isMultiSelect = event.ctrlKey || event.metaKey;
+    if (!this.selectedNodes.has(node.id)) {
+      if (!isMultiSelect) this.selectedNodes.clear();
+      this.selectedNodes.add(node.id);
+    } else if (isMultiSelect) {
+      this.selectedNodes.delete(node.id);
+      this.interactionState = 'idle';
+      this.draggedNode = null;
+      return;
+    }
+
+    this.initialNodePositions.clear();
+    this.nodes.forEach(n => {
+      if (this.selectedNodes.has(n.id)) {
+        this.initialNodePositions.set(n.id, { x: n.positionX, y: n.positionY });
+      }
+    });
+
+    const now = Date.now();
+    if (this.lastTapNodeId === node.id && now - this.lastTapTime < 300) {
+      this.centerOnNode(node);
+      this.lastTapTime = 0;
+    } else {
+      this.lastTapTime = now;
+      this.lastTapNodeId = node.id;
+    }
+  }
+
+  startLinkingPointer(event: PointerEvent, node: SkillNode) {
+    event.stopPropagation();
+    if (event.button !== 0 && event.pointerType === 'mouse') return;
+    
+    (event.target as Element).setPointerCapture(event.pointerId);
+    this.activePointers.set(event.pointerId, event);
+    this.dragThresholdPassed = false;
+
+    this.interactionState = 'linking';
+    this.linkSourceNode = node;
+    const svgP = this.getSvgPoint(event.clientX, event.clientY);
+    this.mousePosition = { x: svgP.x, y: svgP.y };
+  }
+
+  onPointerMove(event: PointerEvent) {
+    if (!this.activePointers.has(event.pointerId)) return;
+    this.activePointers.set(event.pointerId, event);
+
+    if (!this.dragThresholdPassed && this.interactionState !== 'pinching') {
+      const dist = Math.hypot(event.clientX - this.dragStartScreen.x, event.clientY - this.dragStartScreen.y);
+      if (dist > 5) this.dragThresholdPassed = true;
+    }
+
+    if (this.interactionState === 'pinching' && this.activePointers.size === 2) {
+      event.preventDefault();
+      const pointers = Array.from(this.activePointers.values());
+      const currentDistance = Math.hypot(
+        pointers[0].clientX - pointers[1].clientX,
+        pointers[0].clientY - pointers[1].clientY
+      );
+      
+      if (this.initialPinchDistance > 0) {
+        const pinchScale = this.initialPinchDistance / currentDistance;
+        const newZoom = this.zoomLevel / pinchScale;
+        
+        // Clamp zoom level
+        if (newZoom >= 0.15 && newZoom <= 5) {
+          this.zoomLevel = newZoom;
+          const newW = window.innerWidth / this.zoomLevel;
+          const newH = window.innerHeight / this.zoomLevel;
+
+          const dw = newW - this.viewBox.w;
+          const dh = newH - this.viewBox.h;
+          this.viewBox.x -= dw / 2;
+          this.viewBox.y -= dh / 2;
+          this.viewBox.w = newW;
+          this.viewBox.h = newH;
+        }
+        
+        this.initialPinchDistance = currentDistance;
+      }
+    } else if (this.interactionState === 'panning') {
+      event.preventDefault();
+      const dx = (event.clientX - this.dragStartScreen.x) * (this.viewBox.w / window.innerWidth);
+      const dy = (event.clientY - this.dragStartScreen.y) * (this.viewBox.h / window.innerHeight);
+      this.viewBox.x -= dx;
+      this.viewBox.y -= dy;
+      this.dragStartScreen = { x: event.clientX, y: event.clientY };
+    } else if (this.interactionState === 'selecting' && this.selectionStart && this.selectionBox) {
+      event.preventDefault();
+      const svgP = this.getSvgPoint(event.clientX, event.clientY);
+      this.selectionBox.x = Math.min(this.selectionStart.x, svgP.x);
+      this.selectionBox.y = Math.min(this.selectionStart.y, svgP.y);
+      this.selectionBox.w = Math.abs(svgP.x - this.selectionStart.x);
+      this.selectionBox.h = Math.abs(svgP.y - this.selectionStart.y);
+
+      if (!event.ctrlKey && !event.metaKey) this.selectedNodes.clear();
       
       this.nodes.forEach(node => {
         if (
@@ -256,16 +381,9 @@ export class CanvasComponent implements OnInit {
           this.selectedNodes.add(node.id);
         }
       });
-    } else if (this.isDraggingCanvas) {
-      const dx = (event.clientX - this.dragStart.x) * (this.viewBox.w / window.innerWidth);
-      const dy = (event.clientY - this.dragStart.y) * (this.viewBox.h / window.innerHeight);
-
-      this.viewBox.x -= dx;
-      this.viewBox.y -= dy;
-
-      this.dragStart = { x: event.clientX, y: event.clientY };
-    } else if (this.isDraggingNode && this.draggedNode && this.dragStartSvg) {
-      this.hasMovedNode = true;
+    } else if (this.interactionState === 'dragging-node' && this.draggedNode && this.dragStartSvg) {
+      event.preventDefault();
+      const svgP = this.getSvgPoint(event.clientX, event.clientY);
       const dx = svgP.x - this.dragStartSvg.x;
       const dy = svgP.y - this.dragStartSvg.y;
 
@@ -278,106 +396,89 @@ export class CanvasComponent implements OnInit {
           }
         }
       });
+    } else if (this.interactionState === 'linking') {
+      event.preventDefault();
+      const svgP = this.getSvgPoint(event.clientX, event.clientY);
+      this.mousePosition = { x: svgP.x, y: svgP.y };
     }
   }
 
-  onMouseUp() {
-    this.isDraggingCanvas = false;
-    
-    if (this.isSelecting) {
-      this.isSelecting = false;
-      this.selectionBox = null;
-      this.selectionStart = null;
+  onPointerUp(event: PointerEvent) {
+    if (!this.activePointers.has(event.pointerId)) return;
+    (event.target as Element).releasePointerCapture(event.pointerId);
+    this.activePointers.delete(event.pointerId);
+
+    if (this.interactionState === 'pinching') {
+      if (this.activePointers.size < 2) {
+        if (this.activePointers.size === 1) {
+          this.interactionState = 'panning';
+          const remainingPointer = Array.from(this.activePointers.values())[0];
+          this.dragStartScreen = { x: remainingPointer.clientX, y: remainingPointer.clientY };
+        } else {
+          this.interactionState = 'idle';
+        }
+      }
+      return;
     }
 
-    if (this.isDraggingNode && this.draggedNode) {
-      this.isDraggingNode = false;
-      // Save new position for ALL selected nodes
-      this.nodes.forEach(n => {
-        if (this.selectedNodes.has(n.id)) {
-          this.nodesService.updateNode(n.id, {
-            positionX: n.positionX,
-            positionY: n.positionY
-          }).subscribe();
-        }
-      });
+    if (this.interactionState === 'dragging-node') {
+      if (this.dragThresholdPassed) {
+        this.nodes.forEach(n => {
+          if (this.selectedNodes.has(n.id)) {
+            this.nodesService.updateNode(n.id, {
+              positionX: n.positionX,
+              positionY: n.positionY
+            }).subscribe();
+          }
+        });
+      } else if (this.draggedNode && (event.pointerType === 'mouse' ? event.button === 0 : true)) {
+        this.onNodeTap(event, this.draggedNode);
+      }
       this.draggedNode = null;
       this.dragStartSvg = null;
       this.initialNodePositions.clear();
-    }
-    if (this.isLinking) {
-      this.cancelLinking();
-    }
-  }
-
-  onWheel(event: WheelEvent) {
-    event.preventDefault();
-    const zoomIntensity = 0.1;
-    const wheel = event.deltaY < 0 ? 1 : -1;
-    let zoom = Math.exp(wheel * zoomIntensity);
-
-    // Limits
-    if (this.viewBox.w * zoom > 10000 || this.viewBox.w * zoom < 500) return;
-
-    // Mouse coordinates in SVG space
-    const pt = this.svgCanvas.nativeElement.createSVGPoint();
-    pt.x = event.clientX;
-    pt.y = event.clientY;
-    const svgP = pt.matrixTransform(this.svgCanvas.nativeElement.getScreenCTM()?.inverse());
-
-    this.viewBox.x = svgP.x - (svgP.x - this.viewBox.x) * zoom;
-    this.viewBox.y = svgP.y - (svgP.y - this.viewBox.y) * zoom;
-    this.viewBox.w *= zoom;
-    this.viewBox.h *= zoom;
-  }
-
-  // --- Node Interactions ---
-
-  onNodeMouseDown(event: MouseEvent, node: SkillNode) {
-    event.stopPropagation();
-
-    // Prevent default browser drag/selection behaviors which can lock the UI
-    // and prevent right-click context menus from appearing, especially after double-clicks (like double downgrading).
-    if ((event.target as HTMLElement).tagName.toLowerCase() !== 'input') {
-      event.preventDefault();
-    }
-
-    // Only allow drag if left clicking and not editing progress slider directly inside node
-    if (event.button === 0 && (event.target as HTMLElement).tagName.toLowerCase() !== 'input') {
-      this.isDraggingNode = true;
-      this.hasMovedNode = false;
-      this.draggedNode = node;
-      
-      const pt = this.svgCanvas.nativeElement.createSVGPoint();
-      pt.x = event.clientX;
-      pt.y = event.clientY;
-      const svgP = pt.matrixTransform(this.svgCanvas.nativeElement.getScreenCTM()?.inverse());
-      this.dragStartSvg = { x: svgP.x, y: svgP.y };
-
-      const isMultiSelect = event.ctrlKey || event.metaKey;
-      if (!this.selectedNodes.has(node.id)) {
-        if (!isMultiSelect) {
-          this.selectedNodes.clear();
+    } else if (this.interactionState === 'selecting') {
+      this.selectionBox = null;
+      this.selectionStart = null;
+    } else if (this.interactionState === 'linking' && this.linkSourceNode) {
+      const svgP = this.getSvgPoint(event.clientX, event.clientY);
+      let targetNode = null;
+      for (const n of this.nodes) {
+        if (n.id === this.linkSourceNode.id) continue;
+        const dist = Math.hypot(n.positionX - svgP.x, n.positionY - svgP.y);
+        if (dist < 50) {
+          targetNode = n;
+          break;
         }
-        this.selectedNodes.add(node.id);
-      } else if (isMultiSelect) {
-        this.selectedNodes.delete(node.id);
-        this.isDraggingNode = false;
       }
+      if (targetNode) {
+        this.completeLink(targetNode);
+      } else {
+        this.cancelLinking();
+      }
+    }
 
-      this.initialNodePositions.clear();
-      this.nodes.forEach(n => {
-        if (this.selectedNodes.has(n.id)) {
-          this.initialNodePositions.set(n.id, { x: n.positionX, y: n.positionY });
-        }
-      });
+    if (this.activePointers.size === 0) {
+      this.interactionState = 'idle';
     }
   }
 
-  onNodeClick(event: MouseEvent, node: SkillNode) {
-    if (this.hasMovedNode) return;
-    event.stopPropagation();
+  onPointerCancel(event: PointerEvent) {
+    this.onPointerUp(event);
+  }
 
+  onNodeContextMenu(event: MouseEvent, node: SkillNode) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.interactionState = 'idle';
+    this.activePointers.clear();
+    this.selectedNode = node;
+    this.editNodeData = { ...node };
+    this.showProperties = true;
+    this.editingDescription = false;
+  }
+
+  onNodeTap(event: PointerEvent | MouseEvent, node: SkillNode) {
     const maxLvl = node.maxLevel || 5;
     let currLvl = node.level || 0;
 
@@ -387,33 +488,81 @@ export class CanvasComponent implements OnInit {
       currLvl = Math.min(maxLvl, currLvl + 1);
     }
 
+    this.selectedNode = node;
+    this.editNodeData = { ...node };
+
     if (node.level !== currLvl) {
       node.level = currLvl;
       node.progress = (currLvl / maxLvl) * 100;
       this.nodesService.updateNode(node.id, { level: currLvl, progress: node.progress }).subscribe();
-      if (this.selectedNode?.id === node.id) {
-        this.editNodeData.level = currLvl;
-      }
+      this.editNodeData.level = currLvl;
     }
   }
 
-  onNodeContextMenu(event: MouseEvent, node: SkillNode) {
-    event.preventDefault(); // Prevent default browser context menu
-    event.stopPropagation();
+  centerOnNode(node: SkillNode) {
+    if (this.animationFrameId !== null) {
+      cancelAnimationFrame(this.animationFrameId);
+    }
 
-    // Disable any active dragging state since right click cancels dragging logically anyway
-    this.isDraggingNode = false;
-    this.hasMovedNode = false;
+    const startX = this.viewBox.x;
+    const startY = this.viewBox.y;
+    const targetX = node.positionX - this.viewBox.w / 2;
+    const targetY = node.positionY - this.viewBox.h / 2;
+    
+    const duration = 250;
+    const startTime = performance.now();
 
-    // Open properties instead of downgrading
-    this.selectedNode = node;
-    this.editNodeData = { ...node };
-    this.showProperties = true;
-    this.editingDescription = false;
+    const animate = (time: number) => {
+      let progress = (time - startTime) / duration;
+      if (progress > 1) progress = 1;
+      const ease = 1 - Math.pow(1 - progress, 3);
+      this.viewBox.x = startX + (targetX - startX) * ease;
+      this.viewBox.y = startY + (targetY - startY) * ease;
+      
+      if (progress < 1) {
+        this.animationFrameId = requestAnimationFrame(animate);
+      } else {
+        this.animationFrameId = null;
+      }
+    };
+    this.animationFrameId = requestAnimationFrame(animate);
+  }
+
+  @HostListener('window:resize')
+  onWindowResize() {
+    // Keep the center point and zoom level stable; just adjust viewBox to match new window size
+    const cx = this.viewBox.x + this.viewBox.w / 2;
+    const cy = this.viewBox.y + this.viewBox.h / 2;
+    this.viewBox.w = window.innerWidth / this.zoomLevel;
+    this.viewBox.h = window.innerHeight / this.zoomLevel;
+    this.viewBox.x = cx - this.viewBox.w / 2;
+    this.viewBox.y = cy - this.viewBox.h / 2;
+  }
+
+  onWheel(event: WheelEvent) {
+    event.preventDefault();
+    const zoomIntensity = 0.1;
+    const wheel = event.deltaY < 0 ? 1 : -1;
+    const zoomFactor = Math.exp(wheel * zoomIntensity);
+
+    const newZoom = this.zoomLevel * zoomFactor;
+    // Clamp zoom level
+    if (newZoom < 0.15 || newZoom > 5) return;
+
+    const svgP = this.getSvgPoint(event.clientX, event.clientY);
+
+    this.zoomLevel = newZoom;
+    const newW = window.innerWidth / this.zoomLevel;
+    const newH = window.innerHeight / this.zoomLevel;
+
+    // Zoom toward pointer position
+    this.viewBox.x = svgP.x - (svgP.x - this.viewBox.x) * (newW / this.viewBox.w);
+    this.viewBox.y = svgP.y - (svgP.y - this.viewBox.y) * (newH / this.viewBox.h);
+    this.viewBox.w = newW;
+    this.viewBox.h = newH;
   }
 
   addNode() {
-    // Add node in the center of the current view
     const newNode: Partial<SkillNode> = {
       treeId: this.tree?.id,
       title: 'New Skill',
@@ -423,7 +572,7 @@ export class CanvasComponent implements OnInit {
       maxLevel: 5,
       progress: 0,
       positionX: this.viewBox.x + this.viewBox.w / 2,
-      positionY: this.viewBox.y + this.viewBox.h / 2 - 100, // Appears higher, promoting upward growth
+      positionY: this.viewBox.y + this.viewBox.h / 2 - 100,
     };
 
     this.nodesService.createNode(newNode).subscribe(node => {
@@ -435,47 +584,24 @@ export class CanvasComponent implements OnInit {
     });
   }
 
-  startLinking(event: MouseEvent, node: SkillNode) {
-    // Only left click
-    if (event.button !== 0) return;
-    this.isLinking = true;
-    this.linkSourceNode = node;
-
-    // Set initial mouse position
-    const pt = this.svgCanvas.nativeElement.createSVGPoint();
-    pt.x = event.clientX;
-    pt.y = event.clientY;
-    const svgP = pt.matrixTransform(this.svgCanvas.nativeElement.getScreenCTM()?.inverse());
-    this.mousePosition = { x: svgP.x, y: svgP.y };
-  }
-
-  onNodeMouseUp(event: MouseEvent, node: SkillNode) {
-    if (this.isLinking && this.linkSourceNode && this.linkSourceNode.id !== node.id) {
-      event.stopPropagation();
-      this.completeLink(node);
-    }
-  }
-
   completeLink(targetNode: SkillNode) {
-    this.isLinking = false;
+    this.interactionState = 'idle';
     const sourceNode = this.linkSourceNode;
     this.linkSourceNode = null;
 
     if (!sourceNode || sourceNode.id === targetNode.id) return;
 
-    // Check cycle: if the target is already a parent of the source node
     if (sourceNode.parentId === targetNode.id) {
       this.dialogService.alert("Нельзя привязать навык к своему родителю!");
       return;
     }
 
-    // Set targetNode's parent to sourceNode
     targetNode.parentId = sourceNode.id;
     this.nodesService.updateNode(targetNode.id, { parentId: sourceNode.id }).subscribe();
   }
 
   cancelLinking() {
-    this.isLinking = false;
+    this.interactionState = 'idle';
     this.linkSourceNode = null;
   }
 
