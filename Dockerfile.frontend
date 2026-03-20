@@ -1,0 +1,25 @@
+# ─── Stage 1: Build ───────────────────────────────────────────────────────────
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci --ignore-scripts
+
+COPY . .
+
+# Build Angular in production mode (outputs to dist/apps/frontend/frontend/browser/)
+RUN npx nx build frontend-frontend --configuration=production --skip-nx-cache
+
+# ─── Stage 2: Serve with nginx ────────────────────────────────────────────────
+FROM nginx:1.27-alpine AS runner
+
+# Copy Angular build output
+COPY --from=builder /app/dist/apps/frontend/frontend/browser /usr/share/nginx/html
+
+# Copy custom nginx configuration
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]

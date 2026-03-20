@@ -44,3 +44,6 @@ Thumbs.db
 .angular
 
 /generated/prisma
+
+# Docker production secrets (copy from .env.docker.example)
+.env.docker

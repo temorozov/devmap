@@ -1,0 +1,35 @@
+# ─── Stage 1: Build ───────────────────────────────────────────────────────────
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copy package files and install ALL deps (needed for NX build)
+COPY package.json package-lock.json ./
+RUN npm ci --ignore-scripts
+
+# Copy full source (NX needs the whole monorepo to build)
+COPY . .
+
+# Build backend in production mode (outputs to dist/apps/backend/backend/)
+RUN npx nx build backend-backend --configuration=production --skip-nx-cache
+
+# ─── Stage 2: Runner ──────────────────────────────────────────────────────────
+FROM node:20-alpine AS runner
+
+WORKDIR /app
+
+# Copy built output
+COPY --from=builder /app/dist/apps/backend/backend ./
+
+# Install only the production deps declared by the generated package.json
+RUN npm install --production --ignore-scripts
+
+# Copy prisma schema for migrations
+COPY --from=builder /app/prisma ./prisma
+
+# Install prisma CLI for running migrations at startup
+RUN npm install prisma --save-dev --ignore-scripts
+
+EXPOSE 3000
+
+CMD ["sh", "-c", "npx prisma migrate deploy && node main.js"]
