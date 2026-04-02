@@ -8,35 +8,11 @@ import { Request as ExpressRequest, Response as ExpressResponse } from 'express'
 export class AuthController {
     constructor(private authService: AuthService) { }
 
-    @Post('login')
-    @HttpCode(HttpStatus.OK)
-    async login(@Body() req: any) {
-        const user = await this.authService.validateUser(req.email, req.password);
-        if (!user) {
-            throw new UnauthorizedException('Invalid credentials');
-        }
-        return this.authService.login(user);
-    }
+    // Removed basic auth endpoints
 
     @Post('guest')
     async createGuest() {
         return this.authService.registerGuest();
-    }
-
-    @Post('register')
-    async register(@Body() req: any) {
-        if (!req.email || !req.password) {
-            throw new BadRequestException('Email and password are required');
-        }
-        return await this.authService.registerUser(req.email, req.password);
-    }
-
-    @Post('confirm-email')
-    async confirmEmail(@Body('token') token: string) {
-        if (!token) {
-            throw new BadRequestException('Token is required');
-        }
-        return await this.authService.confirmEmail(token);
     }
 
     @Get('google')
@@ -49,7 +25,19 @@ export class AuthController {
     @UseGuards(AuthGuard('google'))
     async googleAuthRedirect(@Req() req: ExpressRequest, @Res() res: ExpressResponse) {
         const result = await this.authService.login((req as any).user);
-        // Redirect to frontend with token
+        res.redirect(`http://localhost:4200/login?token=${result.access_token}`);
+    }
+
+    @Get('discord')
+    @UseGuards(AuthGuard('discord'))
+    async discordAuth(@Req() req: ExpressRequest) {
+        // Initiates the Discord OAuth flow
+    }
+
+    @Get('discord/callback')
+    @UseGuards(AuthGuard('discord'))
+    async discordAuthRedirect(@Req() req: ExpressRequest, @Res() res: ExpressResponse) {
+        const result = await this.authService.login((req as any).user);
         res.redirect(`http://localhost:4200/login?token=${result.access_token}`);
     }
 

@@ -6,20 +6,19 @@ import { PassportModule } from '@nestjs/passport';
 import { PrismaModule } from '../prisma/prisma.module';
 import { JwtStrategy } from './jwt.strategy';
 import { GoogleStrategy } from './google.strategy';
-import { EmailModule } from '../email/email.module';
+import { DiscordStrategy } from './discord.strategy';
 
 @Module({
   imports: [
     PrismaModule,
     PassportModule,
-    EmailModule,
     JwtModule.register({
       secret: process.env['JWT_SECRET'] || 'super-secret-key-for-skillTree',
       signOptions: { expiresIn: '7d' },
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, GoogleStrategy],
+  providers: [AuthService, JwtStrategy, GoogleStrategy, DiscordStrategy],
   exports: [AuthService]
 })
 export class AuthModule { }

@@ -22,31 +22,7 @@ export class AuthService {
     map(user => !!user?.isGuest)
   );
 
-  login(credentials: { email: string; password: string }) {
-    return this.http.post<{ access_token: string, user: any }>(`${this.apiUrl}/login`, credentials)
-      .pipe(
-        tap(response => {
-          if (response.access_token) {
-            this.setToken(response.access_token);
-          }
-        })
-      );
-  }
-
-  register(credentials: { email: string; password: string }) {
-    return this.http.post<{ access_token?: string, user?: any, message?: string }>(`${this.apiUrl}/register`, credentials)
-      .pipe(
-        tap(response => {
-          if (response.access_token) {
-            this.setToken(response.access_token);
-          }
-        })
-      );
-  }
-
-  confirmEmail(token: string) {
-    return this.http.post<{ message: string }>(`${this.apiUrl}/confirm-email`, { token });
-  }
+  // Removed basic login, register, confirmEmail
 
   handleOAuthToken(token: string) {
     this.setToken(token);

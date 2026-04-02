@@ -3,62 +3,15 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'crypto';
-import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class AuthService {
     constructor(
         private readonly prisma: PrismaService,
-        private readonly jwtService: JwtService,
-        private readonly emailService: EmailService
+        private readonly jwtService: JwtService
     ) { }
 
-    async validateUser(email: string, pass: string): Promise<any> {
-        const user = await this.prisma.user.findUnique({ where: { email } });
-        if (user && user.passwordHash) {
-            const isMatch = await bcrypt.compare(pass, user.passwordHash);
-            if (isMatch) {
-                // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                const { passwordHash, ...result } = user;
-                return result;
-            }
-        }
-        return null;
-    }
-
-    async registerUser(email: string, pass: string): Promise<any> {
-        const existingUser = await this.prisma.user.findUnique({ where: { email } });
-        if (existingUser) {
-            throw new ConflictException('User already exists');
-        }
-
-        const salt = await bcrypt.genSalt();
-        const passwordHash = await bcrypt.hash(pass, salt);
-
-        const user = await this.prisma.user.create({
-            data: { 
-                email, 
-                passwordHash,
-                isEmailConfirmed: true,
-            },
-        });
-
-        return this.login(user);
-    }
-
-    async confirmEmail(token: string) {
-        const user = await this.prisma.user.findFirst({ where: { emailConfirmationToken: token } });
-        if (!user) {
-            throw new UnauthorizedException('Invalid or expired confirmation token');
-        }
-
-        await this.prisma.user.update({
-            where: { id: user.id },
-            data: { isEmailConfirmed: true, emailConfirmationToken: null },
-        });
-
-        return { message: 'Email confirmed successfully' };
-    }
+    // Basic auth logic removed
 
     async validateGoogleUser(profile: { googleId: string; email: string; name: string }): Promise<any> {
         let user = profile.googleId ? await this.prisma.user.findFirst({ where: { googleId: profile.googleId } }) : null;
@@ -79,6 +32,34 @@ export class AuthService {
             user = await this.prisma.user.create({
                 data: {
                     googleId: profile.googleId,
+                    email: profile.email,
+                    name: profile.name,
+                },
+            });
+        }
+
+        return user;
+    }
+
+    async validateDiscordUser(profile: { discordId: string; email: string; name: string }): Promise<any> {
+        let user = profile.discordId ? await this.prisma.user.findFirst({ where: { discordId: profile.discordId } }) : null;
+
+        if (!user && profile.email) {
+            user = await this.prisma.user.findUnique({ where: { email: profile.email } });
+            if (user) {
+                // Link account
+                user = await this.prisma.user.update({
+                    where: { email: profile.email },
+                    data: { discordId: profile.discordId, name: user.name || profile.name },
+                });
+            }
+        }
+
+        if (!user) {
+            // Create new account
+            user = await this.prisma.user.create({
+                data: {
+                    discordId: profile.discordId,
                     email: profile.email,
                     name: profile.name,
                 },

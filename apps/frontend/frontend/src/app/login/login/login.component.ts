@@ -1,13 +1,13 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
+// Removed forms imports
 import { AuthService } from '../../auth.service';
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule],
+  imports: [CommonModule, RouterModule],
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss'],
 })
@@ -15,12 +15,7 @@ export class LoginComponent implements OnInit {
   authService = inject(AuthService);
   router = inject(Router);
   route = inject(ActivatedRoute);
-  private fb = inject(FormBuilder);
-
-  loginForm = this.fb.group({
-    email: ['', [Validators.required, Validators.email]],
-    password: ['', Validators.required]
-  });
+  // Removed loginForm
 
   loading = false;
   error = '';
@@ -34,24 +29,7 @@ export class LoginComponent implements OnInit {
     });
   }
 
-  onSubmit() {
-    if (this.loginForm.invalid) return;
-    this.loading = true;
-    this.error = '';
-
-    const { email, password } = this.loginForm.value;
-
-    this.authService.login({ email: email!, password: password! }).subscribe({
-      next: () => {
-        this.loading = false;
-        this.router.navigate(['/dashboard']);
-      },
-      error: (err) => {
-        this.loading = false;
-        this.error = err.error?.message || 'Invalid credentials';
-      }
-    });
-  }
+  // Removed onSubmit
 
   continueAsGuest() {
     this.loading = true;
@@ -69,5 +47,9 @@ export class LoginComponent implements OnInit {
 
   loginWithGoogle() {
     window.location.href = '/api/auth/google';
+  }
+
+  loginWithDiscord() {
+    window.location.href = '/api/auth/discord';
   }
 }

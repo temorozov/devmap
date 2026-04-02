@@ -13,6 +13,7 @@ model User {
   passwordHash           String?
   name                   String?
   googleId               String?  @unique
+  discordId              String?  @unique
   isGuest                Boolean  @default(false)
   isEmailConfirmed       Boolean  @default(true)
   emailConfirmationToken String?

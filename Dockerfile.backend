@@ -11,6 +11,7 @@ RUN npm ci --ignore-scripts
 COPY . .
 
 # Build backend in production mode (outputs to dist/apps/backend/backend/)
+RUN npx prisma generate
 RUN npx nx build backend-backend --configuration=production --skip-nx-cache
 
 # ─── Stage 2: Runner ──────────────────────────────────────────────────────────
@@ -24,12 +25,19 @@ COPY --from=builder /app/dist/apps/backend/backend ./
 # Install only the production deps declared by the generated package.json
 RUN npm install --production --ignore-scripts
 
-# Copy prisma schema for migrations
+# Copy prisma schema and config for migrations
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma.config.ts ./
 
-# Install prisma CLI for running migrations at startup
-RUN npm install prisma --save-dev --ignore-scripts
+# Install passport-discord (missing production dependency dropped by Nx Webpack)
+RUN npm install passport-discord --production --ignore-scripts
+
+# Install prisma CLI for running migrations at startup, and dotnev
+RUN npm install prisma dotenv --save-dev --ignore-scripts
+
+# Generate Prisma Client for the runner stage
+RUN npx prisma generate
 
 EXPOSE 3000
 
-CMD ["sh", "-c", "npx prisma migrate deploy && node main.js"]
+CMD ["sh", "-c", "npx prisma db push --accept-data-loss && node main.js"]
