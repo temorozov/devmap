@@ -228,6 +228,7 @@ export class CanvasComponent implements OnInit {
         activities: [],
       };
       this.nodes = getDemoSampleNodes(this.i18n.currentLanguage());
+      this.centerDemoTreeInView();
       this.loading = false;
       return;
     }
@@ -775,5 +776,36 @@ export class CanvasComponent implements OnInit {
       this.hoverTooltipTimer = null;
     }
     this.hoveredNode = null;
+  }
+
+  private centerDemoTreeInView() {
+    setTimeout(() => this.centerViewOnNodes(this.nodes), 0);
+  }
+
+  private centerViewOnNodes(nodes: SkillNode[]) {
+    if (!nodes.length) return;
+
+    const nodeRadius = 80;
+    const minX = Math.min(...nodes.map(node => node.positionX - nodeRadius));
+    const maxX = Math.max(...nodes.map(node => node.positionX + nodeRadius));
+    const minY = Math.min(...nodes.map(node => node.positionY - nodeRadius));
+    const maxY = Math.max(...nodes.map(node => node.positionY + nodeRadius));
+
+    const viewportWidth = this.svgCanvas?.nativeElement.clientWidth || window.innerWidth;
+    const viewportHeight = this.svgCanvas?.nativeElement.clientHeight || window.innerHeight;
+
+    const contentWidth = Math.max(1, maxX - minX);
+    const contentHeight = Math.max(1, maxY - minY);
+    const zoomToFit = Math.min(viewportWidth / contentWidth, viewportHeight / contentHeight);
+    const clampedZoom = Math.min(5, Math.max(0.15, Math.min(1, zoomToFit)));
+
+    this.zoomLevel = clampedZoom;
+    this.viewBox.w = viewportWidth / this.zoomLevel;
+    this.viewBox.h = viewportHeight / this.zoomLevel;
+
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+    this.viewBox.x = centerX - this.viewBox.w / 2;
+    this.viewBox.y = centerY - this.viewBox.h / 2;
   }
 }

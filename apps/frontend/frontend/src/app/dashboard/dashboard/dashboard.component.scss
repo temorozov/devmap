@@ -154,18 +154,33 @@
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
-  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+  transition: border-color 0.22s ease, background-color 0.22s ease;
   min-height: 188px;
   background: linear-gradient(180deg, rgba(24, 27, 33, 0.86), rgba(24, 27, 33, 0.72));
   border-color: rgba(255, 255, 255, 0.06);
+  contain: paint;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow: var(--shadow-raised);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.22s ease;
+  }
 
   &:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-raised);
     border-color: rgba(59, 130, 246, 0.28);
+
+    &::after {
+      opacity: 1;
+    }
 
     .card-actions {
       opacity: 1;
+      transform: translateY(0);
     }
   }
 
@@ -244,7 +259,8 @@
     display: flex;
     gap: 0.5rem;
     opacity: 0;
-    transition: opacity 0.2s ease;
+    transform: translateY(4px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
 
     .action-btn {
       background: rgba(24, 27, 33, 0.96);
