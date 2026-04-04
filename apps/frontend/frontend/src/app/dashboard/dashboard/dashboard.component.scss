@@ -2,6 +2,8 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  background:
+    linear-gradient(180deg, rgba(15, 17, 21, 0.98) 0%, rgba(15, 17, 21, 1) 100%);
 }
 
 .topbar {
@@ -9,8 +11,8 @@
   justify-content: space-between;
   align-items: center;
   padding: 1rem 2rem;
-  background: var(--bg-card);
-  border-bottom: 1px solid var(--border-color);
+  background: rgba(24, 27, 33, 0.92);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 
   .logo-area {
     display: flex;
@@ -24,13 +26,21 @@
 
     h2 {
       font-size: 1.25rem;
-      font-weight: 600;
+      font-weight: 650;
+      letter-spacing: -0.02em;
     }
   }
 
   .actions {
     display: flex;
+    align-items: center;
     gap: 0.75rem;
+
+    app-language-switcher {
+      display: flex;
+      align-items: center;
+      margin-right: 0.35rem;
+    }
 
     .guest-actions {
       display: flex;
@@ -51,8 +61,8 @@
 
 .content {
   flex: 1;
-  padding: 3rem 2rem;
-  max-width: 1200px;
+  padding: 2.5rem 2rem 3rem;
+  max-width: 1120px;
   margin: 0 auto;
   width: 100%;
 }
@@ -64,9 +74,15 @@
   margin-bottom: 2rem;
 
   h1 {
-    font-size: 1.75rem;
-    font-weight: 600;
+    font-size: 1.85rem;
+    font-weight: 650;
+    letter-spacing: -0.03em;
   }
+}
+
+.prominent-btn {
+  min-height: 44px;
+  padding-inline: 1rem;
 }
 
 .loading-state {
@@ -95,31 +111,41 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 4rem 2rem;
+  padding: 3.4rem 2rem;
   text-align: center;
   gap: 1rem;
+  background: rgba(24, 27, 33, 0.78);
+  border-color: rgba(255, 255, 255, 0.06);
 
   .material-icons {
-    font-size: 3rem;
+    font-size: 2.8rem;
     color: var(--text-muted);
-    opacity: 0.5;
+    opacity: 0.42;
   }
 
   h3 {
-    font-size: 1.25rem;
+    font-size: 1.3rem;
     color: var(--text-main);
+    font-weight: 650;
   }
 
   p {
     color: var(--text-muted);
     margin-bottom: 1rem;
+    max-width: 520px;
   }
+}
+
+.empty-state-actions {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
 }
 
 .trees-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1.5rem;
+  gap: 1.15rem;
 }
 
 .tree-card {
@@ -128,13 +154,15 @@
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
-  transition: all 0.2s ease;
-  min-height: 180px;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+  min-height: 188px;
+  background: linear-gradient(180deg, rgba(24, 27, 33, 0.86), rgba(24, 27, 33, 0.72));
+  border-color: rgba(255, 255, 255, 0.06);
 
   &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-    border-color: var(--accent-color);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-raised);
+    border-color: rgba(59, 130, 246, 0.28);
 
     .card-actions {
       opacity: 1;
@@ -151,6 +179,7 @@
       height: 48px;
       border-radius: 12px;
       background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.14);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -164,8 +193,9 @@
 
     h3 {
       font-size: 1.15rem;
-      font-weight: 600;
+      font-weight: 650;
       margin-bottom: 0.5rem;
+      letter-spacing: -0.02em;
     }
 
     .date {
@@ -175,13 +205,12 @@
     }
 
     .calendar-preview {
-      background: rgba(0, 0, 0, 0.2);
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 10px;
       padding: 0.75rem;
-      margin-top: auto; // push it to bottom if card expands
+      margin-top: auto;
 
-      // Override calendar styles to be smaller and fit inside card
       ::ng-deep {
         .calendar-wrapper {
           gap: 4px;
@@ -218,17 +247,17 @@
     transition: opacity 0.2s ease;
 
     .action-btn {
-      background: var(--bg-card);
-      border: 1px solid var(--border-color);
+      background: rgba(24, 27, 33, 0.96);
+      border: 1px solid rgba(255, 255, 255, 0.08);
       color: var(--text-muted);
       width: 32px;
       height: 32px;
-      border-radius: 6px;
+      border-radius: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 
       .material-icons {
         font-size: 1.1rem;
@@ -248,7 +277,37 @@
   }
 }
 
-/* Modal Styles */
+.example-card {
+  background: linear-gradient(180deg, rgba(24, 27, 33, 0.82), rgba(24, 27, 33, 0.68));
+
+  .card-badge {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    margin-bottom: 1rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 999px;
+    padding: 0.2rem 0.55rem;
+  }
+
+  .card-footer-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    margin-top: 0.8rem;
+  }
+
+  &:hover {
+    border-color: var(--accent-color);
+  }
+}
+
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -270,6 +329,7 @@
   padding: 0;
   overflow: hidden;
   animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 @keyframes slideUp {
@@ -342,5 +402,40 @@
 
   button {
     padding: 0.5rem 1.25rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .topbar,
+  .content {
+    padding-inline: 1rem;
+  }
+
+  .topbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+
+    .actions,
+    .guest-actions {
+      width: 100%;
+      flex-wrap: wrap;
+    }
+
+    .actions {
+      app-language-switcher {
+        margin-right: 0;
+      }
+    }
+  }
+
+  .header-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .prominent-btn {
+    width: auto;
   }
 }

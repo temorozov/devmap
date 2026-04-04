@@ -13,10 +13,7 @@ import { EmailModule } from './email/email.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      // In Docker, env vars are injected via docker-compose env_file — skip file loading.
-      // Locally, load from .env or .env.production as before.
-      ignoreEnvFile: Boolean(process.env['DOCKER_ENV']),
-      envFilePath: process.env.NODE_ENV === 'production' ? '.env.production' : '.env',
+      ignoreEnvFile: true,
     }),
     PrismaModule, AuthModule, TreesModule, NodesModule, EmailModule
   ],

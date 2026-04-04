@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { environment } from '../environments/environment';
+import { appRuntimeConfig } from './app-config';
 
 export interface SkillNode {
   id: string;
@@ -23,7 +23,7 @@ export interface SkillNode {
 })
 export class NodesService {
   private http = inject(HttpClient);
-  private apiUrl = `${environment.apiUrl}/nodes`;
+  private apiUrl = `${appRuntimeConfig.apiUrl}/nodes`;
 
   getNodesByTree(treeId: string) {
     return this.http.get<SkillNode[]>(`${this.apiUrl}/tree/${treeId}`);

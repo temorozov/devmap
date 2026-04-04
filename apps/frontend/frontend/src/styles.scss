@@ -3,6 +3,8 @@
   --bg-dark: #0f1115;
   --bg-card: #181b21;
   --bg-card-hover: #22262d;
+  --bg-elevated: #1d2129;
+  --bg-soft: rgba(255, 255, 255, 0.04);
   --text-main: #e2e8f0;
   --text-muted: #94a3b8;
   --accent-color: #3b82f6;
@@ -11,6 +13,8 @@
   --success-color: #10b981;
   --glass-bg: rgba(24, 27, 33, 0.7);
   --glass-border: rgba(255, 255, 255, 0.05);
+  --shadow-soft: 0 10px 24px rgba(0, 0, 0, 0.18);
+  --shadow-raised: 0 16px 38px rgba(0, 0, 0, 0.28);
 }
 
 * {
@@ -34,15 +38,16 @@ body {
   background-color: var(--accent-color);
   color: #fff;
   border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  font-weight: 500;
+  padding: 0.62rem 1rem;
+  border-radius: 10px;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
+  box-shadow: 0 8px 18px rgba(59, 130, 246, 0.18);
   
   &:hover:not(:disabled) {
     background-color: var(--accent-hover);
@@ -51,8 +56,8 @@ body {
   }
 
   &:disabled {
-    background-color: rgba(59, 130, 246, 0.4); /* Faded accent color */
-    color: rgba(255, 255, 255, 0.5); /* Faded text */
+    background-color: rgba(59, 130, 246, 0.4);
+    color: rgba(255, 255, 255, 0.5);
     cursor: not-allowed;
     box-shadow: none;
     transform: none;
@@ -63,11 +68,11 @@ body {
   background-color: transparent;
   color: var(--text-main);
   border: 1px solid var(--border-color);
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
+  padding: 0.58rem 0.95rem;
+  border-radius: 10px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -81,8 +86,7 @@ body {
 
 .glass-panel {
   background: var(--glass-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--glass-border);
   border-radius: 12px;
+  box-shadow: var(--shadow-soft);
 }

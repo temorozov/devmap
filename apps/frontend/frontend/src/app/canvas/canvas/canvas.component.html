@@ -1,30 +1,33 @@
 <div class="canvas-layout">
-    <!-- Minimal Header & Tree Progress -->
     <header class="canvas-header glass-panel">
         <div class="left-section">
-            <button class="icon-btn" (click)="router.navigate(['/dashboard'])" title="Back to Dashboard">
+            <button class="icon-btn" (click)="router.navigate(['/dashboard'])" [title]="i18n.t('canvas.back')">
                 <span class="material-icons">arrow_back</span>
             </button>
             <div *ngIf="tree" class="title-container">
                 <ng-container *ngIf="!isEditingTreeTitle">
                     <h2>{{ tree.title }}</h2>
-                    <button class="icon-btn edit-title-btn" (click)="startEditingTreeTitle()" title="Rename Tree">
+                    <span *ngIf="isDemoTree" class="demo-inline-badge">{{ i18n.t('canvas.demoBadge') }}</span>
+                    <button class="icon-btn edit-title-btn" (click)="startEditingTreeTitle()" [title]="i18n.t('canvas.renameTree')">
                         <span class="material-icons">edit</span>
                     </button>
                 </ng-container>
                 <ng-container *ngIf="isEditingTreeTitle">
-                    <input type="text" [(ngModel)]="editTreeTitleData" 
-                        (keydown.enter)="saveTreeTitle()" 
-                        (keydown.escape)="cancelEditingTreeTitle()" 
+                    <input
+                        type="text"
+                        [(ngModel)]="editTreeTitleData"
+                        (keydown.enter)="saveTreeTitle()"
+                        (keydown.escape)="cancelEditingTreeTitle()"
                         (blur)="saveTreeTitle()"
-                        class="title-input">
+                        class="title-input"
+                    >
                 </ng-container>
             </div>
             <div *ngIf="loading" class="loading-indicator">
                 <span class="material-icons spinning">refresh</span>
             </div>
             <div class="tree-progress" *ngIf="!loading">
-                <div class="progress-bar-container" title="Branch Mastery">
+                <div class="progress-bar-container" [title]="i18n.t('canvas.branchMastery')">
                     <div class="progress-fill" [style.width.%]="totalProgress"></div>
                 </div>
                 <span>{{ totalProgress }}%</span>
@@ -34,26 +37,38 @@
         <div class="right-section desktop-actions">
             <div *ngIf="interactionState === 'linking'" class="linking-indicator">
                 <span class="pulse-dot"></span>
-                <span>Select child skill above</span>
-                <button class="btn-secondary small" (click)="cancelLinking()">Cancel</button>
+                <span>{{ i18n.t('canvas.linkingHint') }}</span>
+                <button class="btn-secondary small" (click)="cancelLinking()">{{ i18n.t('canvas.cancel') }}</button>
             </div>
-            <button class="btn-primary" (click)="openAiPrompt()" [disabled]="isGenerating || (isGuest$ | async)" [title]="(isGuest$ | async) ? 'AI features are not available for guests' : ''">
-                <span class="material-icons" [class.spinning]="isGenerating">{{ isGenerating ? 'refresh' : 'auto_awesome' }}</span>
-                <span>{{ isGenerating ? 'Generating...' : 'AI Generate' }}</span>
+            <button
+                type="button"
+                class="help-bubble"
+                (click)="openHelp()"
+                [attr.aria-label]="i18n.t('canvas.helpFabLabel')"
+                [title]="i18n.t('canvas.help')"
+            >
+                ?
             </button>
-            <button class="btn-primary" (click)="addNode()">
+            <button
+                class="btn-primary btn-ai"
+                (click)="openAiPrompt()"
+                [disabled]="isDemoTree || isGenerating || (isGuest$ | async)"
+                [title]="(isGuest$ | async) ? i18n.t('canvas.guestAiUnavailable') : ''"
+            >
+                <span class="material-icons" [class.spinning]="isGenerating">{{ isGenerating ? 'refresh' : 'auto_awesome' }}</span>
+                <span>{{ isGenerating ? i18n.t('canvas.aiGenerating') : i18n.t('canvas.aiCta') }}</span>
+            </button>
+            <button class="btn-primary prominent-action" (click)="addNode()">
                 <span class="material-icons">add</span>
-                <span>Add Skill</span>
+                <span>{{ i18n.t('canvas.addSkill') }}</span>
             </button>
         </div>
     </header>
 
-    <!-- Activity Calendar -->
-    <div class="calendar-panel glass-panel" *ngIf="tree && tree.activities">
-        <app-activity-calendar [activities]="tree.activities"></app-activity-calendar>
+    <div class="calendar-panel glass-panel" *ngIf="hasCalendarActivities">
+        <app-activity-calendar [activities]="calendarActivities"></app-activity-calendar>
     </div>
 
-    <!-- SVG Workspace -->
     <main class="workspace">
         <svg #svgCanvas class="skill-svg" [attr.viewBox]="viewBoxString"
             (pointerdown)="onCanvasPointerDown($event)" (pointermove)="onPointerMove($event)"
@@ -61,79 +76,76 @@
             (wheel)="onWheel($event)" (contextmenu)="onCanvasContextMenu($event)"
             [class.grabbing]="interactionState === 'panning'">
 
-            <!-- Grid Background Pattern -->
             <defs>
                 <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
                     <circle cx="2" cy="2" r="1.5" fill="rgba(255,255,255,0.05)" />
                 </pattern>
-                <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-                    <feGaussianBlur stdDeviation="5" result="blur" />
-                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                </filter>
             </defs>
 
-            <!-- We set the rect to cover a massive infinite area centered around the origin -->
             <rect x="-50000" y="-50000" width="100000" height="100000" fill="url(#grid)" />
-            <!-- Connections / Links Layer -->
+
             <g class="connections-layer">
-                <!-- Existing complete connections -->
                 <ng-container *ngFor="let node of nodes">
                     <path *ngIf="node.parentId && getParentNode(node.parentId) as parent" class="connection-line"
-                        [class.completed]="node.level === (node.maxLevel || 5) && parent.level === (parent.maxLevel || 5)"
+                        [class.completed]="node.level === (node.maxLevel || defaultMaxLevel) && parent.level === (parent.maxLevel || defaultMaxLevel)"
                         [attr.d]="'M ' + parent.positionX + ' ' + (parent.positionY - 40) + ' C ' + parent.positionX + ' ' + (parent.positionY - 100) + ', ' + node.positionX + ' ' + (node.positionY + 100) + ', ' + node.positionX + ' ' + (node.positionY + 40)" />
                 </ng-container>
 
-                <!-- Currently drawn line during drag to link -->
                 <path *ngIf="interactionState === 'linking' && linkSourceNode" class="connection-line linking"
                     [attr.d]="'M ' + linkSourceNode.positionX + ' ' + (linkSourceNode.positionY - 40) + ' C ' + linkSourceNode.positionX + ' ' + (linkSourceNode.positionY - 100) + ', ' + mousePosition.x + ' ' + (mousePosition.y + 100) + ', ' + mousePosition.x + ' ' + mousePosition.y" />
             </g>
 
-            <!-- Nodes Layer -->
             <g class="nodes-layer">
-                <!-- Selection Box -->
-                <rect *ngIf="interactionState === 'selecting' && selectionBox" 
-                      [attr.x]="selectionBox.x" 
-                      [attr.y]="selectionBox.y" 
-                      [attr.width]="selectionBox.w" 
-                      [attr.height]="selectionBox.h" 
+                <rect *ngIf="interactionState === 'selecting' && selectionBox"
+                      [attr.x]="selectionBox.x"
+                      [attr.y]="selectionBox.y"
+                      [attr.width]="selectionBox.w"
+                      [attr.height]="selectionBox.h"
                       class="selection-box" />
 
                 <g *ngFor="let node of nodes" class="skill-node" [class.selected]="selectedNode?.id === node.id"
                     [class.multi-selected]="selectedNodes.has(node.id)"
-                    [class.completed]="node.level === (node.maxLevel || 5)"
+                    [class.completed]="node.level === (node.maxLevel || defaultMaxLevel)"
                     [attr.transform]="'translate(' + node.positionX + ',' + node.positionY + ')'"
                     (pointerdown)="onNodePointerDown($event, node)"
-                    (contextmenu)="onNodeContextMenu($event, node)" (mouseenter)="hoveredNode = node"
-                    (mouseleave)="hoveredNode = null">
+                    (pointerenter)="onNodePointerEnter($event, node)"
+                    (pointerleave)="onNodePointerLeave()"
+                    (contextmenu)="onNodeContextMenu($event, node)">
 
-                    <!-- Base Circle -->
                     <circle class="node-bg" cx="0" cy="0" r="40" />
 
-                    <!-- Circular Progress Ring (circumference = 251.32) -->
                     <circle class="progress-ring-bg" cx="0" cy="0" r="40" />
                     <circle class="progress-ring-fill" cx="0" cy="0" r="40" stroke-dasharray="251.32"
-                        [attr.stroke-dashoffset]="251.32 - (251.32 * (node.level || 0) / (node.maxLevel || 5))" />
+                        [attr.stroke-dashoffset]="251.32 - (251.32 * (node.level || 0) / (node.maxLevel || defaultMaxLevel))" />
 
-                    <!-- Icon -->
                     <text class="material-icons node-icon" x="0" y="0" text-anchor="middle" dominant-baseline="central">
                         {{ node.icon || 'star' }}
                     </text>
 
-                    <!-- Link Handle (Top of Node, as it grows upwards) -->
-                    <circle class="link-handle-hit-area" cx="0" cy="-40" r="20" fill="transparent"
-                        (pointerdown)="startLinkingPointer($event, node)" title="Drag from here to connect" />
+                    <circle
+                        class="link-handle-hit-area"
+                        cx="0"
+                        cy="-40"
+                        r="20"
+                        fill="transparent"
+                        (pointerdown)="startLinkingPointer($event, node)"
+                        [attr.title]="i18n.t('canvas.mobileLinking')"
+                    />
                     <circle class="link-handle" cx="0" cy="-40" r="8" pointer-events="none" />
 
-                    <!-- Native tooltip -->
-                    <title>{{ node.title }} - Lvl {{ node.level || 0 }} / {{ node.maxLevel || 5 }}</title>
-
-                    <!-- SVG Node Details Card (Visible on Hover or Selection) -->
-                    <foreignObject x="-90" y="50" width="180" height="200" class="node-details-card" pointer-events="none"
-                        [class.visible]="(hoveredNode ? hoveredNode.id : selectedNode?.id) === node.id">
-                        <div xmlns="http://www.w3.org/1999/xhtml" class="details-content glass-panel">
-                            <h4>{{ node.title }}</h4>
-                            <p class="desc" *ngIf="node.description" [innerHTML]="node.description | linkify"></p>
-                            <div class="level-badge">Lvl {{ node.level || 0 }} / {{ node.maxLevel || 5 }}</div>
+                    <foreignObject
+                        *ngIf="hoveredNode?.id === node.id"
+                        class="node-tooltip-fo"
+                        x="-130"
+                        y="58"
+                        width="260"
+                        height="124"
+                        pointer-events="none"
+                    >
+                        <div xmlns="http://www.w3.org/1999/xhtml" class="node-tooltip">
+                            <div class="tooltip-title">{{ node.title }}</div>
+                            <div class="tooltip-description">{{ node.description || '—' }}</div>
+                            <div class="tooltip-level">{{ i18n.t('canvas.level') }} {{ node.level || 0 }} / {{ node.maxLevel || defaultMaxLevel }}</div>
                         </div>
                     </foreignObject>
                 </g>
@@ -141,10 +153,9 @@
         </svg>
     </main>
 
-    <!-- Properties Panel -->
     <aside class="properties-panel glass-panel" [class.open]="showProperties" (pointerdown)="$event.stopPropagation()">
         <div class="panel-header">
-            <h3>Node Properties</h3>
+            <h3>{{ i18n.t('canvas.nodeProperties') }}</h3>
             <button class="icon-btn" (click)="showProperties = false; editingDescription = false">
                 <span class="material-icons">close</span>
             </button>
@@ -152,13 +163,13 @@
 
         <div class="panel-body" *ngIf="selectedNode">
             <div class="form-group">
-                <label>Title</label>
+                <label>{{ i18n.t('canvas.title') }}</label>
                 <input type="text" [(ngModel)]="editNodeData.title" (ngModelChange)="saveNodeProperties()"
                     (keydown.enter)="showProperties = false; editingDescription = false">
             </div>
 
             <div class="form-group">
-                <label>Icon</label>
+                <label>{{ i18n.t('canvas.icon') }}</label>
                 <div class="icon-grid">
                     <button *ngFor="let icon of availableIcons" class="icon-select-btn"
                         [class.active]="editNodeData.icon === icon.name"
@@ -169,28 +180,27 @@
             </div>
 
             <div class="form-group">
-                <label>Description</label>
+                <label>{{ i18n.t('canvas.description') }}</label>
                 <textarea *ngIf="editingDescription" class="desc-textarea" [(ngModel)]="editNodeData.description"
-                    (ngModelChange)="saveNodeProperties()" rows="4" placeholder="Description is optional..."
+                    (ngModelChange)="saveNodeProperties()" rows="4" [placeholder]="i18n.t('canvas.descriptionPlaceholder')"
                     (blur)="editingDescription = false"
                     (keydown.enter)="showProperties = false; editingDescription = false; $event.preventDefault()"></textarea>
                 <div *ngIf="!editingDescription" class="description-preview p-2 border rounded bg-dark"
                     style="min-height: 94px; cursor: text; white-space: pre-wrap; word-break: break-word;"
                     (click)="startEditDescription($event)">
                     <span *ngIf="editNodeData.description" [innerHTML]="editNodeData.description | linkify"></span>
-                    <span *ngIf="!editNodeData.description" style="color: var(--text-muted); opacity: 0.7;">Description
-                        is optional... (Click to edit)</span>
+                    <span *ngIf="!editNodeData.description" style="color: var(--text-muted); opacity: 0.7;">{{ i18n.t('canvas.descriptionClick') }}</span>
                 </div>
             </div>
 
             <div class="form-group row-group">
                 <div class="half-width">
-                    <label>Level</label>
-                    <input type="number" min="0" [max]="editNodeData.maxLevel || 5" [(ngModel)]="editNodeData.level"
+                    <label>{{ i18n.t('canvas.level') }}</label>
+                    <input type="number" min="0" [max]="editNodeData.maxLevel || defaultMaxLevel" [(ngModel)]="editNodeData.level"
                         (ngModelChange)="saveNodeProperties()">
                 </div>
                 <div class="half-width">
-                    <label>Max Level</label>
+                    <label>{{ i18n.t('canvas.maxLevel') }}</label>
                     <input type="number" min="1" [(ngModel)]="editNodeData.maxLevel"
                         (ngModelChange)="saveNodeProperties()">
                 </div>
@@ -198,62 +208,78 @@
 
             <div class="actions mt-4">
                 <button class="btn-secondary block w-full text-danger border-danger" (click)="deleteNode()">
-                    <span class="material-icons">delete</span> Delete Node
+                    <span class="material-icons">delete</span> {{ i18n.t('canvas.deleteNode') }}
                 </button>
             </div>
 
             <p class="hint-text mt-4 text-xs text-muted text-center"
                 style="color: var(--text-muted); font-size: 0.8rem; margin-top: 1rem;">
-                Left-Click to level up. Shift-Click to downgrade. Right-Click for properties.
+                {{ i18n.t('canvas.nodeHint') }}
             </p>
         </div>
-        
+
         <div class="panel-footer sticky-footer" *ngIf="selectedNode">
             <button class="btn-primary" style="width: 100%; min-height: 44px; display: flex; justify-content: center;" (click)="closeProperties()">
-                <span class="material-icons">check</span> Save Details
+                <span class="material-icons">check</span> {{ i18n.t('canvas.saveDetails') }}
             </button>
         </div>
     </aside>
 
-    <!-- AI Prompt Modal -->
     <div class="modal-overlay" *ngIf="showAiPrompt">
         <div class="modal-content" style="max-width: 500px; width: 90%;">
             <div class="panel-header">
-                <h3>Generate Skill Tree</h3>
+                <h3>{{ i18n.t('canvas.generateTitle') }}</h3>
                 <button class="icon-btn" (click)="showAiPrompt = false" [disabled]="isGenerating">
                     <span class="material-icons">close</span>
                 </button>
             </div>
             <div class="panel-body mt-4">
-                <p class="text-muted mb-4">Describe the path or topic you want to learn (e.g., "English learning path using movies").</p>
+                <p class="text-muted mb-4">{{ i18n.t('canvas.generateText') }}</p>
                 <div class="form-group">
-                    <textarea class="desc-textarea" [(ngModel)]="aiPrompt" rows="4" placeholder="Enter your prompt..."></textarea>
+                    <textarea class="desc-textarea" [(ngModel)]="aiPrompt" rows="4" [placeholder]="i18n.t('canvas.generatePlaceholder')"></textarea>
                 </div>
                 <div class="modal-actions mt-4">
-                    <button class="btn-secondary" (click)="showAiPrompt = false" [disabled]="isGenerating">Cancel</button>
-                    <button class="btn-primary" (click)="generateWithAi()" [disabled]="isGenerating || !aiPrompt.trim()">
+                    <button class="btn-secondary" (click)="showAiPrompt = false" [disabled]="isGenerating">{{ i18n.t('canvas.cancel') }}</button>
+                    <button class="btn-primary btn-ai modal-ai-btn" (click)="generateWithAi()" [disabled]="isGenerating || !aiPrompt.trim()">
                         <span class="material-icons" [class.spinning]="isGenerating">{{ isGenerating ? 'refresh' : 'auto_awesome' }}</span>
-                        <span>{{ isGenerating ? 'Generating...' : 'Generate' }}</span>
+                        <span>{{ isGenerating ? i18n.t('canvas.aiGenerating') : i18n.t('canvas.generate') }}</span>
                     </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Mobile Action Bar (Separate from Header) -->
+    <div class="modal-overlay help-overlay" *ngIf="showHelp" (click)="closeHelp()">
+        <div class="modal-content help-modal glass-panel" (click)="$event.stopPropagation()">
+            <div class="panel-header">
+                <h3>{{ i18n.t('canvas.helpTitle') }}</h3>
+                <button class="icon-btn" (click)="closeHelp()">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            <div class="panel-body help-body">
+                <p>{{ i18n.t('canvas.helpIntro') }}</p>
+                <p>{{ i18n.t('canvas.helpBody') }}</p>
+                <p class="help-first-visit">{{ i18n.t('canvas.helpFirstVisit') }}</p>
+                <button class="btn-primary help-confirm" (click)="closeHelp()">{{ i18n.t('canvas.helpButton') }}</button>
+            </div>
+        </div>
+    </div>
+
     <div class="mobile-action-bar glass-panel">
         <div *ngIf="interactionState === 'linking'" class="linking-indicator">
             <span class="pulse-dot"></span>
-            <span>Link nodes</span>
-            <button class="btn-secondary small" (click)="cancelLinking()">Cancel</button>
+            <span>{{ i18n.t('canvas.mobileLinking') }}</span>
+            <button class="btn-secondary small" (click)="cancelLinking()">{{ i18n.t('canvas.cancel') }}</button>
         </div>
-        <button class="btn-primary" (click)="openAiPrompt()" [disabled]="isGenerating || (isGuest$ | async)">
+        <button type="button" class="help-bubble mobile-help" (click)="openHelp()" [attr.aria-label]="i18n.t('canvas.helpFabLabel')">?</button>
+        <button class="btn-primary btn-ai" (click)="openAiPrompt()" [disabled]="isDemoTree || isGenerating || (isGuest$ | async)">
             <span class="material-icons" [class.spinning]="isGenerating">{{ isGenerating ? 'refresh' : 'auto_awesome' }}</span>
-            <span>AI</span>
+            <span>{{ i18n.t('canvas.mobileAi') }}</span>
         </button>
-        <button class="btn-primary" (click)="addNode()">
+        <button class="btn-primary prominent-action" (click)="addNode()">
             <span class="material-icons">add</span>
-            <span>Skill</span>
+            <span>{{ i18n.t('canvas.mobileSkill') }}</span>
         </button>
     </div>
 </div>

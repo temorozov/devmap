@@ -48,7 +48,7 @@ model Node {
   positionY   Float
   progress    Int      @default(0) // 0 to 100
   level       Int      @default(0)
-  maxLevel    Int      @default(5)
+  maxLevel    Int      @default(3)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }

@@ -1,7 +1,7 @@
 <div class="dialog-overlay" *ngIf="!isClosing" @overlayAnimation (click)="isConfirm ? cancel() : close(true)">
   <div class="dialog-container glass-panel" @dialogAnimation (click)="$event.stopPropagation()">
     <div class="dialog-header">
-      <h3 class="dialog-title">{{ title }}</h3>
+      <h3 class="dialog-title">{{ title || i18n.t(isConfirm ? 'dialog.confirm' : 'dialog.alert') }}</h3>
       <button class="dialog-close-btn" (click)="isConfirm ? cancel() : close(true)">
         &times;
       </button>
@@ -10,8 +10,8 @@
       <p>{{ message }}</p>
     </div>
     <div class="dialog-footer">
-      <button *ngIf="isConfirm" class="btn-secondary" (click)="cancel()">Cancel</button>
-      <button class="btn-primary" (click)="confirm()">{{ isConfirm ? 'Confirm' : 'OK' }}</button>
+      <button *ngIf="isConfirm" class="btn-secondary" (click)="cancel()">{{ i18n.t('dialog.cancel') }}</button>
+      <button class="btn-primary" (click)="confirm()">{{ i18n.t(isConfirm ? 'dialog.confirm' : 'dialog.ok') }}</button>
     </div>
   </div>
 </div>

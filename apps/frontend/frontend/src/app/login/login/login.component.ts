@@ -1,8 +1,10 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 // Removed forms imports
 import { AuthService } from '../../auth.service';
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
+import { appRuntimeConfig } from '../../app-config';
+import { I18nService } from '../../shared/services/i18n.service';
 
 @Component({
   selector: 'app-login',
@@ -10,11 +12,14 @@ import { Router, ActivatedRoute, RouterModule } from '@angular/router';
   imports: [CommonModule, RouterModule],
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LoginComponent implements OnInit {
   authService = inject(AuthService);
   router = inject(Router);
   route = inject(ActivatedRoute);
+  i18n = inject(I18nService);
+  private readonly cdr = inject(ChangeDetectorRef);
   // Removed loginForm
 
   loading = false;
@@ -40,16 +45,17 @@ export class LoginComponent implements OnInit {
       },
       error: () => {
         this.loading = false;
-        this.error = 'Guest login failed';
+        this.error = this.i18n.t('login.guestError');
+        this.cdr.markForCheck();
       }
     });
   }
 
   loginWithGoogle() {
-    window.location.href = '/api/auth/google';
+    window.location.href = `${appRuntimeConfig.apiUrl}/auth/google`;
   }
 
   loginWithDiscord() {
-    window.location.href = '/api/auth/discord';
+    window.location.href = `${appRuntimeConfig.apiUrl}/auth/discord`;
   }
 }

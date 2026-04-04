@@ -2,14 +2,15 @@ import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-discord';
 import { Injectable } from '@nestjs/common';
 import { AuthService } from './auth.service';
+import { getEnv } from '../config/env';
 
 @Injectable()
 export class DiscordStrategy extends PassportStrategy(Strategy, 'discord') {
     constructor(private authService: AuthService) {
         super({
-            clientID: process.env['DISCORD_CLIENT_ID'] || 'placeholder-client-id',
-            clientSecret: process.env['DISCORD_CLIENT_SECRET'] || 'placeholder-client-secret',
-            callbackURL: process.env['DISCORD_CALLBACK_URL'] || 'http://localhost:3000/api/auth/discord/callback',
+            clientID: getEnv('DISCORD_CLIENT_ID'),
+            clientSecret: getEnv('DISCORD_CLIENT_SECRET'),
+            callbackURL: getEnv('DISCORD_CALLBACK_URL'),
             scope: ['identify', 'email'],
         });
     }

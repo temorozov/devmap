@@ -1,14 +1,16 @@
-import { Component, ElementRef, OnInit, ViewChild, inject, HostListener } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild, inject, HostListener, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { TreesService, Tree } from '../../trees.service';
 import { NodesService, SkillNode } from '../../nodes.service';
-import { BehaviorSubject, Subject, takeUntil, take } from 'rxjs';
+import { take } from 'rxjs';
 import { ActivityCalendarComponent } from '../activity-calendar/activity-calendar.component';
 import { LinkifyPipe } from '../../shared/pipes/linkify.pipe';
 import { AuthService } from '../../auth.service';
 import { DialogService } from '../../shared/services/dialog.service';
+import { I18nService } from '../../shared/services/i18n.service';
+import { DEMO_TREE_ID, getDemoSampleNodes, getDemoSampleTitle } from '../../shared/data/demo-sample';
 
 interface ViewBox {
   x: number;
@@ -16,6 +18,10 @@ interface ViewBox {
   w: number;
   h: number;
 }
+
+const HELP_STORAGE_KEY = 'skill-tree-help-seen';
+const DEFAULT_MAX_LEVEL = 3;
+const HOVER_TOOLTIP_DELAY_MS = 40;
 
 @Component({
   selector: 'app-canvas',
@@ -31,6 +37,7 @@ export class CanvasComponent implements OnInit {
   nodesService = inject(NodesService);
   authService = inject(AuthService);
   dialogService = inject(DialogService);
+  i18n = inject(I18nService);
 
   isGuest$ = this.authService.isGuest$;
 
@@ -64,17 +71,29 @@ export class CanvasComponent implements OnInit {
   initialPinchDistance = 0;
   initialViewBox = { x: 0, y: 0, w: 0, h: 0 };
 
-  // Double Tap Data
-  lastTapTime = 0;
-  lastTapNodeId: string | null = null;
-  animationFrameId: number | null = null;
-
   // Create / Edit state
   showProperties = false;
   editNodeData: Partial<SkillNode> = {};
   editingDescription = false;
   selectedNode: SkillNode | null = null;
   hoveredNode: SkillNode | null = null;
+  readonly defaultMaxLevel = DEFAULT_MAX_LEVEL;
+  private hoverTooltipTimer: ReturnType<typeof setTimeout> | null = null;
+  private hoveredNodeId: string | null = null;
+  showHelp = false;
+  isDemoTree = false;
+  localDemoNodeCounter = 0;
+
+  private readonly syncDemoTranslations = effect(() => {
+    const language = this.i18n.language();
+    if (this.tree?.id === DEMO_TREE_ID) {
+      this.tree = {
+        ...this.tree,
+        title: getDemoSampleTitle(language),
+      };
+      this.nodes = getDemoSampleNodes(language);
+    }
+  });
 
   closeProperties() {
     this.showProperties = false;
@@ -120,9 +139,11 @@ export class CanvasComponent implements OnInit {
     const newTitle = this.editTreeTitleData.trim();
     if (newTitle && newTitle !== this.tree.title) {
       this.tree.title = newTitle;
-      this.treesService.updateTree(this.tree.id, newTitle).subscribe({
-        error: (err) => console.error('Failed to update tree title', err)
-      });
+      if (!this.isDemoTree) {
+        this.treesService.updateTree(this.tree.id, newTitle).subscribe({
+          error: (err) => console.error('Failed to update tree title', err)
+        });
+      }
     }
     this.isEditingTreeTitle = false;
   }
@@ -132,9 +153,10 @@ export class CanvasComponent implements OnInit {
   }
 
   openAiPrompt() {
+    if (this.isDemoTree) return;
     this.isGuest$.pipe(take(1)).subscribe(isGuest => {
       if (isGuest) {
-        this.dialogService.alert('AI features are not available for guests.');
+        this.dialogService.alert(this.i18n.t('canvas.guestAiUnavailable'));
         return;
       }
       this.showAiPrompt = true;
@@ -143,6 +165,7 @@ export class CanvasComponent implements OnInit {
   }
 
   generateWithAi() {
+    if (this.isDemoTree) return;
     this.isGuest$.pipe(take(1)).subscribe(isGuest => {
       if (isGuest) return;
       if (!this.tree || !this.aiPrompt.trim()) return;
@@ -157,7 +180,8 @@ export class CanvasComponent implements OnInit {
         },
         error: (err) => {
           console.error('Error generating tree', err);
-          this.dialogService.alert('Failed to generate tree. Error: ' + JSON.stringify(err.error || err.message));
+          const errorDetails = JSON.stringify(err.error || err.message || '');
+          this.dialogService.alert(`${this.i18n.t('canvas.generateError')} ${errorDetails}`);
           this.isGenerating = false;
         }
       });
@@ -186,15 +210,40 @@ export class CanvasComponent implements OnInit {
   }
 
   loadTree(id: string) {
+    this.loading = true;
+    this.isDemoTree = id === DEMO_TREE_ID;
+    this.showProperties = false;
+    this.selectedNode = null;
+    this.hoveredNode = null;
+    this.maybeOpenHelp();
+
+    if (this.isDemoTree) {
+      this.tree = {
+        id: DEMO_TREE_ID,
+        title: getDemoSampleTitle(this.i18n.currentLanguage()),
+        sharedToken: DEMO_TREE_ID,
+        userId: 'demo',
+        createdAt: new Date(0).toISOString(),
+        updatedAt: new Date(0).toISOString(),
+        activities: [],
+      };
+      this.nodes = getDemoSampleNodes(this.i18n.currentLanguage());
+      this.loading = false;
+      return;
+    }
+
     this.treesService.getTree(id).subscribe({
       next: (tree) => {
         this.tree = tree;
-        this.loading = false;
         if (tree.nodes) {
           this.nodes = tree.nodes;
+          this.loading = false;
         } else {
           // Fetch separately if not included
-          this.nodesService.getNodesByTree(id).subscribe(nodes => this.nodes = nodes);
+          this.nodesService.getNodesByTree(id).subscribe(nodes => {
+            this.nodes = nodes;
+            this.loading = false;
+          });
         }
       },
       error: () => {
@@ -204,6 +253,7 @@ export class CanvasComponent implements OnInit {
             this.tree = tree;
             this.loading = false;
             this.nodes = tree.nodes || [];
+            this.isDemoTree = false;
           },
           error: () => {
             this.router.navigate(['/dashboard']);
@@ -228,6 +278,7 @@ export class CanvasComponent implements OnInit {
   }
 
   onCanvasPointerDown(event: PointerEvent) {
+    this.hideNodeTooltip();
     if (this.showProperties || this.editingDescription) {
       this.closeProperties();
       return;
@@ -262,6 +313,7 @@ export class CanvasComponent implements OnInit {
 
   onNodePointerDown(event: PointerEvent, node: SkillNode) {
     event.stopPropagation();
+    this.hideNodeTooltip();
     (event.target as Element).setPointerCapture(event.pointerId);
     this.activePointers.set(event.pointerId, event);
     this.dragThresholdPassed = false;
@@ -292,15 +344,23 @@ export class CanvasComponent implements OnInit {
         this.initialNodePositions.set(n.id, { x: n.positionX, y: n.positionY });
       }
     });
+  }
 
-    const now = Date.now();
-    if (this.lastTapNodeId === node.id && now - this.lastTapTime < 300) {
-      this.centerOnNode(node);
-      this.lastTapTime = 0;
-    } else {
-      this.lastTapTime = now;
-      this.lastTapNodeId = node.id;
+  onNodePointerEnter(event: PointerEvent, node: SkillNode) {
+    if (event.pointerType && event.pointerType !== 'mouse' && event.pointerType !== 'pen') return;
+    this.hoveredNodeId = node.id;
+    if (this.hoverTooltipTimer) {
+      clearTimeout(this.hoverTooltipTimer);
     }
+    this.hoverTooltipTimer = setTimeout(() => {
+      if (this.hoveredNodeId === node.id) {
+        this.hoveredNode = node;
+      }
+    }, HOVER_TOOLTIP_DELAY_MS);
+  }
+
+  onNodePointerLeave() {
+    this.hideNodeTooltip();
   }
 
   startLinkingPointer(event: PointerEvent, node: SkillNode) {
@@ -423,14 +483,16 @@ export class CanvasComponent implements OnInit {
 
     if (this.interactionState === 'dragging-node') {
       if (this.dragThresholdPassed) {
-        this.nodes.forEach(n => {
-          if (this.selectedNodes.has(n.id)) {
-            this.nodesService.updateNode(n.id, {
-              positionX: n.positionX,
-              positionY: n.positionY
-            }).subscribe();
-          }
-        });
+        if (!this.isDemoTree) {
+          this.nodes.forEach(n => {
+            if (this.selectedNodes.has(n.id)) {
+              this.nodesService.updateNode(n.id, {
+                positionX: n.positionX,
+                positionY: n.positionY
+              }).subscribe();
+            }
+          });
+        }
       } else if (this.draggedNode && (event.pointerType === 'mouse' ? event.button === 0 : true)) {
         this.onNodeTap(event, this.draggedNode);
       }
@@ -470,6 +532,7 @@ export class CanvasComponent implements OnInit {
   onNodeContextMenu(event: MouseEvent, node: SkillNode) {
     event.preventDefault();
     event.stopPropagation();
+    this.hideNodeTooltip();
     this.interactionState = 'idle';
     this.activePointers.clear();
     this.selectedNode = node;
@@ -479,7 +542,7 @@ export class CanvasComponent implements OnInit {
   }
 
   onNodeTap(event: PointerEvent | MouseEvent, node: SkillNode) {
-    const maxLvl = node.maxLevel || 5;
+    const maxLvl = node.maxLevel || DEFAULT_MAX_LEVEL;
     let currLvl = node.level || 0;
 
     if (event.shiftKey) {
@@ -494,38 +557,11 @@ export class CanvasComponent implements OnInit {
     if (node.level !== currLvl) {
       node.level = currLvl;
       node.progress = (currLvl / maxLvl) * 100;
-      this.nodesService.updateNode(node.id, { level: currLvl, progress: node.progress }).subscribe();
+      if (!this.isDemoTree) {
+        this.nodesService.updateNode(node.id, { level: currLvl, progress: node.progress }).subscribe();
+      }
       this.editNodeData.level = currLvl;
     }
-  }
-
-  centerOnNode(node: SkillNode) {
-    if (this.animationFrameId !== null) {
-      cancelAnimationFrame(this.animationFrameId);
-    }
-
-    const startX = this.viewBox.x;
-    const startY = this.viewBox.y;
-    const targetX = node.positionX - this.viewBox.w / 2;
-    const targetY = node.positionY - this.viewBox.h / 2;
-    
-    const duration = 250;
-    const startTime = performance.now();
-
-    const animate = (time: number) => {
-      let progress = (time - startTime) / duration;
-      if (progress > 1) progress = 1;
-      const ease = 1 - Math.pow(1 - progress, 3);
-      this.viewBox.x = startX + (targetX - startX) * ease;
-      this.viewBox.y = startY + (targetY - startY) * ease;
-      
-      if (progress < 1) {
-        this.animationFrameId = requestAnimationFrame(animate);
-      } else {
-        this.animationFrameId = null;
-      }
-    };
-    this.animationFrameId = requestAnimationFrame(animate);
   }
 
   @HostListener('window:resize')
@@ -565,15 +601,38 @@ export class CanvasComponent implements OnInit {
   addNode() {
     const newNode: Partial<SkillNode> = {
       treeId: this.tree?.id,
-      title: 'New Skill',
+      title: this.i18n.t('canvas.newSkill'),
       description: '',
       icon: 'code',
       level: 0,
-      maxLevel: 5,
+      maxLevel: DEFAULT_MAX_LEVEL,
       progress: 0,
       positionX: this.viewBox.x + this.viewBox.w / 2,
       positionY: this.viewBox.y + this.viewBox.h / 2 - 100,
     };
+
+    if (this.isDemoTree) {
+      const node: SkillNode = {
+        id: `demo-local-${this.localDemoNodeCounter++}`,
+        treeId: this.tree?.id || DEMO_TREE_ID,
+        title: newNode.title || this.i18n.t('canvas.newSkill'),
+        description: newNode.description || '',
+        icon: newNode.icon || 'code',
+        positionX: newNode.positionX || 0,
+        positionY: newNode.positionY || 0,
+        progress: 0,
+        level: 0,
+        maxLevel: DEFAULT_MAX_LEVEL,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      this.nodes.push(node);
+      this.selectedNode = node;
+      this.editNodeData = { ...node };
+      this.showProperties = true;
+      this.editingDescription = false;
+      return;
+    }
 
     this.nodesService.createNode(newNode).subscribe(node => {
       this.nodes.push(node);
@@ -592,12 +651,14 @@ export class CanvasComponent implements OnInit {
     if (!sourceNode || sourceNode.id === targetNode.id) return;
 
     if (sourceNode.parentId === targetNode.id) {
-      this.dialogService.alert("Нельзя привязать навык к своему родителю!");
+      this.dialogService.alert(this.i18n.t('canvas.linkParentError'));
       return;
     }
 
     targetNode.parentId = sourceNode.id;
-    this.nodesService.updateNode(targetNode.id, { parentId: sourceNode.id }).subscribe();
+    if (!this.isDemoTree) {
+      this.nodesService.updateNode(targetNode.id, { parentId: sourceNode.id }).subscribe();
+    }
   }
 
   cancelLinking() {
@@ -611,7 +672,7 @@ export class CanvasComponent implements OnInit {
     if (!this.selectedNode || !this.editNodeData) return;
 
     // Recalculate progress if maxLevel changed
-    const maxLvl = this.editNodeData.maxLevel || 5;
+    const maxLvl = this.editNodeData.maxLevel || DEFAULT_MAX_LEVEL;
     let lvl = this.editNodeData.level || 0;
     if (lvl > maxLvl) lvl = maxLvl;
     this.editNodeData.level = lvl;
@@ -629,17 +690,29 @@ export class CanvasComponent implements OnInit {
       clearTimeout(this.saveTimeout);
     }
 
-    this.saveTimeout = setTimeout(() => {
-      if (!this.selectedNode) return;
-      this.nodesService.updateNode(this.selectedNode.id, this.editNodeData).subscribe(updated => {
-        // Optionally sync any backend-specific generated fields
-      });
-    }, 500);
+    if (!this.isDemoTree) {
+      this.saveTimeout = setTimeout(() => {
+        if (!this.selectedNode) return;
+        this.nodesService.updateNode(this.selectedNode.id, this.editNodeData).subscribe(() => {
+          // Optionally sync any backend-specific generated fields
+        });
+      }, 500);
+    }
   }
 
   async deleteNode() {
     if (!this.selectedNode) return;
-    if (await this.dialogService.confirm('Delete this node?')) {
+    if (await this.dialogService.confirm(this.i18n.t('canvas.deleteNodeConfirm'))) {
+      if (this.isDemoTree) {
+        this.nodes = this.nodes.filter(n => n.id !== this.selectedNode?.id);
+        this.nodes.forEach(n => {
+          if (n.parentId === this.selectedNode?.id) n.parentId = undefined;
+        });
+        this.selectedNode = null;
+        this.showProperties = false;
+        return;
+      }
+
       this.nodesService.deleteNode(this.selectedNode.id).subscribe(() => {
         this.nodes = this.nodes.filter(n => n.id !== this.selectedNode?.id);
         // Also remove parentId references loosely in UI since DB cascades or sets null
@@ -667,9 +740,40 @@ export class CanvasComponent implements OnInit {
     let totalMaxLevel = 0;
     for (const node of this.nodes) {
       totalLevel += node.level || 0;
-      totalMaxLevel += node.maxLevel || 5;
+      totalMaxLevel += node.maxLevel || DEFAULT_MAX_LEVEL;
     }
     return totalMaxLevel === 0 ? 0 : Math.round((totalLevel / totalMaxLevel) * 100);
   }
-}
 
+  get calendarActivities() {
+    return this.tree?.activities ?? [];
+  }
+
+  get hasCalendarActivities() {
+    return this.calendarActivities.length > 0;
+  }
+
+  openHelp() {
+    this.showHelp = true;
+  }
+
+  closeHelp() {
+    this.showHelp = false;
+    localStorage.setItem(HELP_STORAGE_KEY, 'true');
+  }
+
+  private maybeOpenHelp() {
+    if (!localStorage.getItem(HELP_STORAGE_KEY)) {
+      this.showHelp = true;
+    }
+  }
+
+  private hideNodeTooltip() {
+    this.hoveredNodeId = null;
+    if (this.hoverTooltipTimer) {
+      clearTimeout(this.hoverTooltipTimer);
+      this.hoverTooltipTimer = null;
+    }
+    this.hoveredNode = null;
+  }
+}

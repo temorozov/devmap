@@ -45,12 +45,6 @@
               "maximumError": "20kb"
             }
           ],
-          "fileReplacements": [
-            {
-              "replace": "apps/frontend/frontend/src/environments/environment.ts",
-              "with": "apps/frontend/frontend/src/environments/environment.prod.ts"
-            }
-          ],
           "outputHashing": "all"
         },
         "development": {
@@ -63,9 +57,6 @@
     },
     "serve": {
       "executor": "@angular-devkit/build-angular:dev-server",
-      "options": {
-        "proxyConfig": "apps/frontend/frontend/proxy.conf.json"
-      },
       "configurations": {
         "production": {
           "buildTarget": "frontend-frontend:build:production"

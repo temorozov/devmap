@@ -1,21 +1,30 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Resend } from 'resend';
+import { getEnv } from '../config/env';
 
 @Injectable()
 export class EmailService {
-  private resend: Resend;
+  private resend?: Resend;
   private readonly logger = new Logger(EmailService.name);
 
   constructor() {
-    this.resend = new Resend('re_UZ7oMiJR_KPuwNZ3eQmXxyueLupyWqyuk');
+    const apiKey = process.env['RESEND_API_KEY'];
+
+    if (apiKey) {
+      this.resend = new Resend(apiKey);
+    }
   }
 
   async sendConfirmationEmail(email: string, token: string) {
-    const confirmLink = `http://localhost:4200/confirm-email?token=${token}`;
+    const confirmLink = `${getEnv('EMAIL_CONFIRM_URL')}?token=${token}`;
+
+    if (!this.resend) {
+      throw new Error('RESEND_API_KEY is required to send confirmation emails');
+    }
     
     try {
       const data = await this.resend.emails.send({
-        from: 'onboarding@resend.dev',
+        from: getEnv('EMAIL_FROM'),
         to: email,
         subject: 'Confirm your email address - Skill Tree',
         html: `

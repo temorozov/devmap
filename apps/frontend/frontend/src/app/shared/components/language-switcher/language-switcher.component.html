@@ -1,0 +1,11 @@
+<div class="language-switcher glass-panel" aria-label="Language switcher">
+  <button
+    *ngFor="let language of languages"
+    type="button"
+    class="language-btn"
+    [class.active]="i18n.currentLanguage() === language"
+    (click)="setLanguage(language)"
+  >
+    {{ i18n.t('language.' + language) }}
+  </button>
+</div>

@@ -1,41 +1,46 @@
-# Инструкция по развертыванию на VPS
+# Прод-запуск
 
-## Шаг 1: Подготовка VPS
+## Что используется
 
-1. Установи **Docker** и **Docker Compose** на свой сервер.
-   - [Официальная инструкция для Ubuntu](https://docs.docker.com/engine/install/ubuntu/)
-2. Склонируй этот репозиторий на сервер или скопируй файлы по SSH / FTP.
+- основной compose: `docker-compose.yml`
+- prod env: `.env.production`
 
-## Шаг 2: Настройка переменных (Environment Variables)
-
-1. Находясь в папке с проектом на сервере, убедись, что файл `.env.production` заполнен корректно.
-2. Сгенерируй надежный ключ для JWT_SECRET:
-   ```bash
-   openssl rand -hex 32
-   ```
-   Установи его в `.env.production`.
-3. Убедись, что `DISCORD_CALLBACK_URL` ведет на твой реальный домен (вида `https://твойдомен.com/api/auth/discord/callback`). То же самое нужно сделать в настройках Discord Developer Portal.
-
-## Шаг 3: Запуск приложения
-
-Запусти проект с использованием основного compose-файла и production-переопределений:
+Итоговая команда запуска:
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+npm run prod
 ```
 
-**Что происходит при запуске:**
+Или напрямую:
 
-- База данных (`postgres`) не будет доступна из интернета снаружи, так как мы скрыли её порт в `.env.prod.yml`.
-- Фронтенд (`frontend` Nginx) будет отвечать на стандартном **80 порту** (HTTP).
-- Бэкенд (`backend`) будет слушать запросы во внутренней сети Docker, а Nginx проксирует к нему запросы на `/api/`.
+```bash
+docker compose --env-file .env.production -f docker-compose.yml up -d --build
+```
 
-## Шаг 4: Настройка домена и SSL (HTTPS)
+## Что проверить в `.env.production`
 
-Авторизация OAuth (Google/Discord) **требует** HTTPS (кроме как для `localhost`). Тебе нужно будет обернуть 80-й порт в HTTPS.
-Самый простой вариант:
+- `FRONTEND_URL=http://pdv.kpdtke.com.ua:20080`
+- `BACKEND_URL=http://pdv.kpdtke.com.ua:21000`
+- `API_URL=http://pdv.kpdtke.com.ua:21000/api`
+- `FRONTEND_PORT=20080`
+- `BACKEND_PORT=21000`
+- `PORT=3000`
+- `CORS_ORIGINS=http://pdv.kpdtke.com.ua:20080`
+- `GOOGLE_CALLBACK_URL=http://pdv.kpdtke.com.ua:21000/api/auth/google/callback`
+- `DISCORD_CALLBACK_URL=http://pdv.kpdtke.com.ua:21000/api/auth/discord/callback`
+- `EMAIL_CONFIRM_URL=http://pdv.kpdtke.com.ua:20080/confirm-email`
 
-1. Установи [Certbot](https://certbot.eff.org/) и Nginx на самой хост-машине VPS.
-2. Настрой Nginx на сервере как Reverse Proxy, перенаправляя трафик с 80/443 порта на порт твоего docker-контейнера. Либо используй **Cloudflare**, включив проксирование (оранжевое облако) и настройку Flexible/Full SSL.
+Если меняются домен или порты, правится только `.env.production`.
 
-_Если возникнут ошибки с миграциями БД, бэкенд перезапустится автоматически: мы настроили команду `db push` перед запуском, так схеме будет применена сразу._
+## Полезные команды
+
+```bash
+npm run prod
+npm run prod:down
+docker compose --env-file .env.production -f docker-compose.yml logs -f
+docker compose --env-file .env.production -f docker-compose.yml ps
+```
+
+## Примечание
+
+Порт PostgreSQL наружу открыт только в `dev` через `docker-compose.dev.yml`. В `prod` база остаётся только внутри Docker-сети.

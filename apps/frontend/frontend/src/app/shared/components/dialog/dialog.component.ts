@@ -1,6 +1,7 @@
-import { Component, EventEmitter, Input, Output, HostListener } from '@angular/core';
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { trigger, transition, style, animate } from '@angular/animations';
+import { I18nService } from '../../services/i18n.service';
 
 @Component({
   selector: 'app-dialog',
@@ -8,6 +9,7 @@ import { trigger, transition, style, animate } from '@angular/animations';
   imports: [CommonModule],
   templateUrl: './dialog.component.html',
   styleUrls: ['./dialog.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   animations: [
     trigger('dialogAnimation', [
       transition(':enter', [
@@ -30,6 +32,8 @@ import { trigger, transition, style, animate } from '@angular/animations';
   ]
 })
 export class DialogComponent {
+  constructor(public i18n: I18nService) {}
+
   @Input() message: string = '';
   @Input() title: string = '';
   @Input() isConfirm: boolean = false;

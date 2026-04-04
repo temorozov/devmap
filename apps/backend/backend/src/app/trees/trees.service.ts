@@ -132,7 +132,7 @@ export class TreesService {
                             positionX,
                             positionY,
                             level: 0,
-                            maxLevel: 5
+                            maxLevel: 3
                         }
                     });
                     

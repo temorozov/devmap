@@ -1,8 +1,6 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
-import * as bcrypt from 'bcrypt';
-import { randomBytes } from 'crypto';
 
 @Injectable()
 export class AuthService {
@@ -84,19 +82,10 @@ export class AuthService {
             },
         });
 
-        const tree = await this.prisma.tree.create({
-            data: {
-                title: 'Guest Skill Tree',
-                userId: user.id,
-                sharedToken: randomBytes(16).toString('hex'),
-            },
-        });
-
         const payload = { sub: user.id, isGuest: true };
         return {
             access_token: this.jwtService.sign(payload),
             user,
-            treeId: tree.id,
         };
     }
 }

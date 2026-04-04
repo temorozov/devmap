@@ -7,13 +7,14 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { JwtStrategy } from './jwt.strategy';
 import { GoogleStrategy } from './google.strategy';
 import { DiscordStrategy } from './discord.strategy';
+import { getEnv } from '../config/env';
 
 @Module({
   imports: [
     PrismaModule,
     PassportModule,
     JwtModule.register({
-      secret: process.env['JWT_SECRET'] || 'super-secret-key-for-skillTree',
+      secret: getEnv('JWT_SECRET'),
       signOptions: { expiresIn: '7d' },
     }),
   ],

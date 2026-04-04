@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { environment } from '../environments/environment';
+import { appRuntimeConfig } from './app-config';
 
 export interface Tree {
   id: string;
@@ -18,7 +18,7 @@ export interface Tree {
 })
 export class TreesService {
   private http = inject(HttpClient);
-  private apiUrl = `${environment.apiUrl}/trees`;
+  private apiUrl = `${appRuntimeConfig.apiUrl}/trees`;
 
   getTrees() {
     return this.http.get<Tree[]>(this.apiUrl);

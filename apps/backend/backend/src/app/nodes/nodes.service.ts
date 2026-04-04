@@ -9,8 +9,22 @@ export class NodesService {
         const tree = await this.prisma.tree.findFirst({ where: { id: createNodeDto.treeId, userId } });
         if (!tree) throw new UnauthorizedException('Tree access denied');
 
+        const maxLevel = createNodeDto.maxLevel && createNodeDto.maxLevel > 0
+            ? createNodeDto.maxLevel
+            : 3;
+        const level = createNodeDto.level ?? 0;
+        const incomingProgress = (createNodeDto as any).progress;
+        const progress = typeof incomingProgress === 'number'
+            ? incomingProgress
+            : Math.round((level / maxLevel) * 100);
+
         const node = await this.prisma.node.create({
-            data: createNodeDto
+            data: {
+                ...createNodeDto,
+                level,
+                maxLevel,
+                progress
+            }
         });
         await this.recordActivity(tree.id);
         return node;
@@ -66,4 +80,3 @@ export class NodesService {
         }).catch((e: any) => console.error('Failed to record activity', e));
     }
 }
-

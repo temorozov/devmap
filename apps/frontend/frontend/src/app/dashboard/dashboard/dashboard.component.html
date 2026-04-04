@@ -2,21 +2,22 @@
     <header class="topbar">
         <div class="logo-area">
             <span class="material-icons logo-icon">account_tree</span>
-            <h2>Skill Tree</h2>
+            <h2>{{ i18n.t('app.name') }}</h2>
         </div>
         <div class="actions">
+            <app-language-switcher></app-language-switcher>
             <button *ngIf="!(isGuest$ | async)" class="btn-secondary" (click)="logout()">
                 <span class="material-icons">logout</span>
-                <span>Logout</span>
+                <span>{{ i18n.t('dashboard.logout') }}</span>
             </button>
             <div *ngIf="isGuest$ | async" class="guest-actions">
                 <a routerLink="/login" class="btn-secondary">
                     <span class="material-icons">login</span>
-                    <span>Login</span>
+                    <span>{{ i18n.t('dashboard.login') }}</span>
                 </a>
                 <a routerLink="/register" class="btn-primary">
                     <span class="material-icons">person_add</span>
-                    <span>Register</span>
+                    <span>{{ i18n.t('dashboard.register') }}</span>
                 </a>
             </div>
         </div>
@@ -24,37 +25,57 @@
 
     <main class="content">
         <div class="header-row">
-            <h1>Your Skill Trees</h1>
-            <button class="btn-primary" (click)="showCreateModal = true">
+            <h1>{{ i18n.t('dashboard.heading') }}</h1>
+            <button class="btn-primary prominent-btn" (click)="openCreateModal()">
                 <span class="material-icons">add</span>
-                <span>New Tree</span>
+                <span>{{ i18n.t('dashboard.newTree') }}</span>
             </button>
         </div>
 
         <div *ngIf="loading" class="loading-state">
             <span class="material-icons spinning">refresh</span>
-            <p>Loading your trees...</p>
+            <p>{{ i18n.t('dashboard.loading') }}</p>
         </div>
 
         <div *ngIf="!loading && trees.length === 0" class="empty-state glass-panel">
             <span class="material-icons">park</span>
-            <h3>No skill trees yet</h3>
-            <p>Create your first tree to start mapping your skills.</p>
-            <button class="btn-primary" (click)="showCreateModal = true">
-                <span class="material-icons">add</span>
-                <span>Create Tree</span>
-            </button>
+            <h3>{{ i18n.t('dashboard.emptyTitle') }}</h3>
+            <p>{{ i18n.t('dashboard.emptyText') }}</p>
+            <div class="empty-state-actions">
+                <button class="btn-primary prominent-btn" (click)="openCreateModal()">
+                    <span class="material-icons">add</span>
+                    <span>{{ i18n.t('dashboard.emptyCreate') }}</span>
+                </button>
+                <button class="btn-secondary" (click)="openDemoTree()">
+                    <span class="material-icons">school</span>
+                    <span>{{ i18n.t('dashboard.exampleAction') }}</span>
+                </button>
+            </div>
         </div>
 
-        <div class="trees-grid" *ngIf="!loading && trees.length > 0">
-            <div class="tree-card glass-panel" *ngFor="let tree of trees" (click)="openTree(tree.id)">
+        <div class="trees-grid" *ngIf="!loading">
+            <div class="tree-card glass-panel example-card" (click)="openDemoTree()">
+                <div class="card-badge">{{ i18n.t('dashboard.exampleBadge') }}</div>
+                <div class="card-content">
+                    <div class="icon-wrapper">
+                        <span class="material-icons">explore</span>
+                    </div>
+                    <h3>{{ i18n.t('dashboard.exampleTitle') }}</h3>
+                    <p class="date">{{ i18n.t('dashboard.exampleText') }}</p>
+                </div>
+                <div class="card-footer-link">
+                    <span>{{ i18n.t('dashboard.exampleAction') }}</span>
+                    <span class="material-icons">arrow_forward</span>
+                </div>
+            </div>
 
+            <div class="tree-card glass-panel" *ngFor="let tree of trees; trackBy: trackByTreeId" (click)="openTree(tree.id)">
                 <div class="card-content">
                     <div class="icon-wrapper">
                         <span class="material-icons">account_tree</span>
                     </div>
                     <h3>{{ tree.title }}</h3>
-                    <p class="date">Updated {{ tree.updatedAt | date:'mediumDate' }}</p>
+                    <p class="date">{{ tree.updatedLabel }}</p>
 
                     <div class="calendar-preview" *ngIf="tree.activities && tree.activities.length > 0">
                         <app-activity-calendar [activities]="tree.activities"></app-activity-calendar>
@@ -62,12 +83,20 @@
                 </div>
 
                 <div class="card-actions">
-                    <button type="button" class="action-btn share-btn" (click)="copyShareLink($event, tree.sharedToken)"
-                        title="Copy Public Link">
+                    <button
+                        type="button"
+                        class="action-btn share-btn"
+                        (click)="copyShareLink($event, tree.sharedToken)"
+                        [title]="i18n.t('dashboard.copyLink')"
+                    >
                         <span class="material-icons">share</span>
                     </button>
-                    <button type="button" class="action-btn delete-btn" (click)="deleteTree($event, tree.id)"
-                        title="Delete Tree">
+                    <button
+                        type="button"
+                        class="action-btn delete-btn"
+                        (click)="deleteTree($event, tree.id)"
+                        [title]="i18n.t('dashboard.deleteTree')"
+                    >
                         <span class="material-icons">delete</span>
                     </button>
                 </div>
@@ -76,24 +105,28 @@
     </main>
 </div>
 
-<!-- Create Modal -->
 <div class="modal-overlay" *ngIf="showCreateModal" (click)="showCreateModal = false">
     <div class="modal-content glass-panel" (click)="$event.stopPropagation()">
         <div class="modal-header">
-            <h3>Create New Skill Tree</h3>
+            <h3>{{ i18n.t('dashboard.createTitle') }}</h3>
             <button class="close-btn" (click)="showCreateModal = false">
                 <span class="material-icons">close</span>
             </button>
         </div>
         <div class="modal-body">
             <div class="input-group">
-                <input type="text" [(ngModel)]="newTreeTitle" placeholder="e.g., Frontend Mastery, Learning Japanese..."
-                    (keyup.enter)="createTree()" autofocus>
+                <input
+                    type="text"
+                    [(ngModel)]="newTreeTitle"
+                    [placeholder]="i18n.t('dashboard.createPlaceholder')"
+                    (keyup.enter)="createTree()"
+                    autofocus
+                >
             </div>
         </div>
         <div class="modal-footer">
-            <button class="btn-secondary" (click)="showCreateModal = false">Cancel</button>
-            <button class="btn-primary" [disabled]="!newTreeTitle.trim()" (click)="createTree()">Create</button>
+            <button class="btn-secondary" (click)="showCreateModal = false">{{ i18n.t('dashboard.cancel') }}</button>
+            <button class="btn-primary" [disabled]="!newTreeTitle.trim()" (click)="createTree()">{{ i18n.t('dashboard.create') }}</button>
         </div>
     </div>
 </div>

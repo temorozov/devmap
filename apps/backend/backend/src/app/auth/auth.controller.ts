@@ -1,8 +1,9 @@
-import { Controller, Post, Body, UseGuards, Request, Get, HttpCode, HttpStatus, Req, Res, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import { Controller, Post, UseGuards, Request, Get, Req, Res } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { AuthGuard } from '@nestjs/passport';
 import { Request as ExpressRequest, Response as ExpressResponse } from 'express';
+import { getEnv } from '../config/env';
 
 @Controller('auth')
 export class AuthController {
@@ -25,7 +26,8 @@ export class AuthController {
     @UseGuards(AuthGuard('google'))
     async googleAuthRedirect(@Req() req: ExpressRequest, @Res() res: ExpressResponse) {
         const result = await this.authService.login((req as any).user);
-        res.redirect(`http://localhost:4200/login?token=${result.access_token}`);
+        const frontendUrl = getEnv('FRONTEND_URL');
+        res.redirect(`${frontendUrl}/login?token=${result.access_token}`);
     }
 
     @Get('discord')
@@ -38,7 +40,8 @@ export class AuthController {
     @UseGuards(AuthGuard('discord'))
     async discordAuthRedirect(@Req() req: ExpressRequest, @Res() res: ExpressResponse) {
         const result = await this.authService.login((req as any).user);
-        res.redirect(`http://localhost:4200/login?token=${result.access_token}`);
+        const frontendUrl = getEnv('FRONTEND_URL');
+        res.redirect(`${frontendUrl}/login?token=${result.access_token}`);
     }
 
     @UseGuards(JwtAuthGuard)
