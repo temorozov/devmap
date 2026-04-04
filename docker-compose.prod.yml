@@ -1,7 +1,7 @@
 services:
   postgres:
     # Remove the port mapping to keep the database private within the Docker network
-    ports: []
+    ports: !reset []
 
   backend:
     # Use production environment config
@@ -9,5 +9,5 @@ services:
 
   frontend:
     # Expose standard HTTP port 80 instead of 8080
-    ports:
+    ports: !override
       - "80:80"
