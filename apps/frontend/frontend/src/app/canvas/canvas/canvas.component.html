@@ -52,7 +52,7 @@
             <button
                 class="btn-primary btn-ai"
                 (click)="openAiPrompt()"
-                [disabled]="isDemoTree || isGenerating || (isGuest$ | async)"
+                [disabled]="isDemoTree || isGenerating"
                 [title]="(isGuest$ | async) ? i18n.t('canvas.guestAiUnavailable') : ''"
             >
                 <span class="material-icons" [class.spinning]="isGenerating">{{ isGenerating ? 'refresh' : 'auto_awesome' }}</span>
@@ -273,7 +273,7 @@
             <button class="btn-secondary small" (click)="cancelLinking()">{{ i18n.t('canvas.cancel') }}</button>
         </div>
         <button type="button" class="help-bubble mobile-help" (click)="openHelp()" [attr.aria-label]="i18n.t('canvas.helpFabLabel')">?</button>
-        <button class="btn-primary btn-ai" (click)="openAiPrompt()" [disabled]="isDemoTree || isGenerating || (isGuest$ | async)">
+        <button class="btn-primary btn-ai" (click)="openAiPrompt()" [disabled]="isDemoTree || isGenerating">
             <span class="material-icons" [class.spinning]="isGenerating">{{ isGenerating ? 'refresh' : 'auto_awesome' }}</span>
             <span>{{ i18n.t('canvas.mobileAi') }}</span>
         </button>

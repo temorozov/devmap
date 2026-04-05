@@ -156,7 +156,10 @@ export class CanvasComponent implements OnInit {
     if (this.isDemoTree) return;
     this.isGuest$.pipe(take(1)).subscribe(isGuest => {
       if (isGuest) {
-        this.dialogService.alert(this.i18n.t('canvas.guestAiUnavailable'));
+        this.dialogService.alert(
+          this.i18n.t('canvas.guestAiUnavailable'),
+          this.i18n.t('canvas.loginRequiredTitle')
+        );
         return;
       }
       this.showAiPrompt = true;

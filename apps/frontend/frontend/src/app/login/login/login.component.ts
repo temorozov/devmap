@@ -5,11 +5,12 @@ import { AuthService } from '../../auth.service';
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { appRuntimeConfig } from '../../app-config';
 import { I18nService } from '../../shared/services/i18n.service';
+import { LanguageSwitcherComponent } from '../../shared/components/language-switcher/language-switcher.component';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, LanguageSwitcherComponent],
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
