@@ -119,7 +119,7 @@
                         [attr.stroke-dashoffset]="251.32 - (251.32 * (node.level || 0) / (node.maxLevel || defaultMaxLevel))" />
 
                     <text class="material-icons node-icon" x="0" y="0" text-anchor="middle" dominant-baseline="central">
-                        {{ node.icon || 'star' }}
+                        {{ node.icon || 'code' }}
                     </text>
 
                     <circle
@@ -139,13 +139,14 @@
                         x="-130"
                         y="58"
                         width="260"
-                        height="124"
+                        height="148"
                         pointer-events="none"
                     >
                         <div xmlns="http://www.w3.org/1999/xhtml" class="node-tooltip">
                             <div class="tooltip-title">{{ node.title }}</div>
                             <div class="tooltip-description">{{ node.description || '—' }}</div>
                             <div class="tooltip-level">{{ i18n.t('canvas.level') }} {{ node.level || 0 }} / {{ node.maxLevel || defaultMaxLevel }}</div>
+                            <div class="tooltip-status">{{ i18n.t(getNodeStatusKey(node)) }}</div>
                         </div>
                     </foreignObject>
                 </g>
@@ -162,14 +163,47 @@
         </div>
 
         <div class="panel-body" *ngIf="selectedNode">
-            <div class="form-group">
-                <label>{{ i18n.t('canvas.title') }}</label>
-                <input type="text" [(ngModel)]="editNodeData.title" (ngModelChange)="saveNodeProperties()"
-                    (keydown.enter)="showProperties = false; editingDescription = false">
-            </div>
+            <section class="panel-overview">
+                <div class="overview-main">
+                    <div class="overview-icon">
+                        <span class="material-icons">{{ editNodeData.icon || 'code' }}</span>
+                    </div>
 
-            <div class="form-group">
-                <label>{{ i18n.t('canvas.icon') }}</label>
+                    <div class="overview-content">
+                        <div class="form-group">
+                            <label class="detail-label">{{ i18n.t('canvas.title') }}</label>
+                            <input class="detail-input" type="text" [(ngModel)]="editNodeData.title"
+                                (ngModelChange)="saveNodeProperties()"
+                                (keydown.enter)="showProperties = false; editingDescription = false">
+                        </div>
+
+                        <div class="overview-meta">
+                            <span class="status-pill" [ngClass]="panelStatusClass">{{ i18n.t(panelStatusKey) }}</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="detail-block description-block">
+                <div class="detail-block-header">
+                    <span class="detail-label">{{ i18n.t('canvas.description') }}</span>
+                </div>
+
+                <textarea *ngIf="editingDescription" class="detail-input desc-textarea" [(ngModel)]="editNodeData.description"
+                    (ngModelChange)="saveNodeProperties()" rows="6" [placeholder]="i18n.t('canvas.descriptionPlaceholder')"
+                    (blur)="editingDescription = false"
+                    (keydown.enter)="showProperties = false; editingDescription = false; $event.preventDefault()"></textarea>
+                <div *ngIf="!editingDescription" class="description-preview" (click)="startEditDescription($event)">
+                    <span *ngIf="editNodeData.description" [innerHTML]="editNodeData.description | linkify"></span>
+                    <span *ngIf="!editNodeData.description" class="description-placeholder">{{ i18n.t('canvas.descriptionClick') }}</span>
+                </div>
+            </section>
+
+            <section class="detail-block settings-block">
+                <div class="detail-block-header">
+                    <span class="detail-label">{{ i18n.t('canvas.icon') }}</span>
+                </div>
+
                 <div class="icon-grid">
                     <button *ngFor="let icon of availableIcons" class="icon-select-btn"
                         [class.active]="editNodeData.icon === icon.name"
@@ -177,45 +211,33 @@
                         <span class="material-icons">{{ icon.name }}</span>
                     </button>
                 </div>
-            </div>
 
-            <div class="form-group">
-                <label>{{ i18n.t('canvas.description') }}</label>
-                <textarea *ngIf="editingDescription" class="desc-textarea" [(ngModel)]="editNodeData.description"
-                    (ngModelChange)="saveNodeProperties()" rows="4" [placeholder]="i18n.t('canvas.descriptionPlaceholder')"
-                    (blur)="editingDescription = false"
-                    (keydown.enter)="showProperties = false; editingDescription = false; $event.preventDefault()"></textarea>
-                <div *ngIf="!editingDescription" class="description-preview p-2 border rounded bg-dark"
-                    style="min-height: 94px; cursor: text; white-space: pre-wrap; word-break: break-word;"
-                    (click)="startEditDescription($event)">
-                    <span *ngIf="editNodeData.description" [innerHTML]="editNodeData.description | linkify"></span>
-                    <span *ngIf="!editNodeData.description" style="color: var(--text-muted); opacity: 0.7;">{{ i18n.t('canvas.descriptionClick') }}</span>
-                </div>
-            </div>
+                <div class="settings-divider"></div>
 
-            <div class="form-group row-group">
-                <div class="half-width">
-                    <label>{{ i18n.t('canvas.level') }}</label>
-                    <input type="number" min="0" [max]="editNodeData.maxLevel || defaultMaxLevel" [(ngModel)]="editNodeData.level"
-                        (ngModelChange)="saveNodeProperties()">
-                </div>
-                <div class="half-width">
-                    <label>{{ i18n.t('canvas.maxLevel') }}</label>
-                    <input type="number" min="1" [(ngModel)]="editNodeData.maxLevel"
-                        (ngModelChange)="saveNodeProperties()">
-                </div>
-            </div>
+                <div class="form-group row-group">
+                    <div class="half-width">
+                        <label class="detail-label">{{ i18n.t('canvas.level') }}</label>
+                        <input class="detail-input" type="number" min="0" [max]="editNodeData.maxLevel || defaultMaxLevel"
+                            [(ngModel)]="editNodeData.level" (ngModelChange)="saveNodeProperties()">
+                    </div>
 
-            <div class="actions mt-4">
-                <button class="btn-secondary block w-full text-danger border-danger" (click)="deleteNode()">
+                    <div class="half-width">
+                        <label class="detail-label">{{ i18n.t('canvas.maxLevel') }}</label>
+                        <input class="detail-input" type="number" min="1" [(ngModel)]="editNodeData.maxLevel"
+                            (ngModelChange)="saveNodeProperties()">
+                    </div>
+                </div>
+            </section>
+
+            <p class="panel-note">
+                {{ i18n.t('canvas.nodeHint') }}
+            </p>
+
+            <div class="actions">
+                <button class="btn-secondary block w-full text-danger border-danger danger-action" (click)="deleteNode()">
                     <span class="material-icons">delete</span> {{ i18n.t('canvas.deleteNode') }}
                 </button>
             </div>
-
-            <p class="hint-text mt-4 text-xs text-muted text-center"
-                style="color: var(--text-muted); font-size: 0.8rem; margin-top: 1rem;">
-                {{ i18n.t('canvas.nodeHint') }}
-            </p>
         </div>
 
         <div class="panel-footer sticky-footer" *ngIf="selectedNode">

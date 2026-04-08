@@ -1,0 +1,11 @@
+process.env.DATABASE_URL ??= 'postgresql://user:pass@localhost:5432/skill_tree_test';
+process.env.JWT_SECRET ??= 'test-secret';
+process.env.FRONTEND_URL ??= 'http://localhost:4200';
+process.env.EMAIL_CONFIRM_URL ??= 'http://localhost:4200/confirm-email';
+process.env.EMAIL_FROM ??= 'noreply@example.com';
+process.env.GOOGLE_CLIENT_ID ??= 'google-client-id';
+process.env.GOOGLE_CLIENT_SECRET ??= 'google-client-secret';
+process.env.GOOGLE_CALLBACK_URL ??= 'http://localhost:3333/auth/google/callback';
+process.env.DISCORD_CLIENT_ID ??= 'discord-client-id';
+process.env.DISCORD_CLIENT_SECRET ??= 'discord-client-secret';
+process.env.DISCORD_CALLBACK_URL ??= 'http://localhost:3333/auth/discord/callback';

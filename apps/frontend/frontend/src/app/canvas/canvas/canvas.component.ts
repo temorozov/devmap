@@ -112,6 +112,58 @@ export class CanvasComponent implements OnInit {
     }, 0);
   }
 
+  get panelLevel(): number {
+    return Math.max(0, Number(this.editNodeData.level) || 0);
+  }
+
+  get panelMaxLevel(): number {
+    const maxLevel = Number(this.editNodeData.maxLevel) || DEFAULT_MAX_LEVEL;
+    return maxLevel > 0 ? maxLevel : DEFAULT_MAX_LEVEL;
+  }
+
+  get panelProgressPercent(): number {
+    return Math.round((Math.min(this.panelLevel, this.panelMaxLevel) / this.panelMaxLevel) * 100);
+  }
+
+  get panelStatusKey(): string {
+    if (this.panelLevel <= 0) {
+      return 'canvas.statusNotStarted';
+    }
+
+    if (this.panelLevel >= this.panelMaxLevel) {
+      return 'canvas.statusCompleted';
+    }
+
+    return 'canvas.statusInProgress';
+  }
+
+  get panelStatusClass(): string {
+    if (this.panelLevel <= 0) {
+      return 'status-not-started';
+    }
+
+    if (this.panelLevel >= this.panelMaxLevel) {
+      return 'status-completed';
+    }
+
+    return 'status-in-progress';
+  }
+
+  getNodeStatusKey(node: Pick<SkillNode, 'level' | 'maxLevel'>): string {
+    const level = Math.max(0, Number(node.level) || 0);
+    const maxLevel = Number(node.maxLevel) > 0 ? Number(node.maxLevel) : DEFAULT_MAX_LEVEL;
+
+    if (level <= 0) {
+      return 'canvas.statusNotStarted';
+    }
+
+    if (level >= maxLevel) {
+      return 'canvas.statusCompleted';
+    }
+
+    return 'canvas.statusInProgress';
+  }
+
   // AI Generation State
   showAiPrompt = false;
   aiPrompt = '';
@@ -197,8 +249,7 @@ export class CanvasComponent implements OnInit {
     { name: 'sports_esports', label: 'Chess/Game' },
     { name: 'menu_book', label: 'Book' },
     { name: 'lightbulb', label: 'Idea' },
-    { name: 'brush', label: 'Art' },
-    { name: 'star', label: 'Star' }
+    { name: 'brush', label: 'Art' }
   ];
 
   @ViewChild('svgCanvas') svgCanvas!: ElementRef<SVGSVGElement>;
