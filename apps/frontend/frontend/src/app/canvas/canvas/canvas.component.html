@@ -103,7 +103,7 @@
                       [attr.height]="selectionBox.h"
                       class="selection-box" />
 
-                <g *ngFor="let node of nodes" class="skill-node" [class.selected]="selectedNode?.id === node.id"
+                <g *ngFor="let node of nodes" class="skill-node" [ngClass]="getNodeStatusClass(node)" [class.selected]="selectedNode?.id === node.id"
                     [class.multi-selected]="selectedNodes.has(node.id)"
                     [class.completed]="node.level === (node.maxLevel || defaultMaxLevel)"
                     [attr.transform]="'translate(' + node.positionX + ',' + node.positionY + ')'"
@@ -112,6 +112,8 @@
                     (pointerleave)="onNodePointerLeave()"
                     (contextmenu)="onNodeContextMenu($event, node)">
 
+                    <circle class="node-aura" cx="0" cy="0" r="52" />
+                    <circle class="node-orbit" cx="0" cy="0" r="47" />
                     <circle class="node-bg" cx="0" cy="0" r="40" />
 
                     <circle class="progress-ring-bg" cx="0" cy="0" r="40" />
@@ -132,24 +134,38 @@
                         [attr.title]="i18n.t('canvas.mobileLinking')"
                     />
                     <circle class="link-handle" cx="0" cy="-40" r="8" pointer-events="none" />
-
-                    <foreignObject
-                        *ngIf="hoveredNode?.id === node.id"
-                        class="node-tooltip-fo"
-                        x="-130"
-                        y="58"
-                        width="260"
-                        height="148"
-                        pointer-events="none"
-                    >
-                        <div xmlns="http://www.w3.org/1999/xhtml" class="node-tooltip">
-                            <div class="tooltip-title">{{ node.title }}</div>
-                            <div class="tooltip-description">{{ node.description || '—' }}</div>
-                            <div class="tooltip-level">{{ i18n.t('canvas.level') }} {{ node.level || 0 }} / {{ node.maxLevel || defaultMaxLevel }}</div>
-                            <div class="tooltip-status">{{ i18n.t(getNodeStatusKey(node)) }}</div>
-                        </div>
-                    </foreignObject>
                 </g>
+            </g>
+
+            <g *ngIf="hoveredNode" class="tooltip-layer" [attr.transform]="'translate(' + hoveredNode.positionX + ',' + hoveredNode.positionY + ')'">
+                <foreignObject
+                    class="node-tooltip-fo"
+                    x="-150"
+                    y="58"
+                    width="300"
+                    height="192"
+                    pointer-events="none"
+                >
+                    <div xmlns="http://www.w3.org/1999/xhtml" class="node-tooltip" [ngClass]="getNodeStatusClass(hoveredNode)">
+                        <div class="tooltip-overview">
+                            <div class="tooltip-icon">
+                                <span class="material-icons">{{ hoveredNode.icon || 'code' }}</span>
+                            </div>
+                            <div class="tooltip-main">
+                                <div class="tooltip-title">{{ hoveredNode.title }}</div>
+                                <div class="tooltip-meta">
+                                    <span class="status-pill tooltip-status-pill" [ngClass]="getNodeStatusClass(hoveredNode)">
+                                        {{ i18n.t(getNodeStatusKey(hoveredNode)) }}
+                                    </span>
+                                    <span class="tooltip-level-badge">
+                                        {{ i18n.t('canvas.level') }} {{ hoveredNode.level || 0 }} / {{ hoveredNode.maxLevel || defaultMaxLevel }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tooltip-description">{{ hoveredNode.description || '—' }}</div>
+                    </div>
+                </foreignObject>
             </g>
         </svg>
     </main>

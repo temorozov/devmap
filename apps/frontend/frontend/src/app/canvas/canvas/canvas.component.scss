@@ -264,13 +264,38 @@
 
 /* Skill Nodes */
 .skill-node {
+    --node-status-color: var(--accent-color);
+    --node-status-rgb: 59, 130, 246;
     cursor: pointer;
+
+    .node-aura {
+        fill: rgba(var(--node-status-rgb), 0.08);
+        opacity: 0.28;
+        transform-origin: center;
+        transform-box: fill-box;
+        transition: transform 0.28s ease, opacity 0.28s ease, fill 0.28s ease, filter 0.28s ease;
+    }
+
+    .node-orbit {
+        fill: none;
+        stroke: rgba(var(--node-status-rgb), 0.72);
+        stroke-width: 1.5;
+        stroke-linecap: round;
+        stroke-dasharray: 34 262;
+        opacity: 0;
+        transform-origin: center;
+        transform-box: fill-box;
+        transform: rotate(-110deg) scale(0.96);
+        transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.22s ease;
+    }
 
     .node-bg {
         fill: var(--bg-card);
-        stroke: var(--border-color);
+        stroke: var(--node-status-color);
+        fill: color-mix(in srgb, var(--bg-card) 88%, rgb(var(--node-status-rgb)) 12%);
+        stroke: color-mix(in srgb, var(--border-color) 62%, var(--node-status-color) 38%);
         stroke-width: 2;
-        transition: stroke 0.2s ease, fill 0.2s ease, stroke-width 0.2s ease, filter 0.2s ease;
+        transition: stroke 0.28s ease, fill 0.28s ease, stroke-width 0.28s ease, filter 0.28s ease, transform 0.28s ease;
     }
 
     .node-icon {
@@ -290,9 +315,9 @@
 
     .progress-ring-fill {
         fill: none;
-        stroke: var(--accent-color);
+        stroke: var(--node-status-color);
         stroke-width: 4;
-        transition: stroke-dashoffset 0.4s ease;
+        transition: stroke-dashoffset 0.4s ease, stroke 0.28s ease, filter 0.28s ease;
         stroke-linecap: round;
         transform: rotate(-90deg);
         transform-origin: 0 0;
@@ -323,20 +348,33 @@
     }
 
     &:hover {
+        .node-aura {
+            opacity: 0.46;
+            transform: scale(1.04);
+        }
+
+        .node-orbit {
+            opacity: 1;
+            transform: rotate(-18deg) scale(1.03);
+        }
+
         .node-bg {
-            stroke: var(--accent-hover);
-            stroke-width: 2.6;
-            fill: rgba(255, 255, 255, 0.035);
-            filter: drop-shadow(0 0 12px rgba(56, 189, 248, 0.32));
+            stroke: var(--node-status-color);
+            fill: var(--bg-card);
+            stroke: color-mix(in srgb, var(--node-status-color) 72%, white 28%);
+            stroke-width: 2.3;
+            fill: color-mix(in srgb, var(--bg-card) 84%, rgb(var(--node-status-rgb)) 16%);
+            transform: translateY(-1px) scale(1.015);
         }
 
         .node-icon {
-            transform: scale(1.08);
+            transform: translateY(-1px) scale(1.045);
             fill: #f4f8ff;
         }
 
         .progress-ring-fill {
-            stroke: var(--accent-hover);
+            stroke: var(--node-status-color);
+            stroke: color-mix(in srgb, var(--node-status-color) 82%, white 18%);
         }
 
         .link-handle {
@@ -345,12 +383,19 @@
     }
 
     &.selected, &.multi-selected {
+        .node-orbit {
+            opacity: 0.72;
+            transform: rotate(-42deg) scale(1.01);
+        }
+
         .node-bg {
-            stroke: var(--accent-color);
+            stroke: var(--node-status-color);
+            stroke: color-mix(in srgb, var(--node-status-color) 72%, white 28%);
         }
 
         .node-icon {
-            fill: var(--accent-hover);
+            fill: var(--node-status-color);
+            fill: color-mix(in srgb, var(--node-status-color) 74%, white 26%);
         }
 
         .link-handle {
@@ -358,19 +403,25 @@
         }
     }
 
-    &.completed {
-        .node-bg {
-            stroke: var(--success-color);
-        }
-
-        .progress-ring-fill {
-            stroke: var(--success-color);
-        }
-
-        .node-icon {
-            fill: var(--success-color);
-        }
+    &.status-not-started {
+        --node-status-color: #d5dbe5;
+        --node-status-rgb: 168, 181, 201;
     }
+
+    &.status-in-progress {
+        --node-status-color: #7dd3fc;
+        --node-status-rgb: 125, 211, 252;
+    }
+
+    &.status-completed,
+    &.completed {
+        --node-status-color: #86efac;
+        --node-status-rgb: 134, 239, 172;
+    }
+}
+
+.tooltip-layer {
+    isolation: isolate;
 }
 
 .node-tooltip-fo {
@@ -378,19 +429,34 @@
 }
 
 .node-tooltip {
-    border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    background: rgba(15, 17, 21, 0.96);
-    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+    border-radius: 17px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background:
+        radial-gradient(circle at top left, rgba(255, 255, 255, 0.06), transparent 42%),
+        rgba(19, 22, 28, 0.96);
+    box-shadow: 0 18px 32px rgba(0, 0, 0, 0.36);
     color: var(--text-main);
-    padding: 0.6rem 0.7rem;
+    padding: 0.85rem 0.9rem;
     display: flex;
     flex-direction: column;
-    gap: 0.35rem;
-    font-size: 0.78rem;
-    line-height: 1.3;
-    animation: tooltip-appear 140ms cubic-bezier(0.22, 1, 0.36, 1);
+    gap: 0.72rem;
+    font-size: 0.8rem;
+    line-height: 1.35;
+    animation: tooltip-appear 160ms cubic-bezier(0.22, 1, 0.36, 1);
     transform-origin: 50% 0;
+    backdrop-filter: blur(18px);
+
+    &.status-not-started {
+        box-shadow: 0 18px 32px rgba(0, 0, 0, 0.34), 0 0 0 1px rgba(168, 181, 201, 0.08);
+    }
+
+    &.status-in-progress {
+        box-shadow: 0 18px 32px rgba(0, 0, 0, 0.34), 0 0 0 1px rgba(125, 211, 252, 0.12);
+    }
+
+    &.status-completed {
+        box-shadow: 0 18px 32px rgba(0, 0, 0, 0.34), 0 0 0 1px rgba(134, 239, 172, 0.12);
+    }
 }
 
 @keyframes tooltip-appear {
@@ -404,9 +470,58 @@
     }
 }
 
+.tooltip-overview {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+.tooltip-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: rgba(59, 130, 246, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #e8f3ff;
+
+    .material-icons {
+        font-size: 1.3rem;
+    }
+}
+
+.tooltip-main {
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.node-tooltip.status-not-started .tooltip-icon {
+    background: rgba(148, 163, 184, 0.14);
+    border-color: rgba(168, 181, 201, 0.18);
+    color: #eef2f7;
+}
+
+.node-tooltip.status-in-progress .tooltip-icon {
+    background: rgba(14, 165, 233, 0.14);
+    border-color: rgba(125, 211, 252, 0.2);
+    color: #def6ff;
+}
+
+.node-tooltip.status-completed .tooltip-icon {
+    background: rgba(34, 197, 94, 0.14);
+    border-color: rgba(134, 239, 172, 0.2);
+    color: #e8fff1;
+}
+
 .tooltip-title {
     font-weight: 650;
-    font-size: 0.82rem;
+    font-size: 0.92rem;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -418,16 +533,31 @@
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
+    line-height: 1.5;
 }
 
-.tooltip-level {
-    color: var(--accent-hover);
-    font-weight: 600;
+.tooltip-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
 }
 
-.tooltip-status {
-    color: rgba(226, 244, 255, 0.9);
+.tooltip-status-pill {
+    flex-shrink: 0;
+}
+
+.tooltip-level-badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 26px;
+    padding: 0.22rem 0.54rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #cfe3ff;
+    font-size: 0.68rem;
     font-weight: 600;
+    letter-spacing: 0.02em;
 }
 
 /* Properties Panel */
@@ -560,6 +690,8 @@
 
     &.status-not-started {
         color: #d5dbe5;
+        border-color: rgba(168, 181, 201, 0.18);
+        background: rgba(148, 163, 184, 0.12);
     }
 
     &.status-in-progress {

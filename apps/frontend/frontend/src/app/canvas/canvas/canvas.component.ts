@@ -149,6 +149,21 @@ export class CanvasComponent implements OnInit {
     return 'status-in-progress';
   }
 
+  getNodeStatusClass(node: Pick<SkillNode, 'level' | 'maxLevel'>): string {
+    const level = Math.max(0, Number(node.level) || 0);
+    const maxLevel = Number(node.maxLevel) > 0 ? Number(node.maxLevel) : DEFAULT_MAX_LEVEL;
+
+    if (level <= 0) {
+      return 'status-not-started';
+    }
+
+    if (level >= maxLevel) {
+      return 'status-completed';
+    }
+
+    return 'status-in-progress';
+  }
+
   getNodeStatusKey(node: Pick<SkillNode, 'level' | 'maxLevel'>): string {
     const level = Math.max(0, Number(node.level) || 0);
     const maxLevel = Number(node.maxLevel) > 0 ? Number(node.maxLevel) : DEFAULT_MAX_LEVEL;
