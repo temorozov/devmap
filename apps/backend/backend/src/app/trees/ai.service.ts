@@ -21,7 +21,7 @@ interface ProviderAttempt {
 }
 
 const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
-const SKILL_TREE_OPENAI_MODEL = 'gpt-5.4-nano';
+const DEFAULT_OPENAI_MODEL = 'gpt-5.4-nano';
 const DEFAULT_REQUEST_TIMEOUT_MS = 30000;
 const DEFAULT_PROVIDER_RETRY_COUNT = 1;
 const DEFAULT_PROVIDER_RETRY_DELAY_MS = 1200;
@@ -84,7 +84,7 @@ export class AiService {
   private readonly geminiApiKey = getOptionalEnv('GEMINI_API_KEY');
   private readonly openAiApiKey = getOptionalEnv('OPENAI_API_KEY');
   private readonly geminiModel = getOptionalEnv('AI_GEMINI_MODEL', DEFAULT_GEMINI_MODEL) ?? DEFAULT_GEMINI_MODEL;
-  private readonly openAiModel = SKILL_TREE_OPENAI_MODEL;
+  private readonly openAiModel = getOptionalEnv('AI_OPENAI_MODEL', DEFAULT_OPENAI_MODEL) ?? DEFAULT_OPENAI_MODEL;
   private readonly requestTimeoutMs = this.getTimeoutMs();
   private readonly providerRetryCount = this.getRetryCount();
   private readonly providerRetryDelayMs = this.getRetryDelayMs();

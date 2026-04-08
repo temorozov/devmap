@@ -32,7 +32,7 @@ describe('AiService', () => {
     }
   });
 
-  it('uses gpt-5.4-nano through OpenAI for skill tree generation', async () => {
+  it('uses AI_OPENAI_MODEL through OpenAI for skill tree generation', async () => {
     const loggerSpy = jest.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
     const postSpy = jest.spyOn(axios, 'post').mockResolvedValue({
       data: {
@@ -64,7 +64,7 @@ describe('AiService', () => {
     expect(postSpy).toHaveBeenCalledWith(
       'https://api.openai.com/v1/responses',
       expect.objectContaining({
-        model: 'gpt-5.4-nano',
+        model: 'gpt-4o',
         instructions: expect.stringContaining('Return only valid JSON'),
         prompt_cache_key: 'skill-tree:generate:v1',
         input: [
