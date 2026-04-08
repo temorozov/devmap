@@ -5,7 +5,6 @@ import { FormsModule } from '@angular/forms';
 import { TreesService, Tree } from '../../trees.service';
 import { NodesService, SkillNode } from '../../nodes.service';
 import { take } from 'rxjs';
-import { ActivityCalendarComponent } from '../activity-calendar/activity-calendar.component';
 import { LinkifyPipe } from '../../shared/pipes/linkify.pipe';
 import { AuthService } from '../../auth.service';
 import { DialogService } from '../../shared/services/dialog.service';
@@ -19,6 +18,21 @@ interface ViewBox {
   h: number;
 }
 
+type NodeStatusClass = 'status-not-started' | 'status-in-progress' | 'status-completed';
+type NodeStatusFilter = 'all' | NodeStatusClass;
+
+interface FocusActionItem {
+  title: string;
+  meta: string;
+  progressPercent: number;
+}
+
+interface FocusAction {
+  title: string;
+  description: string;
+  items: FocusActionItem[];
+}
+
 const HELP_STORAGE_KEY = 'skill-tree-help-seen';
 const DEFAULT_MAX_LEVEL = 3;
 const HOVER_TOOLTIP_DELAY_MS = 40;
@@ -26,7 +40,7 @@ const HOVER_TOOLTIP_DELAY_MS = 40;
 @Component({
   selector: 'app-canvas',
   standalone: true,
-  imports: [CommonModule, FormsModule, ActivityCalendarComponent, LinkifyPipe],
+  imports: [CommonModule, FormsModule, LinkifyPipe],
   templateUrl: './canvas.component.html',
   styleUrls: ['./canvas.component.scss'],
 })
@@ -78,6 +92,13 @@ export class CanvasComponent implements OnInit {
   selectedNode: SkillNode | null = null;
   hoveredNode: SkillNode | null = null;
   readonly defaultMaxLevel = DEFAULT_MAX_LEVEL;
+  readonly mapFilterOptions: Array<{ value: NodeStatusFilter; labelKey: string; className: string }> = [
+    { value: 'all', labelKey: 'canvas.filterAll', className: 'filter-all' },
+    { value: 'status-not-started', labelKey: 'canvas.filterNotStarted', className: 'status-not-started' },
+    { value: 'status-in-progress', labelKey: 'canvas.filterInProgress', className: 'status-in-progress' },
+    { value: 'status-completed', labelKey: 'canvas.filterCompleted', className: 'status-completed' },
+  ];
+  statusFilter: NodeStatusFilter = 'all';
   private hoverTooltipTimer: ReturnType<typeof setTimeout> | null = null;
   private hoveredNodeId: string | null = null;
   showHelp = false;
@@ -149,7 +170,7 @@ export class CanvasComponent implements OnInit {
     return 'status-in-progress';
   }
 
-  getNodeStatusClass(node: Pick<SkillNode, 'level' | 'maxLevel'>): string {
+  getNodeStatusClass(node: Pick<SkillNode, 'level' | 'maxLevel'>): NodeStatusClass {
     const level = Math.max(0, Number(node.level) || 0);
     const maxLevel = Number(node.maxLevel) > 0 ? Number(node.maxLevel) : DEFAULT_MAX_LEVEL;
 
@@ -250,8 +271,18 @@ export class CanvasComponent implements OnInit {
         },
         error: (err) => {
           console.error('Error generating tree', err);
-          const errorDetails = JSON.stringify(err.error || err.message || '');
-          this.dialogService.alert(`${this.i18n.t('canvas.generateError')} ${errorDetails}`);
+          const backendMessage =
+            typeof err?.error?.message === 'string'
+              ? err.error.message
+              : typeof err?.message === 'string'
+                ? err.message
+                : '';
+
+          this.dialogService.alert(
+            backendMessage
+              ? `${this.i18n.t('canvas.generateError')} ${backendMessage}`
+              : this.i18n.t('canvas.generateError'),
+          );
           this.isGenerating = false;
         }
       });
@@ -281,8 +312,10 @@ export class CanvasComponent implements OnInit {
   loadTree(id: string) {
     this.loading = true;
     this.isDemoTree = id === DEMO_TREE_ID;
+    this.statusFilter = 'all';
     this.showProperties = false;
     this.selectedNode = null;
+    this.selectedNodes.clear();
     this.hoveredNode = null;
     this.maybeOpenHelp();
 
@@ -501,7 +534,7 @@ export class CanvasComponent implements OnInit {
 
       if (!event.ctrlKey && !event.metaKey) this.selectedNodes.clear();
       
-      this.nodes.forEach(node => {
+      this.filteredNodes.forEach(node => {
         if (
           node.positionX >= this.selectionBox!.x &&
           node.positionX <= this.selectionBox!.x + this.selectionBox!.w &&
@@ -575,7 +608,7 @@ export class CanvasComponent implements OnInit {
     } else if (this.interactionState === 'linking' && this.linkSourceNode) {
       const svgP = this.getSvgPoint(event.clientX, event.clientY);
       let targetNode = null;
-      for (const n of this.nodes) {
+      for (const n of this.filteredNodes) {
         if (n.id === this.linkSourceNode.id) continue;
         const dist = Math.hypot(n.positionX - svgP.x, n.positionY - svgP.y);
         if (dist < 50) {
@@ -631,6 +664,7 @@ export class CanvasComponent implements OnInit {
         this.nodesService.updateNode(node.id, { level: currLvl, progress: node.progress }).subscribe();
       }
       this.editNodeData.level = currLvl;
+      this.syncFilteredStateAfterNodeChange(node);
     }
   }
 
@@ -756,6 +790,8 @@ export class CanvasComponent implements OnInit {
       this.nodes[idx] = this.selectedNode;
     }
 
+    this.syncFilteredStateAfterNodeChange(this.selectedNode);
+
     if (this.saveTimeout) {
       clearTimeout(this.saveTimeout);
     }
@@ -804,6 +840,14 @@ export class CanvasComponent implements OnInit {
     return `${this.viewBox.x} ${this.viewBox.y} ${this.viewBox.w} ${this.viewBox.h}`;
   }
 
+  get filteredNodes(): SkillNode[] {
+    if (this.statusFilter === 'all') {
+      return this.nodes;
+    }
+
+    return this.nodes.filter(node => this.getNodeStatusClass(node) === this.statusFilter);
+  }
+
   get totalProgress(): number {
     if (!this.nodes || this.nodes.length === 0) return 0;
     let totalLevel = 0;
@@ -819,8 +863,164 @@ export class CanvasComponent implements OnInit {
     return this.tree?.activities ?? [];
   }
 
+  get nextFocus(): FocusAction {
+    if (!this.nodes.length) {
+      return {
+        title: this.i18n.t('canvas.closestGoalEmptyTitle'),
+        description: this.i18n.t('canvas.closestGoalEmptyText'),
+        items: [],
+      };
+    }
+
+    const incompleteNodes = this.nodes.filter(node => this.getNodeStatusClass(node) !== 'status-completed');
+    if (!incompleteNodes.length) {
+      return {
+        title: this.i18n.t('canvas.closestGoalDoneTitle'),
+        description: this.i18n.t('canvas.closestGoalDoneText'),
+        items: [],
+      };
+    }
+
+    const activeNodes = incompleteNodes
+      .filter(node => this.getNodeStatusClass(node) === 'status-in-progress')
+      .sort((a, b) => this.compareFocusNodes(a, b));
+
+    if (activeNodes.length) {
+      const items = activeNodes.slice(0, 3);
+      return {
+        title: this.i18n.t('canvas.closestGoalActiveTitle', { count: items.length }),
+        description: this.i18n.t('canvas.closestGoalActiveText'),
+        items: items.map(node => ({
+          title: node.title,
+          meta: this.i18n.t('canvas.closestGoalItemLevels', { count: this.getRemainingLevels(node) }),
+          progressPercent: this.getNodeProgressPercent(node),
+        })),
+      };
+    }
+
+    const readyNodes = incompleteNodes
+      .filter(node => this.getNodeStatusClass(node) === 'status-not-started' && this.isNodeUnlocked(node))
+      .sort((a, b) => this.compareFocusNodes(a, b));
+
+    if (readyNodes.length) {
+      const items = readyNodes.slice(0, 3);
+      return {
+        title: this.i18n.t('canvas.closestGoalReadyTitle', { count: items.length }),
+        description: this.i18n.t('canvas.closestGoalReadyText'),
+        items: items.map(node => ({
+          title: node.title,
+          meta: this.i18n.t('canvas.closestGoalItemStart'),
+          progressPercent: 0,
+        })),
+      };
+    }
+
+    const lockedNodes = incompleteNodes.sort((a, b) => this.compareFocusNodes(a, b)).slice(0, 3);
+    return {
+      title: this.i18n.t('canvas.closestGoalLockedTitle'),
+      description: this.i18n.t('canvas.closestGoalLockedText'),
+      items: lockedNodes.map(node => ({
+        title: node.title,
+        meta: this.i18n.t('canvas.closestGoalItemUnlockAfter', {
+          title: this.getParentNode(node.parentId || '')?.title ?? this.i18n.t('canvas.closestGoalParentFallback'),
+        }),
+        progressPercent: this.getParentNode(node.parentId || '')
+          ? this.getNodeProgressPercent(this.getParentNode(node.parentId || '')!)
+          : 0,
+      })),
+    };
+  }
+
+  get primaryFocusItem(): FocusActionItem | null {
+    return this.nextFocus.items[0] ?? null;
+  }
+
+  get primaryFocusProgressPercent(): number {
+    return this.primaryFocusItem?.progressPercent ?? 0;
+  }
+
   get hasCalendarActivities() {
     return this.calendarActivities.length > 0;
+  }
+
+  get currentStreak(): number {
+    const activeDays = this.getActivityDayKeys();
+    if (!activeDays.size) return 0;
+
+    const today = this.getStartOfDay(new Date());
+    const startDate = activeDays.has(this.toDayKey(today))
+      ? today
+      : this.getStartOfDay(new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1));
+
+    let streak = 0;
+    const cursor = new Date(startDate);
+    while (activeDays.has(this.toDayKey(cursor))) {
+      streak += 1;
+      cursor.setDate(cursor.getDate() - 1);
+    }
+
+    return streak;
+  }
+
+  get activeDaysThisMonth(): number {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = today.getMonth();
+    const uniqueDays = new Set(
+      this.calendarActivities
+        .filter(activity => activity.count > 0)
+        .map(activity => this.getStartOfDay(new Date(activity.date)))
+        .filter(date => date.getFullYear() === year && date.getMonth() === month)
+        .map(date => this.toDayKey(date))
+    );
+
+    return uniqueDays.size;
+  }
+
+  get activeDaysLast7(): number {
+    const activeDays = this.getActivityDayKeys();
+    if (!activeDays.size) return 0;
+
+    const today = this.getStartOfDay(new Date());
+    let count = 0;
+
+    for (let offset = 0; offset < 7; offset += 1) {
+      const date = new Date(today);
+      date.setDate(today.getDate() - offset);
+      if (activeDays.has(this.toDayKey(date))) {
+        count += 1;
+      }
+    }
+
+    return count;
+  }
+
+  get consistencyToneClass(): string {
+    if (this.activeDaysLast7 >= 5 || this.currentStreak >= 4) {
+      return 'steady';
+    }
+
+    if (this.activeDaysLast7 >= 2 || this.currentStreak >= 2) {
+      return 'building';
+    }
+
+    return 'quiet';
+  }
+
+  get consistencyTitle(): string {
+    if (this.consistencyToneClass === 'steady') {
+      return this.i18n.t('canvas.consistencyStrong');
+    }
+
+    if (this.consistencyToneClass === 'building') {
+      return this.i18n.t('canvas.consistencyBuilding');
+    }
+
+    return this.i18n.t('canvas.consistencyQuiet');
+  }
+
+  get consistencyHint(): string {
+    return this.i18n.t('canvas.consistencyHint', { count: this.activeDaysLast7 });
   }
 
   openHelp() {
@@ -876,5 +1076,126 @@ export class CanvasComponent implements OnInit {
     const centerY = (minY + maxY) / 2;
     this.viewBox.x = centerX - this.viewBox.w / 2;
     this.viewBox.y = centerY - this.viewBox.h / 2;
+  }
+
+  setStatusFilter(filter: NodeStatusFilter) {
+    this.statusFilter = filter;
+
+    if (this.hoveredNode && !this.isNodeVisible(this.hoveredNode)) {
+      this.hideNodeTooltip();
+    }
+
+    if (this.selectedNode && !this.isNodeVisible(this.selectedNode)) {
+      this.closeProperties();
+    }
+
+    this.selectedNodes = new Set(
+      Array.from(this.selectedNodes).filter(nodeId => {
+        const node = this.nodes.find(item => item.id === nodeId);
+        return !!node && this.isNodeVisible(node);
+      })
+    );
+
+    if (this.linkSourceNode && !this.isNodeVisible(this.linkSourceNode)) {
+      this.cancelLinking();
+    }
+  }
+
+  getStatusFilterCount(filter: NodeStatusFilter): number {
+    if (filter === 'all') {
+      return this.nodes.length;
+    }
+
+    return this.nodes.filter(node => this.getNodeStatusClass(node) === filter).length;
+  }
+
+  isNodeVisible(node: Pick<SkillNode, 'level' | 'maxLevel'>): boolean {
+    return this.statusFilter === 'all' || this.getNodeStatusClass(node) === this.statusFilter;
+  }
+
+  getVisibleParentNode(parentId: string): SkillNode | undefined {
+    const parent = this.getParentNode(parentId);
+    return parent && this.isNodeVisible(parent) ? parent : undefined;
+  }
+
+  trackByNodeId(_index: number, node: SkillNode): string {
+    return node.id;
+  }
+
+  private getNodeLevel(node: Pick<SkillNode, 'level'>): number {
+    return Math.max(0, Number(node.level) || 0);
+  }
+
+  private getNodeMaxLevel(node: Pick<SkillNode, 'maxLevel'>): number {
+    const maxLevel = Number(node.maxLevel) || DEFAULT_MAX_LEVEL;
+    return maxLevel > 0 ? maxLevel : DEFAULT_MAX_LEVEL;
+  }
+
+  private getRemainingLevels(node: Pick<SkillNode, 'level' | 'maxLevel'>): number {
+    return Math.max(0, this.getNodeMaxLevel(node) - this.getNodeLevel(node));
+  }
+
+  private getNodeProgressPercent(node: Pick<SkillNode, 'level' | 'maxLevel'>): number {
+    const maxLevel = this.getNodeMaxLevel(node);
+    return maxLevel === 0 ? 0 : Math.round((this.getNodeLevel(node) / maxLevel) * 100);
+  }
+
+  private isNodeUnlocked(node: SkillNode): boolean {
+    if (!node.parentId) return true;
+
+    const parent = this.getParentNode(node.parentId);
+    return !!parent && this.getNodeStatusClass(parent) === 'status-completed';
+  }
+
+  private compareFocusNodes(a: SkillNode, b: SkillNode): number {
+    const remainingDelta = this.getRemainingLevels(a) - this.getRemainingLevels(b);
+    if (remainingDelta !== 0) {
+      return remainingDelta;
+    }
+
+    const levelDelta = this.getNodeLevel(b) - this.getNodeLevel(a);
+    if (levelDelta !== 0) {
+      return levelDelta;
+    }
+
+    return a.title.localeCompare(b.title);
+  }
+
+  private getActivityDayKeys(): Set<string> {
+    return new Set(
+      this.calendarActivities
+        .filter(activity => activity.count > 0)
+        .map(activity => this.toDayKey(activity.date))
+    );
+  }
+
+  private getStartOfDay(date: Date): Date {
+    const normalized = new Date(date);
+    normalized.setHours(0, 0, 0, 0);
+    return normalized;
+  }
+
+  private toDayKey(value: string | Date): string {
+    const date = this.getStartOfDay(new Date(value));
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  private syncFilteredStateAfterNodeChange(node: SkillNode) {
+    if (this.isNodeVisible(node)) {
+      return;
+    }
+
+    this.selectedNodes.delete(node.id);
+
+    if (this.selectedNode?.id === node.id) {
+      this.closeProperties();
+    }
+
+    if (this.hoveredNode?.id === node.id) {
+      this.hideNodeTooltip();
+    }
   }
 }

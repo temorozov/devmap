@@ -49,6 +49,35 @@ const translations: TranslationDictionary = {
     'canvas.back': 'Back to dashboard',
     'canvas.renameTree': 'Rename tree',
     'canvas.branchMastery': 'Branch mastery',
+    'canvas.closestGoal': 'Closest goal',
+    'canvas.closestGoalEmptyTitle': 'Create the first skill',
+    'canvas.closestGoalEmptyText': 'Start with one node that defines your very next learning step.',
+    'canvas.closestGoalDoneTitle': 'Branch completed',
+    'canvas.closestGoalDoneText': 'Everything here is maxed out. Add a new skill or raise the ceiling.',
+    'canvas.closestGoalActiveTitle': 'Finish what is already in progress',
+    'canvas.closestGoalActiveText': 'These are the fastest wins you can close right now.',
+    'canvas.closestGoalReadyTitle': 'Start the next ready skills',
+    'canvas.closestGoalReadyText': 'These branches are unlocked and ready for the first level.',
+    'canvas.closestGoalLockedTitle': 'Unlock the next branch',
+    'canvas.closestGoalLockedText': 'Finish a parent skill first to open the next section.',
+    'canvas.closestGoalItemLevels': (params) => `+${params?.['count'] ?? 0} lvl left`,
+    'canvas.closestGoalItemStart': 'Ready to start',
+    'canvas.closestGoalExtraItems': (params) => `+${params?.['count'] ?? 0} more`,
+    'canvas.closestGoalItemUnlockAfter': (params) => `After ${params?.['title'] ?? ''}`,
+    'canvas.closestGoalParentFallback': 'parent skill',
+    'canvas.consistencyLabel': 'Consistency',
+    'canvas.consistencyStrong': 'You are moving steadily',
+    'canvas.consistencyBuilding': 'Momentum is building',
+    'canvas.consistencyQuiet': 'The rhythm slipped',
+    'canvas.consistencyHint': (params) => `Active in last 7 days: ${params?.['count'] ?? 0}/7`,
+    'canvas.calendarStreak': (params) => `Streak: ${params?.['count'] ?? 0} ${pluralizeEnDay(Number(params?.['count'] ?? 0))}`,
+    'canvas.calendarMonthActiveDays': (params) => `Active this month: ${params?.['count'] ?? 0}`,
+    'canvas.calendarActiveDaysCompact': (params) => `Active days: ${params?.['count'] ?? 0}`,
+    'canvas.mapFilterLabel': 'Map filter',
+    'canvas.filterAll': 'All',
+    'canvas.filterNotStarted': 'Not started',
+    'canvas.filterInProgress': 'In progress',
+    'canvas.filterCompleted': 'Completed',
     'canvas.linkingHint': 'Select a child skill above',
     'canvas.cancel': 'Cancel',
     'canvas.help': 'How it works',
@@ -151,6 +180,35 @@ const translations: TranslationDictionary = {
     'canvas.back': 'Назад к списку',
     'canvas.renameTree': 'Переименовать дерево',
     'canvas.branchMastery': 'Прогресс ветки',
+    'canvas.closestGoal': 'Ближайшая цель',
+    'canvas.closestGoalEmptyTitle': 'Создай первый навык',
+    'canvas.closestGoalEmptyText': 'Начни с одного узла, который задаст самый ближайший шаг в обучении.',
+    'canvas.closestGoalDoneTitle': 'Ветка завершена',
+    'canvas.closestGoalDoneText': 'Здесь всё уже прокачано. Добавь новый навык или подними потолок уровней.',
+    'canvas.closestGoalActiveTitle': 'Дожми то, что уже в процессе',
+    'canvas.closestGoalActiveText': 'Это самые быстрые очки прогресса, которые можно закрыть прямо сейчас.',
+    'canvas.closestGoalReadyTitle': 'Запусти следующие готовые навыки',
+    'canvas.closestGoalReadyText': 'Эти ветки уже открыты и готовы к первому уровню.',
+    'canvas.closestGoalLockedTitle': 'Открой следующую ветку',
+    'canvas.closestGoalLockedText': 'Сначала заверши родительский навык, чтобы открыть следующий участок карты.',
+    'canvas.closestGoalItemLevels': (params) => `+${params?.['count'] ?? 0} ур.`,
+    'canvas.closestGoalItemStart': 'Готово к старту',
+    'canvas.closestGoalExtraItems': (params) => `+${params?.['count'] ?? 0} ещё`,
+    'canvas.closestGoalItemUnlockAfter': (params) => `После ${params?.['title'] ?? ''}`,
+    'canvas.closestGoalParentFallback': 'родительского навыка',
+    'canvas.consistencyLabel': 'Регулярность',
+    'canvas.consistencyStrong': 'Движение идёт стабильно',
+    'canvas.consistencyBuilding': 'Темп набирается',
+    'canvas.consistencyQuiet': 'Ритм просел',
+    'canvas.consistencyHint': (params) => `Активность за 7 дней: ${params?.['count'] ?? 0}/7`,
+    'canvas.calendarStreak': (params) => `Серия: ${params?.['count'] ?? 0} ${pluralizeRuDay(Number(params?.['count'] ?? 0))}`,
+    'canvas.calendarMonthActiveDays': (params) => `Активных дней за месяц: ${params?.['count'] ?? 0}`,
+    'canvas.calendarActiveDaysCompact': (params) => `Активных дней: ${params?.['count'] ?? 0}`,
+    'canvas.mapFilterLabel': 'Фильтр карты',
+    'canvas.filterAll': 'Все',
+    'canvas.filterNotStarted': 'Не начатые',
+    'canvas.filterInProgress': 'В процессе',
+    'canvas.filterCompleted': 'Завершённые',
     'canvas.linkingHint': 'Выберите дочерний навык выше',
     'canvas.cancel': 'Отмена',
     'canvas.help': 'Как это работает',
@@ -253,6 +311,35 @@ const translations: TranslationDictionary = {
     'canvas.back': 'Назад до списку',
     'canvas.renameTree': 'Перейменувати дерево',
     'canvas.branchMastery': 'Прогрес гілки',
+    'canvas.closestGoal': 'Найближча ціль',
+    'canvas.closestGoalEmptyTitle': 'Створи першу навичку',
+    'canvas.closestGoalEmptyText': 'Почни з одного вузла, який задасть твій найближчий крок у навчанні.',
+    'canvas.closestGoalDoneTitle': 'Гілку завершено',
+    'canvas.closestGoalDoneText': 'Тут уже все прокачано. Додай нову навичку або підвищ межу рівнів.',
+    'canvas.closestGoalActiveTitle': 'Дотисни те, що вже в процесі',
+    'canvas.closestGoalActiveText': 'Це найшвидші очки прогресу, які можна закрити просто зараз.',
+    'canvas.closestGoalReadyTitle': 'Запусти наступні готові навички',
+    'canvas.closestGoalReadyText': 'Ці гілки вже відкриті та готові до першого рівня.',
+    'canvas.closestGoalLockedTitle': 'Відкрий наступну гілку',
+    'canvas.closestGoalLockedText': 'Спершу заверши батьківську навичку, щоб відкрити наступну частину мапи.',
+    'canvas.closestGoalItemLevels': (params) => `+${params?.['count'] ?? 0} рів.`,
+    'canvas.closestGoalItemStart': 'Готово до старту',
+    'canvas.closestGoalExtraItems': (params) => `+${params?.['count'] ?? 0} ще`,
+    'canvas.closestGoalItemUnlockAfter': (params) => `Після ${params?.['title'] ?? ''}`,
+    'canvas.closestGoalParentFallback': 'батьківської навички',
+    'canvas.consistencyLabel': 'Регулярність',
+    'canvas.consistencyStrong': 'Рух іде стабільно',
+    'canvas.consistencyBuilding': 'Темп набирається',
+    'canvas.consistencyQuiet': 'Ритм просів',
+    'canvas.consistencyHint': (params) => `Активність за 7 днів: ${params?.['count'] ?? 0}/7`,
+    'canvas.calendarStreak': (params) => `Серія: ${params?.['count'] ?? 0} ${pluralizeUkDay(Number(params?.['count'] ?? 0))}`,
+    'canvas.calendarMonthActiveDays': (params) => `Активних днів за місяць: ${params?.['count'] ?? 0}`,
+    'canvas.calendarActiveDaysCompact': (params) => `Активних днів: ${params?.['count'] ?? 0}`,
+    'canvas.mapFilterLabel': 'Фільтр мапи',
+    'canvas.filterAll': 'Усі',
+    'canvas.filterNotStarted': 'Не розпочаті',
+    'canvas.filterInProgress': 'У процесі',
+    'canvas.filterCompleted': 'Завершені',
     'canvas.linkingHint': 'Оберіть дочірню навичку вище',
     'canvas.cancel': 'Скасувати',
     'canvas.help': 'Як це працює',
@@ -323,6 +410,26 @@ function normalizeLanguage(language: string | null | undefined): AppLanguage {
   if (normalized.startsWith('ru')) return 'ru';
   if (normalized.startsWith('uk') || normalized.startsWith('ua')) return 'uk';
   return 'en';
+}
+
+function pluralizeEnDay(count: number): string {
+  return count === 1 ? 'day' : 'days';
+}
+
+function pluralizeRuDay(count: number): string {
+  const mod10 = count % 10;
+  const mod100 = count % 100;
+  if (mod10 === 1 && mod100 !== 11) return 'день';
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return 'дня';
+  return 'дней';
+}
+
+function pluralizeUkDay(count: number): string {
+  const mod10 = count % 10;
+  const mod100 = count % 100;
+  if (mod10 === 1 && mod100 !== 11) return 'день';
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return 'дні';
+  return 'днів';
 }
 
 @Injectable({

@@ -44,6 +44,7 @@ npm run prod:down
 - `DISCORD_CALLBACK_URL`
 - `EMAIL_CONFIRM_URL`
 - `DATABASE_URL`
+- `OPENAI_API_KEY`
 
 Примеры:
 
@@ -67,5 +68,6 @@ API_URL=http://pdv.kpdtke.com.ua:21000/api
 
 - Frontend получает `API_URL`, `FRONTEND_URL` и `BACKEND_URL` через runtime `app-config.js`.
 - Backend читает CORS, callback URL, frontend redirect URL и порт только из env.
+- Генерация `skill tree` использует только OpenAI-модель `gpt-5.4-nano` и требует `OPENAI_API_KEY`.
 - В `docker-compose.yml` больше нет отдельного docker-env файла: dev и prod используют только `.env` и `.env.production`.
 - `docker-compose.dev.yml` нужен только для локальной разработки, чтобы открыть наружу порт PostgreSQL.

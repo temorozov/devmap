@@ -18,6 +18,7 @@ model User {
   isEmailConfirmed       Boolean  @default(true)
   emailConfirmationToken String?
   trees                  Tree[]
+  aiBatchJobs            AiBatchJob[]
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
 }
@@ -30,6 +31,7 @@ model Tree {
   user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   nodes       Node[]
   activities  TreeActivity[]
+  aiBatchJobs AiBatchJob[]
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 }
@@ -61,4 +63,35 @@ model TreeActivity {
   count  Int      @default(1)
 
   @@unique([treeId, date])
+}
+
+model AiBatchJob {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  treeId          String?
+  tree            Tree?    @relation(fields: [treeId], references: [id], onDelete: Cascade)
+  kind            String
+  status          String
+  provider        String   @default("openai")
+  model           String
+  endpoint        String
+  batchId         String?  @unique
+  inputFileId     String?
+  outputFileId    String?
+  errorFileId     String?
+  inputJsonlPath  String?
+  requestCount    Int      @default(0)
+  completedCount  Int      @default(0)
+  failedCount     Int      @default(0)
+  metadata        Json?
+  lastError       String?
+  completedAt     DateTime?
+  resultsAppliedAt DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([treeId, createdAt])
+  @@index([status, createdAt])
 }

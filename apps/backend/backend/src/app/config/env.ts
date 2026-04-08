@@ -8,6 +8,11 @@ export function getEnv(name: string, fallback?: string): string {
   return value;
 }
 
+export function getOptionalEnv(name: string, fallback?: string): string | undefined {
+  const value = process.env[name] ?? fallback;
+  return value?.trim() ? value : undefined;
+}
+
 export function getEnvList(name: string): string[] {
   return getEnv(name)
     .split(',')

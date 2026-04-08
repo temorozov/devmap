@@ -3,11 +3,12 @@ import { TreesService } from './trees.service';
 import { TreesController } from './trees.controller';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AiService } from './ai.service';
+import { BatchGenerationService } from './batch-generation.service';
 
 @Module({
   imports: [PrismaModule],
   controllers: [TreesController],
-  providers: [TreesService, AiService],
+  providers: [TreesService, AiService, BatchGenerationService],
   exports: [TreesService]
 })
 export class TreesModule { }

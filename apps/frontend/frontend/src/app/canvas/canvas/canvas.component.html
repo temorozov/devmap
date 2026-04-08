@@ -65,8 +65,49 @@
         </div>
     </header>
 
-    <div class="calendar-panel glass-panel" *ngIf="hasCalendarActivities">
-        <app-activity-calendar [activities]="calendarActivities"></app-activity-calendar>
+    <div class="insights-stack" *ngIf="!loading">
+        <section class="insight-card glass-panel">
+            <div class="insight-card-header">
+                <span class="detail-label">{{ i18n.t('canvas.closestGoal') }}</span>
+            </div>
+
+            <div class="insight-primary-line">
+                <div class="insight-title">{{ nextFocus.title }}</div>
+                <p class="insight-description">
+                    {{ primaryFocusItem ? primaryFocusItem.title + ' · ' + primaryFocusItem.meta : nextFocus.description }}
+                </p>
+                <div class="insight-mini-progress">
+                    <div class="insight-mini-progress-fill" [style.width.%]="primaryFocusProgressPercent"></div>
+                </div>
+            </div>
+
+            <div class="insight-footer">
+                <div class="insight-footer-copy">
+                    <span class="insight-metric streak">
+                        <span class="material-icons insight-metric-icon">local_fire_department</span>
+                        <span>{{ i18n.t('canvas.calendarStreak', { count: currentStreak }) }}</span>
+                    </span>
+                    <span class="insight-footer-separator">·</span>
+                    <span class="insight-metric">{{ i18n.t('canvas.calendarActiveDaysCompact', { count: activeDaysThisMonth }) }}</span>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <div class="map-filters glass-panel" *ngIf="!loading">
+        <div class="map-filter-controls">
+            <button
+                *ngFor="let option of mapFilterOptions"
+                type="button"
+                class="filter-chip"
+                [class.active]="statusFilter === option.value"
+                [ngClass]="option.className"
+                (click)="setStatusFilter(option.value)"
+            >
+                <span>{{ i18n.t(option.labelKey) }}</span>
+                <span class="filter-count">{{ getStatusFilterCount(option.value) }}</span>
+            </button>
+        </div>
     </div>
 
     <main class="workspace">
@@ -85,13 +126,13 @@
             <rect x="-50000" y="-50000" width="100000" height="100000" fill="url(#grid)" />
 
             <g class="connections-layer">
-                <ng-container *ngFor="let node of nodes">
-                    <path *ngIf="node.parentId && getParentNode(node.parentId) as parent" class="connection-line"
+                <ng-container *ngFor="let node of filteredNodes; trackBy: trackByNodeId">
+                    <path *ngIf="node.parentId && getVisibleParentNode(node.parentId) as parent" class="connection-line"
                         [class.completed]="node.level === (node.maxLevel || defaultMaxLevel) && parent.level === (parent.maxLevel || defaultMaxLevel)"
                         [attr.d]="'M ' + parent.positionX + ' ' + (parent.positionY - 40) + ' C ' + parent.positionX + ' ' + (parent.positionY - 100) + ', ' + node.positionX + ' ' + (node.positionY + 100) + ', ' + node.positionX + ' ' + (node.positionY + 40)" />
                 </ng-container>
 
-                <path *ngIf="interactionState === 'linking' && linkSourceNode" class="connection-line linking"
+                <path *ngIf="interactionState === 'linking' && linkSourceNode && isNodeVisible(linkSourceNode)" class="connection-line linking"
                     [attr.d]="'M ' + linkSourceNode.positionX + ' ' + (linkSourceNode.positionY - 40) + ' C ' + linkSourceNode.positionX + ' ' + (linkSourceNode.positionY - 100) + ', ' + mousePosition.x + ' ' + (mousePosition.y + 100) + ', ' + mousePosition.x + ' ' + mousePosition.y" />
             </g>
 
@@ -103,7 +144,7 @@
                       [attr.height]="selectionBox.h"
                       class="selection-box" />
 
-                <g *ngFor="let node of nodes" class="skill-node" [ngClass]="getNodeStatusClass(node)" [class.selected]="selectedNode?.id === node.id"
+                <g *ngFor="let node of filteredNodes; trackBy: trackByNodeId" class="skill-node" [ngClass]="getNodeStatusClass(node)" [class.selected]="selectedNode?.id === node.id"
                     [class.multi-selected]="selectedNodes.has(node.id)"
                     [class.completed]="node.level === (node.maxLevel || defaultMaxLevel)"
                     [attr.transform]="'translate(' + node.positionX + ',' + node.positionY + ')'"
@@ -137,7 +178,7 @@
                 </g>
             </g>
 
-            <g *ngIf="hoveredNode" class="tooltip-layer" [attr.transform]="'translate(' + hoveredNode.positionX + ',' + hoveredNode.positionY + ')'">
+            <g *ngIf="hoveredNode && isNodeVisible(hoveredNode)" class="tooltip-layer" [attr.transform]="'translate(' + hoveredNode.positionX + ',' + hoveredNode.positionY + ')'">
                 <foreignObject
                     class="node-tooltip-fo"
                     x="-150"
@@ -274,7 +315,7 @@
             <div class="panel-body mt-4">
                 <p class="text-muted mb-4">{{ i18n.t('canvas.generateText') }}</p>
                 <div class="form-group">
-                    <textarea class="desc-textarea" [(ngModel)]="aiPrompt" rows="4" [placeholder]="i18n.t('canvas.generatePlaceholder')"></textarea>
+                    <textarea class="detail-input desc-textarea" [(ngModel)]="aiPrompt" rows="4" [placeholder]="i18n.t('canvas.generatePlaceholder')"></textarea>
                 </div>
                 <div class="modal-actions mt-4">
                     <button class="btn-secondary" (click)="showAiPrompt = false" [disabled]="isGenerating">{{ i18n.t('canvas.cancel') }}</button>
