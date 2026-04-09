@@ -3,12 +3,11 @@ import { nxE2EPreset } from '@nx/playwright/preset';
 
 import { workspaceRoot } from '@nx/devkit';
 
-const baseURL = process.env['BASE_URL'] || process.env['FRONTEND_URL'];
-const frontendPort = process.env['FRONTEND_PORT'];
-
-if (!baseURL || !frontendPort) {
-  throw new Error('FRONTEND_URL and FRONTEND_PORT must be set for frontend e2e');
-}
+// Nx imports this config while building the project graph, so it must stay
+// loadable even when e2e-specific env vars are not set.
+const baseURL =
+  process.env['BASE_URL'] || process.env['FRONTEND_URL'] || 'http://127.0.0.1:4200';
+const frontendPort = process.env['FRONTEND_PORT'] || '4200';
 
 /**
  * Read environment variables from file.

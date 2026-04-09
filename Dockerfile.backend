@@ -12,7 +12,7 @@ COPY . .
 
 # Build backend in production mode (outputs to dist/apps/backend/backend/)
 RUN npx prisma generate
-RUN npx nx build backend-backend --configuration=production --skip-nx-cache
+RUN NX_DAEMON=false NX_ISOLATE_PLUGINS=false npx nx build backend-backend --configuration=production --skip-nx-cache
 
 # ─── Stage 2: Runner ──────────────────────────────────────────────────────────
 FROM node:20-alpine AS runner

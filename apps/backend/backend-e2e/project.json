@@ -4,6 +4,9 @@
   "projectType": "application",
   "implicitDependencies": ["backend-backend"],
   "targets": {
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    },
     "e2e": {
       "executor": "@nx/jest:jest",
       "outputs": ["{workspaceRoot}/coverage/{e2eProjectRoot}"],

@@ -9,7 +9,7 @@ RUN npm ci --ignore-scripts
 COPY . .
 
 # Build Angular in production mode (outputs to dist/apps/frontend/frontend/browser/)
-RUN npx nx build frontend-frontend --configuration=production --skip-nx-cache
+RUN NX_DAEMON=false NX_ISOLATE_PLUGINS=false npx nx build frontend-frontend --configuration=production --skip-nx-cache
 
 # ─── Stage 2: Serve with nginx ────────────────────────────────────────────────
 FROM nginx:1.27-alpine AS runner

@@ -5,5 +5,15 @@
   "sourceRoot": "apps/frontend/frontend-e2e/src",
   "implicitDependencies": ["frontend-frontend"],
   "// targets": "to see all targets run: nx show project frontend-frontend-e2e --web",
-  "targets": {}
+  "targets": {
+    "e2e": {
+      "executor": "@nx/playwright:playwright",
+      "options": {
+        "config": "apps/frontend/frontend-e2e/playwright.config.ts"
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    }
+  }
 }
