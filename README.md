@@ -14,6 +14,13 @@ npm run dev
 npm run prod
 ```
 
+Если прод-запуск падает с ошибкой Prisma `P1000` при уже корректных паролях в
+`.env.production`, пересоздай PostgreSQL volume:
+
+```sh
+npm run prod:recreate-db
+```
+
 Обе команды запускают проект через Docker Compose и берут все URL, домены и порты только из env-файлов.
 `dev` использует общий `docker-compose.yml` и локальный override `docker-compose.dev.yml`.
 `prod` использует только общий `docker-compose.yml`.

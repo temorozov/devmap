@@ -36,10 +36,26 @@ docker compose --env-file .env.production -f docker-compose.yml up -d --build
 
 ```bash
 npm run prod
+npm run prod:recreate-db
 npm run prod:down
 docker compose --env-file .env.production -f docker-compose.yml logs -f
 docker compose --env-file .env.production -f docker-compose.yml ps
 ```
+
+## Если backend падает с `P1000`
+
+Если в логах есть ошибка Prisma `P1000: Authentication failed`, а пароль в `.env.production`
+уже указан правильно, обычно причина в старом Docker volume PostgreSQL, созданном с другим
+паролем раньше.
+
+В этом случае не нужно менять текущие пароли в `.env.production`. Нужно пересоздать только
+контейнеры и volume базы:
+
+```bash
+npm run prod:recreate-db
+```
+
+Важно: команда удалит текущий Docker volume PostgreSQL и поднимет пустую базу заново.
 
 ## Примечание
 

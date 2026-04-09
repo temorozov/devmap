@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "docker compose --env-file .env -f docker-compose.yml -f docker-compose.dev.yml up --build",
     "prod": "docker compose --env-file .env.production -f docker-compose.yml up -d --build",
+    "prod:recreate-db": "docker compose --env-file .env.production -f docker-compose.yml down -v && docker compose --env-file .env.production -f docker-compose.yml up -d --build",
     "dev:down": "docker compose --env-file .env -f docker-compose.yml -f docker-compose.dev.yml down",
     "prod:down": "docker compose --env-file .env.production -f docker-compose.yml down"
   },
