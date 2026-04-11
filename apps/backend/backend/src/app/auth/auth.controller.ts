@@ -1,9 +1,10 @@
 import { Controller, Post, UseGuards, Request, Get, Req, Res } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
-import { AuthGuard } from '@nestjs/passport';
 import { Request as ExpressRequest, Response as ExpressResponse } from 'express';
 import { getEnv } from '../config/env';
+import { GoogleOauthGuard } from './google-oauth.guard';
+import { DiscordOauthGuard } from './discord-oauth.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -17,13 +18,13 @@ export class AuthController {
     }
 
     @Get('google')
-    @UseGuards(AuthGuard('google'))
+    @UseGuards(GoogleOauthGuard)
     async googleAuth(@Req() req: ExpressRequest) {
         // Initiates the Google OAuth flow
     }
 
     @Get('google/callback')
-    @UseGuards(AuthGuard('google'))
+    @UseGuards(GoogleOauthGuard)
     async googleAuthRedirect(@Req() req: ExpressRequest, @Res() res: ExpressResponse) {
         const result = await this.authService.login((req as any).user);
         const frontendUrl = getEnv('FRONTEND_URL');
@@ -31,13 +32,13 @@ export class AuthController {
     }
 
     @Get('discord')
-    @UseGuards(AuthGuard('discord'))
+    @UseGuards(DiscordOauthGuard)
     async discordAuth(@Req() req: ExpressRequest) {
         // Initiates the Discord OAuth flow
     }
 
     @Get('discord/callback')
-    @UseGuards(AuthGuard('discord'))
+    @UseGuards(DiscordOauthGuard)
     async discordAuthRedirect(@Req() req: ExpressRequest, @Res() res: ExpressResponse) {
         const result = await this.authService.login((req as any).user);
         const frontendUrl = getEnv('FRONTEND_URL');

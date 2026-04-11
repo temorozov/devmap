@@ -44,3 +44,11 @@ Thumbs.db
 .angular
 
 /generated/prisma
+
+# Local environment files
+.env
+.env.production
+.env.local
+.env.*.local
+!.env.example
+!.env.production.example

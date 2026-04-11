@@ -3,6 +3,12 @@ node_modules
 npm-debug.log
 yarn-error.log
 
+# Local environment files
+.env
+.env.production
+.env.local
+.env.*.local
+
 # Build output
 dist
 out-tsc
@@ -36,3 +42,4 @@ Thumbs.db
 coverage
 testem.log
 tmp
+test-npm-behavior

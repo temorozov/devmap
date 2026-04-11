@@ -1,62 +1,71 @@
-# Прод-запуск
+# Прод-запуск на VPS
 
-## Что используется
+## 1. Подготовка env
 
-- основной compose: `docker-compose.yml`
-- prod env: `.env.production`
-
-Итоговая команда запуска:
+На сервере создай локальный env-файл на основе шаблона:
 
 ```bash
-npm run prod
+cp .env.production.example .env.production
 ```
 
-Или напрямую:
+Заполни в `.env.production` как минимум:
+
+- `FRONTEND_URL`
+- `FRONTEND_PORT`
+- `BACKEND_URL`
+- `BACKEND_PORT`
+- `PORT`
+- `API_URL`
+- `CORS_ORIGINS`
+- `POSTGRES_DB`
+- `POSTGRES_USER`
+- `POSTGRES_PASSWORD`
+- `DATABASE_URL`
+- `JWT_SECRET`
+
+OAuth и email-интеграции теперь опциональны: если не заполнить Google / Discord переменные,
+backend все равно поднимется, но эти способы входа будут недоступны.
+
+## 2. Запуск
+
+Рекомендуемый способ:
 
 ```bash
-docker compose --env-file .env.production -f docker-compose.yml up -d --build
+./deploy.sh
 ```
 
-## Что проверить в `.env.production`
+Что делает скрипт:
 
-- `FRONTEND_URL=http://pdv.kpdtke.com.ua:20080`
-- `BACKEND_URL=http://pdv.kpdtke.com.ua:21000`
-- `API_URL=http://pdv.kpdtke.com.ua:21000/api`
-- `FRONTEND_PORT=20080`
-- `BACKEND_PORT=21000`
-- `PORT=3000`
-- `CORS_ORIGINS=http://pdv.kpdtke.com.ua:20080`
-- `GOOGLE_CALLBACK_URL=http://pdv.kpdtke.com.ua:21000/api/auth/google/callback`
-- `DISCORD_CALLBACK_URL=http://pdv.kpdtke.com.ua:21000/api/auth/discord/callback`
-- `EMAIL_CONFIRM_URL=http://pdv.kpdtke.com.ua:20080/confirm-email`
+- валидирует `.env.production`
+- проверяет итоговый `docker compose` конфиг
+- собирает и поднимает контейнеры
+- автоматически накатывает Prisma migrations через `prisma migrate deploy`
 
-Если меняются домен или порты, правится только `.env.production`.
-
-## Полезные команды
+## 3. Полезные команды
 
 ```bash
+./deploy.sh
 npm run prod
-npm run prod:recreate-db
 npm run prod:down
 docker compose --env-file .env.production -f docker-compose.yml logs -f
 docker compose --env-file .env.production -f docker-compose.yml ps
 ```
 
-## Если backend падает с `P1000`
+## 4. Если backend не подключается к PostgreSQL
 
-Если в логах есть ошибка Prisma `P1000: Authentication failed`, а пароль в `.env.production`
-уже указан правильно, обычно причина в старом Docker volume PostgreSQL, созданном с другим
-паролем раньше.
+Если в логах есть Prisma `P1000: Authentication failed`, а пароль уже исправлен в `.env.production`,
+скорее всего раньше был создан старый Docker volume с другим паролем.
 
-В этом случае не нужно менять текущие пароли в `.env.production`. Нужно пересоздать только
-контейнеры и volume базы:
+В таком случае можно пересоздать базу:
 
 ```bash
 npm run prod:recreate-db
 ```
 
-Важно: команда удалит текущий Docker volume PostgreSQL и поднимет пустую базу заново.
+Важно: команда удалит текущий volume PostgreSQL и поднимет пустую базу заново.
 
-## Примечание
+## 5. Важные замечания
 
-Порт PostgreSQL наружу открыт только в `dev` через `docker-compose.dev.yml`. В `prod` база остаётся только внутри Docker-сети.
+- Реальные `.env` и `.env.production` больше не должны храниться в git.
+- `app-config.js` отдается без агрессивного кэша, поэтому frontend подхватывает новые URL сразу после деплоя.
+- В `prod` PostgreSQL наружу не публикуется и остается только внутри Docker-сети.

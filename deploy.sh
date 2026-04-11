@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ENV_FILE=".env.production"
+ENV_FILE="${1:-.env.production}"
 COMPOSE_ARGS=(--env-file "$ENV_FILE" -f docker-compose.yml)
 
 if [ ! -f "$ENV_FILE" ]; then
@@ -9,11 +9,14 @@ if [ ! -f "$ENV_FILE" ]; then
   exit 1
 fi
 
+./scripts/validate-env.sh "$ENV_FILE"
+docker compose "${COMPOSE_ARGS[@]}" config >/dev/null
+
 set -a
 . "$ENV_FILE"
 set +a
 
-docker compose "${COMPOSE_ARGS[@]}" up -d --build
+docker compose "${COMPOSE_ARGS[@]}" up -d --build --remove-orphans
 docker compose "${COMPOSE_ARGS[@]}" ps
 
 echo ""

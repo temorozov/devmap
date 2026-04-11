@@ -11,14 +11,9 @@ npm run dev
 Для продакшена:
 
 ```sh
-npm run prod
-```
-
-Если прод-запуск падает с ошибкой Prisma `P1000` при уже корректных паролях в
-`.env.production`, пересоздай PostgreSQL volume:
-
-```sh
-npm run prod:recreate-db
+cp .env.production.example .env.production
+# заполнить .env.production своими значениями
+./deploy.sh
 ```
 
 Обе команды запускают проект через Docker Compose и берут все URL, домены и порты только из env-файлов.
@@ -32,11 +27,31 @@ npm run dev:down
 npm run prod:down
 ```
 
+## VPS деплой
+
+```sh
+cp .env.production.example .env.production
+./deploy.sh
+```
+
+Что делает `./deploy.sh`:
+
+- проверяет обязательные переменные в `.env.production`
+- валидирует итоговый `docker compose` конфиг до запуска
+- собирает и поднимает контейнеры с `--remove-orphans`
+- автоматически применяет Prisma migrations через `prisma migrate deploy`
+
+Если нужно использовать другой env-файл:
+
+```sh
+./deploy.sh /path/to/your.env.production
+```
+
 ## Env-структура
 
-Разработка: `.env`
+Разработка: локальный `.env` на основе `.env.example`
 
-Продакшен: `.env.production`
+Продакшен: локальный `.env.production` на основе `.env.production.example`
 
 Ключевые переменные:
 
@@ -54,28 +69,12 @@ npm run prod:down
 - `OPENAI_API_KEY`
 - `AI_OPENAI_MODEL`
 
-Примеры:
-
-```env
-# dev
-FRONTEND_URL=http://localhost:4200
-BACKEND_URL=http://localhost:3000
-PORT=3000
-API_URL=http://localhost:3000/api
-```
-
-```env
-# prod
-FRONTEND_URL=http://pdv.kpdtke.com.ua:20080
-BACKEND_URL=http://pdv.kpdtke.com.ua:21000
-PORT=3000
-API_URL=http://pdv.kpdtke.com.ua:21000/api
-```
-
 ## Что важно
 
 - Frontend получает `API_URL`, `FRONTEND_URL` и `BACKEND_URL` через runtime `app-config.js`.
 - Backend читает CORS, callback URL, frontend redirect URL и порт только из env.
 - Генерация `skill tree` читает OpenAI-модель из `AI_OPENAI_MODEL` в `.env` или `.env.production` и требует `OPENAI_API_KEY`.
-- В `docker-compose.yml` больше нет отдельного docker-env файла: dev и prod используют только `.env` и `.env.production`.
+- В репозиторий больше не должны попадать реальные `.env` и `.env.production`; для этого оставлены только `.env.example` и `.env.production.example`.
+- `app-config.js` теперь не кэшируется агрессивно, поэтому после деплоя frontend не будет держать старые URL из предыдущей конфигурации.
+- Google / Discord OAuth больше не валят backend на старте, если их переменные не заполнены; соответствующие endpoints просто будут недоступны.
 - `docker-compose.dev.yml` нужен только для локальной разработки, чтобы открыть наружу порт PostgreSQL.
