@@ -6,6 +6,8 @@
 
 ```sh
 npm run dev
+# или явно
+npm run dev:up
 ```
 
 Для продакшена:
@@ -26,6 +28,8 @@ cp .env.production.example .env.production
 npm run dev:down
 npm run prod:down
 ```
+
+`dev:up` и `dev:down` используют скрипты из `scripts/`, которые корректно работают даже при запуске не из корня проекта.
 
 ## VPS деплой
 
@@ -66,6 +70,7 @@ cp .env.production.example .env.production
 - `DISCORD_CALLBACK_URL`
 - `EMAIL_CONFIRM_URL`
 - `DATABASE_URL`
+- `POSTGRES_PORT` (для dev-публикации PostgreSQL из `docker-compose.dev.yml`)
 - `OPENAI_API_KEY`
 - `AI_OPENAI_MODEL`
 
