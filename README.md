@@ -74,12 +74,3 @@ cp .env.production.example .env.production
 - `OPENAI_API_KEY`
 - `AI_OPENAI_MODEL`
 
-## Что важно
-
-- Frontend получает `API_URL`, `FRONTEND_URL` и `BACKEND_URL` через runtime `app-config.js`.
-- Backend читает CORS, callback URL, frontend redirect URL и порт только из env.
-- Генерация `skill tree` читает OpenAI-модель из `AI_OPENAI_MODEL` в `.env` или `.env.production` и требует `OPENAI_API_KEY`.
-- В репозиторий больше не должны попадать реальные `.env` и `.env.production`; для этого оставлены только `.env.example` и `.env.production.example`.
-- `app-config.js` теперь не кэшируется агрессивно, поэтому после деплоя frontend не будет держать старые URL из предыдущей конфигурации.
-- Google / Discord OAuth больше не валят backend на старте, если их переменные не заполнены; соответствующие endpoints просто будут недоступны.
-- `docker-compose.dev.yml` нужен только для локальной разработки, чтобы открыть наружу порт PostgreSQL.
