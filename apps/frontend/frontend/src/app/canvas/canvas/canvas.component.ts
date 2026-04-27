@@ -1,10 +1,10 @@
-import { Component, ElementRef, OnInit, ViewChild, inject, HostListener, effect } from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, OnInit, ViewChild, inject, HostListener, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { TreesService, Tree } from '../../trees.service';
 import { NodesService, SkillNode } from '../../nodes.service';
-import { take } from 'rxjs';
+import { finalize, take } from 'rxjs';
 import { LinkifyPipe } from '../../shared/pipes/linkify.pipe';
 import { AuthService } from '../../auth.service';
 import { DialogService } from '../../shared/services/dialog.service';
@@ -52,6 +52,7 @@ export class CanvasComponent implements OnInit {
   authService = inject(AuthService);
   dialogService = inject(DialogService);
   i18n = inject(I18nService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   isGuest$ = this.authService.isGuest$;
 
@@ -255,19 +256,31 @@ export class CanvasComponent implements OnInit {
     });
   }
 
+  closeAiPrompt() {
+    if (this.isGenerating) return;
+    this.showAiPrompt = false;
+    this.aiPrompt = '';
+  }
+
   generateWithAi() {
-    if (this.isDemoTree) return;
+    if (this.isDemoTree || this.isGenerating) return;
     this.isGuest$.pipe(take(1)).subscribe(isGuest => {
       if (isGuest) return;
       if (!this.tree || !this.aiPrompt.trim()) return;
       this.isGenerating = true;
       
-      this.treesService.generateTree(this.tree.id, this.aiPrompt).subscribe({
-        next: (newNodes) => {
-          // Create a new array reference to trigger change detection
-          this.nodes = [...this.nodes, ...newNodes];
+      this.treesService.generateTree(this.tree.id, this.aiPrompt).pipe(
+        finalize(() => {
           this.isGenerating = false;
+        }),
+      ).subscribe({
+        next: (newNodes) => {
+          const generatedNodes = Array.isArray(newNodes) ? newNodes : [];
+          // Create a new array reference to trigger change detection
+          this.nodes = [...this.nodes, ...generatedNodes];
           this.showAiPrompt = false;
+          this.aiPrompt = '';
+          this.cdr.detectChanges();
         },
         error: (err) => {
           console.error('Error generating tree', err);
@@ -283,7 +296,6 @@ export class CanvasComponent implements OnInit {
               ? `${this.i18n.t('canvas.generateError')} ${backendMessage}`
               : this.i18n.t('canvas.generateError'),
           );
-          this.isGenerating = false;
         }
       });
     });

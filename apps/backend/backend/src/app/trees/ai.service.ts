@@ -23,6 +23,7 @@ interface ProviderAttempt {
 const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
 const DEFAULT_OPENAI_MODEL = 'gpt-5.4-nano';
 const DEFAULT_REQUEST_TIMEOUT_MS = 30000;
+const DEFAULT_YOUTUBE_REQUEST_TIMEOUT_MS = 2500;
 const DEFAULT_PROVIDER_RETRY_COUNT = 1;
 const DEFAULT_PROVIDER_RETRY_DELAY_MS = 1200;
 const OPENAI_SKILL_TREE_PROMPT_CACHE_KEY = 'skill-tree:generate:v1';
@@ -86,6 +87,7 @@ export class AiService {
   private readonly geminiModel = getOptionalEnv('AI_GEMINI_MODEL', DEFAULT_GEMINI_MODEL) ?? DEFAULT_GEMINI_MODEL;
   private readonly openAiModel = getOptionalEnv('AI_OPENAI_MODEL', DEFAULT_OPENAI_MODEL) ?? DEFAULT_OPENAI_MODEL;
   private readonly requestTimeoutMs = this.getTimeoutMs();
+  private readonly youtubeRequestTimeoutMs = this.getYoutubeTimeoutMs();
   private readonly providerRetryCount = this.getRetryCount();
   private readonly providerRetryDelayMs = this.getRetryDelayMs();
 
@@ -280,9 +282,9 @@ ${prompt}`;
       return skills;
     }
 
-    for (const skill of skills) {
+    await Promise.all(skills.map(async (skill) => {
       if (!skill.youtubeSearchQuery) {
-        continue;
+        return;
       }
 
       try {
@@ -294,7 +296,7 @@ ${prompt}`;
             maxResults: 1,
             key: this.youtubeApiKey,
           },
-          timeout: this.requestTimeoutMs,
+          timeout: this.youtubeRequestTimeoutMs,
         });
 
         if (ytResponse.data.items && ytResponse.data.items.length > 0) {
@@ -306,7 +308,7 @@ ${prompt}`;
       } catch (error) {
         this.logger.warn(`Failed to fetch YouTube video for "${skill.youtubeSearchQuery}": ${this.getErrorSummary(error)}`);
       }
-    }
+    }));
 
     return skills;
   }
@@ -467,6 +469,12 @@ ${prompt}`;
     const raw = getOptionalEnv('AI_REQUEST_TIMEOUT_MS');
     const parsed = raw ? Number(raw) : DEFAULT_REQUEST_TIMEOUT_MS;
     return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_REQUEST_TIMEOUT_MS;
+  }
+
+  private getYoutubeTimeoutMs(): number {
+    const raw = getOptionalEnv('AI_YOUTUBE_REQUEST_TIMEOUT_MS');
+    const parsed = raw ? Number(raw) : DEFAULT_YOUTUBE_REQUEST_TIMEOUT_MS;
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_YOUTUBE_REQUEST_TIMEOUT_MS;
   }
 
   private getRetryCount(): number {

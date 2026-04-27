@@ -308,7 +308,7 @@
         <div class="modal-content" style="max-width: 500px; width: 90%;">
             <div class="panel-header">
                 <h3>{{ i18n.t('canvas.generateTitle') }}</h3>
-                <button class="icon-btn" (click)="showAiPrompt = false" [disabled]="isGenerating">
+                <button class="icon-btn" (click)="closeAiPrompt()" [disabled]="isGenerating">
                     <span class="material-icons">close</span>
                 </button>
             </div>
@@ -318,7 +318,7 @@
                     <textarea class="detail-input desc-textarea" [(ngModel)]="aiPrompt" rows="4" [placeholder]="i18n.t('canvas.generatePlaceholder')"></textarea>
                 </div>
                 <div class="modal-actions mt-4">
-                    <button class="btn-secondary" (click)="showAiPrompt = false" [disabled]="isGenerating">{{ i18n.t('canvas.cancel') }}</button>
+                    <button class="btn-secondary" (click)="closeAiPrompt()" [disabled]="isGenerating">{{ i18n.t('canvas.cancel') }}</button>
                     <button class="btn-primary btn-ai modal-ai-btn" (click)="generateWithAi()" [disabled]="isGenerating || !aiPrompt.trim()">
                         <span class="material-icons" [class.spinning]="isGenerating">{{ isGenerating ? 'refresh' : 'auto_awesome' }}</span>
                         <span>{{ isGenerating ? i18n.t('canvas.aiGenerating') : i18n.t('canvas.generate') }}</span>

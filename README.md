@@ -10,6 +10,17 @@ npm run dev
 npm run dev:up
 ```
 
+Быстрый локальный запуск для просмотра изменений без пересборки Docker-образов:
+
+```sh
+npm run dev:fast
+```
+
+Он поднимает только PostgreSQL в Docker, а Angular и NestJS запускает через Nx на хосте.
+Frontend: `http://localhost:4200`, backend API проксируется через `/api` на `http://localhost:3000`.
+Если `3000` уже занят старым Docker backend, скрипт автоматически выберет свободный порт начиная с `3001`
+и настроит frontend proxy на него.
+
 Для продакшена:
 
 ```sh
