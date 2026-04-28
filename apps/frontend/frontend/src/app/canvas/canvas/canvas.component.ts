@@ -34,7 +34,6 @@ interface FocusAction {
 }
 
 const HELP_STORAGE_KEY = 'skill-tree-help-seen';
-const QUICK_START_STORAGE_KEY = 'skill-tree-quick-start-dismissed';
 const DEFAULT_MAX_LEVEL = 3;
 const HOVER_TOOLTIP_DELAY_MS = 40;
 
@@ -104,7 +103,6 @@ export class CanvasComponent implements OnInit, AfterViewInit {
   private hoverTooltipTimer: ReturnType<typeof setTimeout> | null = null;
   private hoveredNodeId: string | null = null;
   showHelp = false;
-  showQuickStart = false;
   isDemoTree = false;
   localDemoNodeCounter = 0;
   private pendingDemoCenter = false;
@@ -342,7 +340,6 @@ export class CanvasComponent implements OnInit, AfterViewInit {
     this.selectedNode = null;
     this.selectedNodes.clear();
     this.hoveredNode = null;
-    this.showQuickStart = !localStorage.getItem(QUICK_START_STORAGE_KEY);
 
     if (this.isDemoTree) {
       this.tree = {
@@ -357,7 +354,6 @@ export class CanvasComponent implements OnInit, AfterViewInit {
       this.nodes = getDemoSampleNodes(this.i18n.currentLanguage());
       this.centerDemoTreeInView();
       this.loading = false;
-      this.showQuickStart = true;
       return;
     }
 
@@ -367,14 +363,12 @@ export class CanvasComponent implements OnInit, AfterViewInit {
         if (tree.nodes) {
           this.nodes = tree.nodes;
           this.loading = false;
-          this.syncQuickStartVisibility();
           this.maybeOpenAiPromptFromQuery();
         } else {
           // Fetch separately if not included
           this.nodesService.getNodesByTree(id).subscribe(nodes => {
             this.nodes = nodes;
             this.loading = false;
-            this.syncQuickStartVisibility();
             this.maybeOpenAiPromptFromQuery();
           });
         }
@@ -387,7 +381,6 @@ export class CanvasComponent implements OnInit, AfterViewInit {
             this.loading = false;
             this.nodes = tree.nodes || [];
             this.isDemoTree = false;
-            this.syncQuickStartVisibility();
             this.maybeOpenAiPromptFromQuery();
           },
           error: () => {
@@ -917,45 +910,6 @@ export class CanvasComponent implements OnInit, AfterViewInit {
     return !this.loading && this.nodes.length === 0;
   }
 
-  get quickStartTitle(): string {
-    if (this.isDemoTree) {
-      return this.i18n.t('canvas.quickStartDemoTitle');
-    }
-
-    if (this.nodes.length === 0) {
-      return this.i18n.t('canvas.quickStartEmptyTitle');
-    }
-
-    return this.i18n.t('canvas.quickStartActiveTitle');
-  }
-
-  get quickStartText(): string {
-    if (this.isDemoTree) {
-      return this.i18n.t('canvas.quickStartDemoText');
-    }
-
-    if (this.nodes.length === 0) {
-      return this.i18n.t('canvas.quickStartEmptyText');
-    }
-
-    return this.i18n.t('canvas.quickStartActiveText');
-  }
-
-  get quickStartPrimaryLabel(): string {
-    return this.isDemoTree
-      ? this.i18n.t('canvas.quickStartCreateOwn')
-      : this.i18n.t('canvas.quickStartStartAi');
-  }
-
-  handleQuickStartPrimary() {
-    if (this.isDemoTree) {
-      this.router.navigate(['/dashboard']);
-      return;
-    }
-
-    this.openAiPrompt();
-  }
-
   get calendarActivities() {
     return this.tree?.activities ?? [];
   }
@@ -1129,20 +1083,6 @@ export class CanvasComponent implements OnInit, AfterViewInit {
     localStorage.setItem(HELP_STORAGE_KEY, 'true');
   }
 
-  dismissQuickStart() {
-    this.showQuickStart = false;
-
-    if (!this.isDemoTree && this.nodes.length > 0) {
-      localStorage.setItem(QUICK_START_STORAGE_KEY, 'true');
-    }
-  }
-
-  private syncQuickStartVisibility() {
-    if (this.nodes.length === 0) {
-      this.showQuickStart = true;
-    }
-  }
-
   private hideNodeTooltip() {
     this.hoveredNodeId = null;
     if (this.hoverTooltipTimer) {
@@ -1176,10 +1116,17 @@ export class CanvasComponent implements OnInit, AfterViewInit {
 
     const viewportWidth = this.svgCanvas?.nativeElement.clientWidth || window.innerWidth;
     const viewportHeight = this.svgCanvas?.nativeElement.clientHeight || window.innerHeight;
+    const isCompactViewport = viewportWidth <= 992;
+    const safeTop = isCompactViewport ? 126 : 112;
+    const safeBottom = isCompactViewport ? 108 : 36;
+    const safeLeft = isCompactViewport ? 12 : 360;
+    const safeRight = isCompactViewport ? 12 : 24;
+    const availableWidth = Math.max(1, viewportWidth - safeLeft - safeRight);
+    const availableHeight = Math.max(1, viewportHeight - safeTop - safeBottom);
 
     const contentWidth = Math.max(1, maxX - minX);
     const contentHeight = Math.max(1, maxY - minY);
-    const zoomToFit = Math.min(viewportWidth / contentWidth, viewportHeight / contentHeight);
+    const zoomToFit = Math.min(availableWidth / contentWidth, availableHeight / contentHeight);
     const clampedZoom = Math.min(5, Math.max(0.15, Math.min(1, zoomToFit)));
 
     this.zoomLevel = clampedZoom;
@@ -1188,8 +1135,10 @@ export class CanvasComponent implements OnInit, AfterViewInit {
 
     const centerX = (minX + maxX) / 2;
     const centerY = (minY + maxY) / 2;
-    this.viewBox.x = centerX - this.viewBox.w / 2;
-    this.viewBox.y = centerY - this.viewBox.h / 2;
+    const safeCenterX = safeLeft + availableWidth / 2;
+    const safeCenterY = safeTop + availableHeight / 2;
+    this.viewBox.x = centerX - safeCenterX / this.zoomLevel;
+    this.viewBox.y = centerY - safeCenterY / this.zoomLevel;
   }
 
   setStatusFilter(filter: NodeStatusFilter) {

@@ -34,97 +34,9 @@
             </div>
         </div>
 
-        <div class="right-section desktop-actions">
-            <div *ngIf="interactionState === 'linking'" class="linking-indicator">
-                <span class="pulse-dot"></span>
-                <span>{{ i18n.t('canvas.linkingHint') }}</span>
-                <button class="btn-secondary small" (click)="cancelLinking()">{{ i18n.t('canvas.cancel') }}</button>
-            </div>
-            <button
-                type="button"
-                class="help-bubble"
-                (click)="openHelp()"
-                [attr.aria-label]="i18n.t('canvas.helpFabLabel')"
-                [title]="i18n.t('canvas.help')"
-            >
-                ?
-            </button>
-            <button
-                class="btn-primary btn-ai"
-                (click)="openAiPrompt()"
-                [disabled]="isDemoTree || isGenerating"
-                [title]="(isGuest$ | async) ? i18n.t('canvas.guestAiUnavailable') : ''"
-            >
-                <span class="material-icons" [class.spinning]="isGenerating">{{ isGenerating ? 'refresh' : 'auto_awesome' }}</span>
-                <span>{{ isGenerating ? i18n.t('canvas.aiGenerating') : i18n.t('canvas.aiCta') }}</span>
-            </button>
-            <button class="btn-primary prominent-action" (click)="addNode()">
-                <span class="material-icons">add</span>
-                <span>{{ i18n.t('canvas.addSkill') }}</span>
-            </button>
-        </div>
     </header>
 
-    <section class="quick-start-panel glass-panel" *ngIf="!loading && showQuickStart">
-        <div class="quick-start-header">
-            <span class="detail-label">{{ i18n.t('canvas.quickStartKicker') }}</span>
-            <button
-                type="button"
-                class="icon-btn compact-close"
-                (click)="dismissQuickStart()"
-                [attr.aria-label]="i18n.t('canvas.quickStartDismiss')"
-                [title]="i18n.t('canvas.quickStartDismiss')"
-            >
-                <span class="material-icons">close</span>
-            </button>
-        </div>
-
-        <div class="quick-start-copy">
-            <h3>{{ quickStartTitle }}</h3>
-            <p>{{ quickStartText }}</p>
-        </div>
-
-        <div class="quick-start-steps">
-            <div class="quick-start-step">
-                <span class="material-icons">auto_awesome</span>
-                <div>
-                    <strong>{{ i18n.t('canvas.quickStartDraftTitle') }}</strong>
-                    <span>{{ i18n.t('canvas.quickStartDraftText') }}</span>
-                </div>
-            </div>
-            <div class="quick-start-step">
-                <span class="material-icons">touch_app</span>
-                <div>
-                    <strong>{{ i18n.t('canvas.quickStartEditTitle') }}</strong>
-                    <span>{{ i18n.t('canvas.quickStartEditText') }}</span>
-                </div>
-            </div>
-            <div class="quick-start-step">
-                <span class="material-icons">device_hub</span>
-                <div>
-                    <strong>{{ i18n.t('canvas.quickStartConnectTitle') }}</strong>
-                    <span>{{ i18n.t('canvas.quickStartConnectText') }}</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="quick-start-actions">
-            <button type="button" class="btn-primary" (click)="handleQuickStartPrimary()">
-                <span class="material-icons">{{ isDemoTree ? 'rocket_launch' : 'auto_awesome' }}</span>
-                <span>{{ quickStartPrimaryLabel }}</span>
-            </button>
-            <button type="button" class="btn-secondary" (click)="addNode()" *ngIf="!isDemoTree">
-                <span class="material-icons">add</span>
-                <span>{{ i18n.t('canvas.quickStartManual') }}</span>
-            </button>
-            <button type="button" class="btn-secondary icon-only-label" (click)="openHelp()">
-                <span class="material-icons">help_outline</span>
-                <span>{{ i18n.t('canvas.quickStartOpenHelp') }}</span>
-            </button>
-        </div>
-    </section>
-
-    <div class="insights-stack" *ngIf="!loading && !showQuickStart">
+    <div class="canvas-side-panel" *ngIf="!loading && !isEmptyTree">
         <section class="insight-card glass-panel">
             <div class="insight-card-header">
                 <span class="detail-label">{{ i18n.t('canvas.closestGoal') }}</span>
@@ -151,6 +63,22 @@
                 </div>
             </div>
         </section>
+
+        <div class="map-filters glass-panel">
+            <div class="map-filter-controls">
+                <button
+                    *ngFor="let option of mapFilterOptions"
+                    type="button"
+                    class="filter-chip"
+                    [class.active]="statusFilter === option.value"
+                    [ngClass]="option.className"
+                    (click)="setStatusFilter(option.value)"
+                >
+                    <span>{{ i18n.t(option.labelKey) }}</span>
+                    <span class="filter-count">{{ getStatusFilterCount(option.value) }}</span>
+                </button>
+            </div>
+        </div>
     </div>
 
     <section class="empty-map-callout glass-panel" *ngIf="isEmptyTree">
@@ -171,20 +99,36 @@
         </div>
     </section>
 
-    <div class="map-filters glass-panel" *ngIf="!loading">
-        <div class="map-filter-controls">
-            <button
-                *ngFor="let option of mapFilterOptions"
-                type="button"
-                class="filter-chip"
-                [class.active]="statusFilter === option.value"
-                [ngClass]="option.className"
-                (click)="setStatusFilter(option.value)"
-            >
-                <span>{{ i18n.t(option.labelKey) }}</span>
-                <span class="filter-count">{{ getStatusFilterCount(option.value) }}</span>
-            </button>
-        </div>
+    <div class="canvas-action-dock glass-panel" *ngIf="!loading && !isEmptyTree">
+        <button
+            type="button"
+            class="dock-icon-btn"
+            (click)="openHelp()"
+            [attr.aria-label]="i18n.t('canvas.helpFabLabel')"
+            [title]="i18n.t('canvas.help')"
+        >
+            <span class="material-icons">help_outline</span>
+        </button>
+        <button type="button" class="btn-secondary dock-secondary-action" (click)="addNode()">
+            <span class="material-icons">add</span>
+            <span>{{ i18n.t('canvas.addSkill') }}</span>
+        </button>
+        <button
+            type="button"
+            class="btn-primary btn-ai dock-primary-action"
+            (click)="openAiPrompt()"
+            [disabled]="isDemoTree || isGenerating"
+            [title]="(isGuest$ | async) ? i18n.t('canvas.guestAiUnavailable') : ''"
+        >
+            <span class="material-icons" [class.spinning]="isGenerating">{{ isGenerating ? 'refresh' : 'auto_awesome' }}</span>
+            <span>{{ isGenerating ? i18n.t('canvas.aiGenerating') : i18n.t('canvas.aiCta') }}</span>
+        </button>
+    </div>
+
+    <div class="canvas-linking-status glass-panel" *ngIf="interactionState === 'linking'">
+        <span class="pulse-dot"></span>
+        <span>{{ i18n.t('canvas.linkingHint') }}</span>
+        <button class="btn-secondary small" (click)="cancelLinking()">{{ i18n.t('canvas.cancel') }}</button>
     </div>
 
     <main class="workspace">
@@ -422,20 +366,4 @@
         </div>
     </div>
 
-    <div class="mobile-action-bar glass-panel">
-        <div *ngIf="interactionState === 'linking'" class="linking-indicator">
-            <span class="pulse-dot"></span>
-            <span>{{ i18n.t('canvas.mobileLinking') }}</span>
-            <button class="btn-secondary small" (click)="cancelLinking()">{{ i18n.t('canvas.cancel') }}</button>
-        </div>
-        <button type="button" class="help-bubble mobile-help" (click)="openHelp()" [attr.aria-label]="i18n.t('canvas.helpFabLabel')">?</button>
-        <button class="btn-primary btn-ai" (click)="openAiPrompt()" [disabled]="isDemoTree || isGenerating">
-            <span class="material-icons" [class.spinning]="isGenerating">{{ isGenerating ? 'refresh' : 'auto_awesome' }}</span>
-            <span>{{ i18n.t('canvas.mobileAi') }}</span>
-        </button>
-        <button class="btn-primary prominent-action" (click)="addNode()">
-            <span class="material-icons">add</span>
-            <span>{{ i18n.t('canvas.mobileSkill') }}</span>
-        </button>
-    </div>
 </div>
