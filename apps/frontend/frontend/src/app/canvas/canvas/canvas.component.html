@@ -65,7 +65,66 @@
         </div>
     </header>
 
-    <div class="insights-stack" *ngIf="!loading">
+    <section class="quick-start-panel glass-panel" *ngIf="!loading && showQuickStart">
+        <div class="quick-start-header">
+            <span class="detail-label">{{ i18n.t('canvas.quickStartKicker') }}</span>
+            <button
+                type="button"
+                class="icon-btn compact-close"
+                (click)="dismissQuickStart()"
+                [attr.aria-label]="i18n.t('canvas.quickStartDismiss')"
+                [title]="i18n.t('canvas.quickStartDismiss')"
+            >
+                <span class="material-icons">close</span>
+            </button>
+        </div>
+
+        <div class="quick-start-copy">
+            <h3>{{ quickStartTitle }}</h3>
+            <p>{{ quickStartText }}</p>
+        </div>
+
+        <div class="quick-start-steps">
+            <div class="quick-start-step">
+                <span class="material-icons">auto_awesome</span>
+                <div>
+                    <strong>{{ i18n.t('canvas.quickStartDraftTitle') }}</strong>
+                    <span>{{ i18n.t('canvas.quickStartDraftText') }}</span>
+                </div>
+            </div>
+            <div class="quick-start-step">
+                <span class="material-icons">touch_app</span>
+                <div>
+                    <strong>{{ i18n.t('canvas.quickStartEditTitle') }}</strong>
+                    <span>{{ i18n.t('canvas.quickStartEditText') }}</span>
+                </div>
+            </div>
+            <div class="quick-start-step">
+                <span class="material-icons">device_hub</span>
+                <div>
+                    <strong>{{ i18n.t('canvas.quickStartConnectTitle') }}</strong>
+                    <span>{{ i18n.t('canvas.quickStartConnectText') }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="quick-start-actions">
+            <button type="button" class="btn-primary" (click)="handleQuickStartPrimary()">
+                <span class="material-icons">{{ isDemoTree ? 'rocket_launch' : 'auto_awesome' }}</span>
+                <span>{{ quickStartPrimaryLabel }}</span>
+            </button>
+            <button type="button" class="btn-secondary" (click)="addNode()" *ngIf="!isDemoTree">
+                <span class="material-icons">add</span>
+                <span>{{ i18n.t('canvas.quickStartManual') }}</span>
+            </button>
+            <button type="button" class="btn-secondary icon-only-label" (click)="openHelp()">
+                <span class="material-icons">help_outline</span>
+                <span>{{ i18n.t('canvas.quickStartOpenHelp') }}</span>
+            </button>
+        </div>
+    </section>
+
+    <div class="insights-stack" *ngIf="!loading && !showQuickStart">
         <section class="insight-card glass-panel">
             <div class="insight-card-header">
                 <span class="detail-label">{{ i18n.t('canvas.closestGoal') }}</span>
@@ -93,6 +152,24 @@
             </div>
         </section>
     </div>
+
+    <section class="empty-map-callout glass-panel" *ngIf="isEmptyTree">
+        <div class="empty-map-icon">
+            <span class="material-icons">account_tree</span>
+        </div>
+        <h3>{{ i18n.t('canvas.emptyMapTitle') }}</h3>
+        <p>{{ i18n.t('canvas.emptyMapText') }}</p>
+        <div class="empty-map-actions">
+            <button type="button" class="btn-primary" (click)="openAiPrompt()">
+                <span class="material-icons">auto_awesome</span>
+                <span>{{ i18n.t('canvas.quickStartStartAi') }}</span>
+            </button>
+            <button type="button" class="btn-secondary" (click)="addNode()">
+                <span class="material-icons">add</span>
+                <span>{{ i18n.t('canvas.quickStartManual') }}</span>
+            </button>
+        </div>
+    </section>
 
     <div class="map-filters glass-panel" *ngIf="!loading">
         <div class="map-filter-controls">

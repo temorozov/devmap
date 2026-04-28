@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, ElementRef, OnInit, ViewChild, inject, HostListener, effect } from '@angular/core';
+import { AfterViewInit, ChangeDetectorRef, Component, ElementRef, OnInit, ViewChild, inject, HostListener, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -34,6 +34,7 @@ interface FocusAction {
 }
 
 const HELP_STORAGE_KEY = 'skill-tree-help-seen';
+const QUICK_START_STORAGE_KEY = 'skill-tree-quick-start-dismissed';
 const DEFAULT_MAX_LEVEL = 3;
 const HOVER_TOOLTIP_DELAY_MS = 40;
 
@@ -44,7 +45,7 @@ const HOVER_TOOLTIP_DELAY_MS = 40;
   templateUrl: './canvas.component.html',
   styleUrls: ['./canvas.component.scss'],
 })
-export class CanvasComponent implements OnInit {
+export class CanvasComponent implements OnInit, AfterViewInit {
   route = inject(ActivatedRoute);
   router = inject(Router);
   treesService = inject(TreesService);
@@ -103,8 +104,10 @@ export class CanvasComponent implements OnInit {
   private hoverTooltipTimer: ReturnType<typeof setTimeout> | null = null;
   private hoveredNodeId: string | null = null;
   showHelp = false;
+  showQuickStart = false;
   isDemoTree = false;
   localDemoNodeCounter = 0;
+  private pendingDemoCenter = false;
 
   private readonly syncDemoTranslations = effect(() => {
     const language = this.i18n.language();
@@ -325,6 +328,12 @@ export class CanvasComponent implements OnInit {
     });
   }
 
+  ngAfterViewInit() {
+    if (this.pendingDemoCenter) {
+      this.centerDemoTreeInView();
+    }
+  }
+
   loadTree(id: string) {
     this.loading = true;
     this.isDemoTree = id === DEMO_TREE_ID;
@@ -333,7 +342,7 @@ export class CanvasComponent implements OnInit {
     this.selectedNode = null;
     this.selectedNodes.clear();
     this.hoveredNode = null;
-    this.maybeOpenHelp();
+    this.showQuickStart = !localStorage.getItem(QUICK_START_STORAGE_KEY);
 
     if (this.isDemoTree) {
       this.tree = {
@@ -348,6 +357,7 @@ export class CanvasComponent implements OnInit {
       this.nodes = getDemoSampleNodes(this.i18n.currentLanguage());
       this.centerDemoTreeInView();
       this.loading = false;
+      this.showQuickStart = true;
       return;
     }
 
@@ -357,12 +367,14 @@ export class CanvasComponent implements OnInit {
         if (tree.nodes) {
           this.nodes = tree.nodes;
           this.loading = false;
+          this.syncQuickStartVisibility();
           this.maybeOpenAiPromptFromQuery();
         } else {
           // Fetch separately if not included
           this.nodesService.getNodesByTree(id).subscribe(nodes => {
             this.nodes = nodes;
             this.loading = false;
+            this.syncQuickStartVisibility();
             this.maybeOpenAiPromptFromQuery();
           });
         }
@@ -375,6 +387,7 @@ export class CanvasComponent implements OnInit {
             this.loading = false;
             this.nodes = tree.nodes || [];
             this.isDemoTree = false;
+            this.syncQuickStartVisibility();
             this.maybeOpenAiPromptFromQuery();
           },
           error: () => {
@@ -900,6 +913,49 @@ export class CanvasComponent implements OnInit {
     return totalMaxLevel === 0 ? 0 : Math.round((totalLevel / totalMaxLevel) * 100);
   }
 
+  get isEmptyTree(): boolean {
+    return !this.loading && this.nodes.length === 0;
+  }
+
+  get quickStartTitle(): string {
+    if (this.isDemoTree) {
+      return this.i18n.t('canvas.quickStartDemoTitle');
+    }
+
+    if (this.nodes.length === 0) {
+      return this.i18n.t('canvas.quickStartEmptyTitle');
+    }
+
+    return this.i18n.t('canvas.quickStartActiveTitle');
+  }
+
+  get quickStartText(): string {
+    if (this.isDemoTree) {
+      return this.i18n.t('canvas.quickStartDemoText');
+    }
+
+    if (this.nodes.length === 0) {
+      return this.i18n.t('canvas.quickStartEmptyText');
+    }
+
+    return this.i18n.t('canvas.quickStartActiveText');
+  }
+
+  get quickStartPrimaryLabel(): string {
+    return this.isDemoTree
+      ? this.i18n.t('canvas.quickStartCreateOwn')
+      : this.i18n.t('canvas.quickStartStartAi');
+  }
+
+  handleQuickStartPrimary() {
+    if (this.isDemoTree) {
+      this.router.navigate(['/dashboard']);
+      return;
+    }
+
+    this.openAiPrompt();
+  }
+
   get calendarActivities() {
     return this.tree?.activities ?? [];
   }
@@ -1073,9 +1129,17 @@ export class CanvasComponent implements OnInit {
     localStorage.setItem(HELP_STORAGE_KEY, 'true');
   }
 
-  private maybeOpenHelp() {
-    if (!localStorage.getItem(HELP_STORAGE_KEY)) {
-      this.showHelp = true;
+  dismissQuickStart() {
+    this.showQuickStart = false;
+
+    if (!this.isDemoTree && this.nodes.length > 0) {
+      localStorage.setItem(QUICK_START_STORAGE_KEY, 'true');
+    }
+  }
+
+  private syncQuickStartVisibility() {
+    if (this.nodes.length === 0) {
+      this.showQuickStart = true;
     }
   }
 
@@ -1089,7 +1153,16 @@ export class CanvasComponent implements OnInit {
   }
 
   private centerDemoTreeInView() {
-    setTimeout(() => this.centerViewOnNodes(this.nodes), 0);
+    this.pendingDemoCenter = true;
+    setTimeout(() => {
+      if (!this.svgCanvas?.nativeElement) {
+        return;
+      }
+
+      this.pendingDemoCenter = false;
+      this.centerViewOnNodes(this.nodes);
+      this.cdr.detectChanges();
+    }, 0);
   }
 
   private centerViewOnNodes(nodes: SkillNode[]) {
