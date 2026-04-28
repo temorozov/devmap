@@ -7,14 +7,24 @@ import { of } from 'rxjs';
 describe('LoginComponent', () => {
   let component: LoginComponent;
   let fixture: ComponentFixture<LoginComponent>;
+  const handleOAuthToken = jest.fn();
+  const guestLogin = jest.fn(() => of({}));
+  const hasValidToken = jest.fn();
+  const navigate = jest.fn();
 
   beforeEach(async () => {
+    handleOAuthToken.mockReset();
+    guestLogin.mockClear();
+    hasValidToken.mockReset();
+    hasValidToken.mockReturnValue(false);
+    navigate.mockReset();
+
     await TestBed.configureTestingModule({
       imports: [LoginComponent],
       providers: [
-        { provide: AuthService, useValue: { guestLogin: () => of({}), handleOAuthToken: jest.fn() } },
+        { provide: AuthService, useValue: { guestLogin, handleOAuthToken, hasValidToken } },
         { provide: ActivatedRoute, useValue: { queryParams: of({}) } },
-        { provide: Router, useValue: { navigate: jest.fn() } },
+        { provide: Router, useValue: { navigate } },
       ],
     }).compileComponents();
 
@@ -25,5 +35,15 @@ describe('LoginComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('redirects authenticated users to the dashboard', () => {
+    hasValidToken.mockReturnValue(true);
+
+    fixture = TestBed.createComponent(LoginComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+
+    expect(navigate).toHaveBeenCalledWith(['/dashboard']);
   });
 });

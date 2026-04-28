@@ -1,0 +1,117 @@
+<main class="landing-page">
+  <section class="hero-section">
+    <header class="landing-nav">
+      <a class="brand-link" routerLink="/" aria-label="Skill Tree">
+        <span class="material-icons logo-icon">account_tree</span>
+        <span>{{ i18n.t('app.name') }}</span>
+      </a>
+
+      <div class="nav-actions">
+        <app-language-switcher></app-language-switcher>
+        <a class="nav-login" [routerLink]="authEntryRoute">{{ copy.login }}</a>
+      </div>
+    </header>
+
+    <div class="hero-content">
+      <div class="hero-copy">
+        <p class="eyebrow">{{ copy.eyebrow }}</p>
+        <h1>{{ copy.title }}</h1>
+        <p class="hero-subtitle">{{ copy.subtitle }}</p>
+
+        <div class="hero-actions">
+          <a class="btn-primary hero-primary" [routerLink]="authEntryRoute">
+            <span>{{ copy.primaryCta }}</span>
+            <span class="material-icons">arrow_forward</span>
+          </a>
+          <a class="btn-secondary hero-secondary" [routerLink]="demoTreeUrl">
+            <span class="material-icons">explore</span>
+            <span>{{ copy.secondaryCta }}</span>
+          </a>
+        </div>
+      </div>
+
+      <div class="skill-map-preview" aria-hidden="true">
+        <svg class="preview-lines" viewBox="0 0 640 430" role="img">
+          <path d="M320 334 C320 276 210 268 210 210" />
+          <path d="M320 334 C320 268 320 250 320 174" />
+          <path d="M320 334 C320 276 430 268 430 210" />
+          <path d="M210 210 C210 154 146 146 146 92" />
+          <path d="M430 210 C430 154 494 146 494 92" />
+        </svg>
+
+        <div class="map-node root-node">
+          <span class="material-icons">code</span>
+        </div>
+        <div class="map-node node-html complete">
+          <span class="material-icons">view_quilt</span>
+        </div>
+        <div class="map-node node-css active">
+          <span class="material-icons">palette</span>
+        </div>
+        <div class="map-node node-js">
+          <span class="material-icons">data_object</span>
+        </div>
+        <div class="map-node node-project">
+          <span class="material-icons">rocket_launch</span>
+        </div>
+        <div class="map-node node-share">
+          <span class="material-icons">share</span>
+        </div>
+
+        <div class="map-status glass-panel">
+          <span>{{ copy.visualBadge }}</span>
+          <strong>{{ copy.visualTitle }}</strong>
+          <div class="status-progress" aria-hidden="true">
+            <span></span>
+          </div>
+          <small>{{ copy.visualMeta }}</small>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="how-section" aria-labelledby="how-title">
+    <div class="section-heading">
+      <h2 id="how-title">{{ copy.howTitle }}</h2>
+      <p>{{ copy.howSubtitle }}</p>
+    </div>
+
+    <div class="steps-list">
+      <article class="step-item" *ngFor="let step of copy.steps; let index = index">
+        <div class="step-index">{{ index + 1 }}</div>
+        <div class="step-icon">
+          <span class="material-icons">{{ step.icon }}</span>
+        </div>
+        <div>
+          <h3>{{ step.title }}</h3>
+          <p>{{ step.text }}</p>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="features-section" aria-labelledby="features-title">
+    <h2 id="features-title">{{ copy.featuresTitle }}</h2>
+
+    <div class="features-list">
+      <article class="feature-item" *ngFor="let feature of copy.features">
+        <span class="material-icons">{{ feature.icon }}</span>
+        <div>
+          <h3>{{ feature.title }}</h3>
+          <p>{{ feature.text }}</p>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="final-cta">
+    <div>
+      <h2>{{ copy.finalTitle }}</h2>
+      <p>{{ copy.finalText }}</p>
+    </div>
+    <a class="btn-primary final-button" [routerLink]="authEntryRoute">
+      <span>{{ copy.finalCta }}</span>
+      <span class="material-icons">arrow_forward</span>
+    </a>
+  </section>
+</main>

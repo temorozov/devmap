@@ -4,6 +4,9 @@
 
 Skill Tree is a web app for creating visual learning trees. Users can create trees, add and edit skill nodes, track node progress, open a demo tree, share trees by token, and generate tree branches with AI. Guest users can enter the app, but AI generation endpoints reject guest users.
 
+## Целевая аудитория
+Люди которые хотят изучить новую сферу , которым нужен интерактивный и простой roadmap , и важен процесс геймификации развития . Проблемы которые решает сайт: .Они не знают с чего начать, в обычных роадмапах все сложно и непонятно, хочется простой и игровой вариант
+
 ## Stack
 
 - Monorepo: Nx

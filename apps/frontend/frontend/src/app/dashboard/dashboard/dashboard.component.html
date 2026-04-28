@@ -2,7 +2,9 @@
     <header class="topbar">
         <div class="logo-area">
             <span class="material-icons logo-icon">account_tree</span>
-            <h2>{{ i18n.t('app.name') }}</h2>
+            <a class="brand-link" routerLink="/">
+                <h2>{{ i18n.t('app.name') }}</h2>
+            </a>
         </div>
         <div class="actions">
             <app-language-switcher></app-language-switcher>

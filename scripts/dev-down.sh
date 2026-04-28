@@ -6,6 +6,7 @@ PROJECT_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 cd "${PROJECT_ROOT}"
 
 COMPOSE_ARGS=(--env-file .env -f docker-compose.yml -f docker-compose.dev.yml)
+DEV_SERVICES=(backend frontend postgres)
 
 disable_restart_policy() {
   local service="$1"
@@ -48,17 +49,61 @@ graceful_stop_backend() {
   fi
 }
 
+running_service_ids() {
+  docker compose "${COMPOSE_ARGS[@]}" ps -q --status running "${DEV_SERVICES[@]}" 2>/dev/null || true
+}
+
+remove_stopped_services() {
+  docker compose "${COMPOSE_ARGS[@]}" rm -fv "${DEV_SERVICES[@]}" >/dev/null 2>&1 || true
+}
+
+try_compose_down() {
+  timeout 10s docker compose "${COMPOSE_ARGS[@]}" down --remove-orphans --timeout 2 >/dev/null 2>&1 || true
+}
+
+try_sudo_stop() {
+  local container_ids
+
+  container_ids="$(running_service_ids | tr '\n' ' ')"
+  if [ -z "${container_ids// }" ]; then
+    return 0
+  fi
+
+  if [ -t 0 ] && command -v sudo >/dev/null 2>&1; then
+    echo "Docker denied normal stop. Trying sudo docker stop for stuck dev containers ..." >&2
+    # shellcheck disable=SC2086
+    sudo docker update --restart=no ${container_ids} >/dev/null 2>&1 || true
+    # shellcheck disable=SC2086
+    sudo docker stop ${container_ids} >/dev/null 2>&1 || true
+    # shellcheck disable=SC2086
+    sudo docker rm -f ${container_ids} >/dev/null 2>&1 || true
+  fi
+}
+
+assert_stopped() {
+  local still_running
+
+  still_running="$(docker compose "${COMPOSE_ARGS[@]}" ps --status running "${DEV_SERVICES[@]}" 2>/dev/null | tail -n +2 || true)"
+  if [ -n "${still_running}" ]; then
+    echo "Some dev containers are still running because Docker denied stop/kill on this host:" >&2
+    echo "${still_running}" >&2
+    echo >&2
+    echo "Run this once, then start again with npm run dev:" >&2
+    echo "  sudo snap restart docker" >&2
+    echo >&2
+    echo "If you do not use snap Docker, run:" >&2
+    echo "  sudo systemctl restart docker" >&2
+    exit 1
+  fi
+}
+
 graceful_stop_service frontend nginx -s quit
 graceful_stop_backend
 graceful_stop_service postgres sh -lc 'su postgres -c "pg_ctl -D \"${PGDATA:-/var/lib/postgresql/data}\" -m fast stop"'
-docker compose "${COMPOSE_ARGS[@]}" stop frontend postgres >/dev/null 2>&1 || true
-docker compose "${COMPOSE_ARGS[@]}" rm -fsv frontend postgres >/dev/null 2>&1 || true
 
-if docker compose "${COMPOSE_ARGS[@]}" ps --status running backend | tail -n +2 | grep -q .; then
-  echo "Backend is still running because Docker denied stop/kill on this host." >&2
-  echo "Frontend/Postgres were cleaned up. Restart Docker daemon/host to fully remove backend." >&2
-  echo "You can still run: npm run dev" >&2
-  exit 0
-fi
-
-docker compose "${COMPOSE_ARGS[@]}" rm -fsv backend >/dev/null 2>&1 || true
+timeout 10s docker compose "${COMPOSE_ARGS[@]}" stop --timeout 2 "${DEV_SERVICES[@]}" >/dev/null 2>&1 || true
+remove_stopped_services
+try_compose_down
+try_sudo_stop
+remove_stopped_services
+assert_stopped

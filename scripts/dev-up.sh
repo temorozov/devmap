@@ -82,23 +82,18 @@ graceful_stop_backend() {
   return 0
 }
 
-# In this environment Docker sometimes fails to stop long-running containers
-# from the outside with "permission denied". Stopping the main process from
-# inside the container avoids the recreate/name-conflict failure path.
-graceful_stop_service frontend nginx -s quit
-backend_stopped=1
-if ! graceful_stop_backend; then
-  backend_stopped=0
-fi
-graceful_stop_service postgres sh -lc 'su postgres -c "pg_ctl -D \"${PGDATA:-/var/lib/postgresql/data}\" -m fast stop"'
+echo "Stopping existing dev containers ..."
+./scripts/dev-down.sh
 
-docker compose "${COMPOSE_ARGS[@]}" rm -fsv backend frontend postgres >/dev/null 2>&1 || true
-if [ "${backend_stopped}" -eq 0 ]; then
-  echo "Warning: backend container cannot be stopped on this host, starting with --no-recreate." >&2
-  docker compose "${COMPOSE_ARGS[@]}" up --build --no-recreate -d
-else
-  docker compose "${COMPOSE_ARGS[@]}" up --build -d
-fi
+echo "Starting Postgres ..."
+docker compose "${COMPOSE_ARGS[@]}" up -d postgres
+
+echo "Building fresh backend/frontend images ..."
+docker compose "${COMPOSE_ARGS[@]}" build --no-cache backend frontend
+
+./scripts/dev-repair-prisma.sh
+
+docker compose "${COMPOSE_ARGS[@]}" up --force-recreate --remove-orphans -d backend frontend
 
 docker compose "${COMPOSE_ARGS[@]}" logs -f backend frontend postgres &
 LOG_PID=$!

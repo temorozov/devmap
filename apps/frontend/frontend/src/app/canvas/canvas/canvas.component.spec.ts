@@ -35,7 +35,8 @@ describe('CanvasComponent', () => {
         {
           provide: ActivatedRoute,
           useValue: {
-            paramMap: of({ get: () => '1' })
+            paramMap: of({ get: () => '1' }),
+            queryParamMap: of({ get: () => null })
           }
         },
         { provide: Router, useValue: { navigate: jest.fn() } },
@@ -53,6 +54,28 @@ describe('CanvasComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('opens AI prompt and prefills text from query params', async () => {
+    const route = TestBed.inject(ActivatedRoute) as {
+      paramMap: any;
+      queryParamMap: any;
+    };
+
+    route.paramMap = of({ get: (key: string) => (key === 'id' ? '1' : null) });
+    route.queryParamMap = of({
+      get: (key: string) => {
+        if (key === 'openAi') return '1';
+        if (key === 'aiPrompt') return 'New Tree Title';
+        return null;
+      }
+    });
+
+    component.ngOnInit();
+    await Promise.resolve();
+
+    expect(component.showAiPrompt).toBe(true);
+    expect(component.aiPrompt).toBe('New Tree Title');
   });
 
   it('clears AI generation loader when generation succeeds', () => {

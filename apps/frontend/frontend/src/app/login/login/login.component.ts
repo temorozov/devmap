@@ -31,6 +31,11 @@ export class LoginComponent implements OnInit {
       const token = params['token'];
       if (token) {
         this.authService.handleOAuthToken(token);
+        return;
+      }
+
+      if (this.authService.hasValidToken()) {
+        this.router.navigate(['/dashboard']);
       }
     });
   }

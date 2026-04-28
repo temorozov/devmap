@@ -4,7 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { TreesService, Tree } from '../../trees.service';
 import { NodesService, SkillNode } from '../../nodes.service';
-import { finalize, take } from 'rxjs';
+import { combineLatest, finalize, take } from 'rxjs';
 import { LinkifyPipe } from '../../shared/pipes/linkify.pipe';
 import { AuthService } from '../../auth.service';
 import { DialogService } from '../../shared/services/dialog.service';
@@ -205,6 +205,8 @@ export class CanvasComponent implements OnInit {
   showAiPrompt = false;
   aiPrompt = '';
   isGenerating = false;
+  private pendingAiPrompt: string | null = null;
+  private shouldAutoOpenAi = false;
 
   // Tree Title Edit State
   isEditingTreeTitle = false;
@@ -313,9 +315,11 @@ export class CanvasComponent implements OnInit {
   @ViewChild('svgCanvas') svgCanvas!: ElementRef<SVGSVGElement>;
 
   ngOnInit() {
-    this.route.paramMap.subscribe(params => {
+    combineLatest([this.route.paramMap, this.route.queryParamMap]).subscribe(([params, queryParams]) => {
       const id = params.get('id');
       if (id) {
+        this.pendingAiPrompt = (queryParams.get('aiPrompt') || '').trim();
+        this.shouldAutoOpenAi = queryParams.get('openAi') === '1';
         this.loadTree(id);
       }
     });
@@ -353,11 +357,13 @@ export class CanvasComponent implements OnInit {
         if (tree.nodes) {
           this.nodes = tree.nodes;
           this.loading = false;
+          this.maybeOpenAiPromptFromQuery();
         } else {
           // Fetch separately if not included
           this.nodesService.getNodesByTree(id).subscribe(nodes => {
             this.nodes = nodes;
             this.loading = false;
+            this.maybeOpenAiPromptFromQuery();
           });
         }
       },
@@ -369,12 +375,35 @@ export class CanvasComponent implements OnInit {
             this.loading = false;
             this.nodes = tree.nodes || [];
             this.isDemoTree = false;
+            this.maybeOpenAiPromptFromQuery();
           },
           error: () => {
             this.router.navigate(['/dashboard']);
           }
         });
       }
+    });
+  }
+
+  private maybeOpenAiPromptFromQuery() {
+    if (!this.shouldAutoOpenAi || this.isDemoTree) {
+      this.shouldAutoOpenAi = false;
+      this.pendingAiPrompt = null;
+      return;
+    }
+
+    this.isGuest$.pipe(take(1)).subscribe(isGuest => {
+      if (isGuest) {
+        this.shouldAutoOpenAi = false;
+        this.pendingAiPrompt = null;
+        return;
+      }
+
+      this.showAiPrompt = true;
+      this.aiPrompt = this.pendingAiPrompt ?? '';
+      this.shouldAutoOpenAi = false;
+      this.pendingAiPrompt = null;
+      this.cdr.markForCheck();
     });
   }
 

@@ -62,14 +62,20 @@ export class DashboardComponent implements OnInit {
   }
 
   createTree() {
-    if (!this.newTreeTitle.trim()) return;
-    this.treesService.createTree(this.newTreeTitle).subscribe({
+    const title = this.newTreeTitle.trim();
+    if (!title) return;
+    this.treesService.createTree(title).subscribe({
       next: (tree) => {
         this.trees.unshift(this.toViewModel(tree));
         this.showCreateModal = false;
         this.newTreeTitle = '';
         this.cdr.markForCheck();
-        this.openTree(tree.id);
+        this.router.navigate(['/tree', tree.id], {
+          queryParams: {
+            aiPrompt: title,
+            openAi: '1',
+          },
+        });
       }
     });
   }

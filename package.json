@@ -9,6 +9,7 @@
     "dev:fast:db": "docker compose --env-file .env -f docker-compose.yml -f docker-compose.dev.yml up -d postgres",
     "dev:fast:frontend": "npx nx serve frontend-frontend",
     "dev:fast:backend": "./scripts/dev-fast.sh backend",
+    "dev:repair-db": "./scripts/dev-repair-prisma.sh",
     "prod": "./deploy.sh",
     "prod:recreate-db": "docker compose --env-file .env.production -f docker-compose.yml down -v && docker compose --env-file .env.production -f docker-compose.yml up -d --build",
     "dev:down": "./scripts/dev-down.sh",
