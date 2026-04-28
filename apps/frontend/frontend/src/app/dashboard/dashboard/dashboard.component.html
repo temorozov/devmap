@@ -26,8 +26,11 @@
     </header>
 
     <main class="content">
-        <div class="header-row">
-            <h1>{{ i18n.t('dashboard.heading') }}</h1>
+        <div class="dashboard-header">
+            <div class="header-copy">
+                <span class="section-kicker">{{ i18n.t('app.name') }}</span>
+                <h1>{{ i18n.t('dashboard.heading') }}</h1>
+            </div>
             <button class="btn-primary prominent-btn" (click)="openCreateModal()">
                 <span class="material-icons">add</span>
                 <span>{{ i18n.t('dashboard.newTree') }}</span>
@@ -57,8 +60,15 @@
 
         <div class="trees-grid" *ngIf="!loading">
             <div class="tree-card glass-panel example-card" (click)="openDemoTree()">
-                <div class="card-badge">{{ i18n.t('dashboard.exampleBadge') }}</div>
+                <div class="example-orbit" aria-hidden="true">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
                 <div class="card-content">
+                    <div class="card-topline">
+                        <div class="card-badge">{{ i18n.t('dashboard.exampleBadge') }}</div>
+                    </div>
                     <div class="icon-wrapper">
                         <span class="material-icons">explore</span>
                     </div>
@@ -73,8 +83,10 @@
 
             <div class="tree-card glass-panel" *ngFor="let tree of trees; trackBy: trackByTreeId" (click)="openTree(tree.id)">
                 <div class="card-content">
-                    <div class="icon-wrapper">
-                        <span class="material-icons">account_tree</span>
+                    <div class="card-topline">
+                        <div class="icon-wrapper">
+                            <span class="material-icons">account_tree</span>
+                        </div>
                     </div>
                     <h3>{{ tree.title }}</h3>
                     <p class="date">{{ tree.updatedLabel }}</p>
@@ -90,6 +102,7 @@
                         class="action-btn share-btn"
                         (click)="copyShareLink($event, tree.sharedToken)"
                         [title]="i18n.t('dashboard.copyLink')"
+                        [attr.aria-label]="i18n.t('dashboard.copyLink')"
                     >
                         <span class="material-icons">share</span>
                     </button>
@@ -98,6 +111,7 @@
                         class="action-btn delete-btn"
                         (click)="deleteTree($event, tree.id)"
                         [title]="i18n.t('dashboard.deleteTree')"
+                        [attr.aria-label]="i18n.t('dashboard.deleteTree')"
                     >
                         <span class="material-icons">delete</span>
                     </button>
