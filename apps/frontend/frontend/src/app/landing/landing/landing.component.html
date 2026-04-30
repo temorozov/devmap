@@ -90,6 +90,68 @@
     </div>
   </section>
 
+  <section class="skill-intro-section" aria-labelledby="skill-intro-title">
+    <div class="skill-intro-copy">
+      <p class="section-kicker">{{ copy.skillIntroPanelTitle }}</p>
+      <h2 id="skill-intro-title">{{ copy.skillIntroTitle }}</h2>
+      <p>{{ copy.skillIntroSubtitle }}</p>
+
+      <div class="skill-hints">
+        <article class="skill-hint" *ngFor="let hint of copy.skillIntroHints">
+          <span class="material-icons">{{ hint.icon }}</span>
+          <div>
+            <h3>{{ hint.title }}</h3>
+            <p>{{ hint.text }}</p>
+          </div>
+        </article>
+      </div>
+    </div>
+
+    <div class="skill-panel-preview glass-panel" aria-hidden="true">
+      <div class="skill-panel-header">
+        <h3>{{ copy.skillIntroPanelTitle }}</h3>
+        <span class="material-icons">close</span>
+      </div>
+
+      <div class="skill-panel-overview">
+        <div class="skill-panel-node">
+          <span class="material-icons">palette</span>
+        </div>
+        <div>
+          <span class="skill-panel-label">{{ copy.skillIntroTitleLabel }}</span>
+          <strong>{{ copy.skillIntroNodeTitle }}</strong>
+          <small>{{ copy.skillIntroStatus }}</small>
+        </div>
+      </div>
+
+      <div class="skill-panel-block">
+        <span class="skill-panel-label">{{ copy.skillIntroDescriptionLabel }}</span>
+        <p>{{ copy.skillIntroDescription }}</p>
+      </div>
+
+      <div class="skill-panel-grid">
+        <div class="skill-panel-block">
+          <span class="skill-panel-label">{{ copy.skillIntroIconLabel }}</span>
+          <div class="mini-icons">
+            <span class="material-icons active">palette</span>
+            <span class="material-icons">code</span>
+            <span class="material-icons">menu_book</span>
+            <span class="material-icons">lightbulb</span>
+          </div>
+          <p>{{ copy.skillIntroIconText }}</p>
+        </div>
+
+        <div class="skill-panel-block level-card">
+          <span class="skill-panel-label">{{ copy.skillIntroLevelLabel }}</span>
+          <strong>{{ copy.skillIntroLevelText }}</strong>
+          <div class="level-preview" aria-hidden="true">
+            <span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <section class="features-section" aria-labelledby="features-title">
     <h2 id="features-title">{{ copy.featuresTitle }}</h2>
 
