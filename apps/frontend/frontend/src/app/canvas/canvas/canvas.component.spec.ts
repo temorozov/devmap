@@ -1,4 +1,4 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { CanvasComponent } from './canvas.component';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TreesService } from '../../trees.service';
@@ -101,6 +101,72 @@ describe('CanvasComponent', () => {
     expect(component.aiPrompt).toBe('');
     expect(component.nodes).toContain(generatedNode);
   });
+
+  it('centers the canvas on the root node when a tree loads', fakeAsync(() => {
+    const rootNode = {
+      id: 'root-node',
+      treeId: '1',
+      title: 'Root',
+      positionX: 1200,
+      positionY: 900,
+      progress: 0,
+      createdAt: '',
+      updatedAt: '',
+    };
+    const childNode = {
+      ...rootNode,
+      id: 'child-node',
+      title: 'Child',
+      parentId: 'root-node',
+      positionX: 1600,
+      positionY: 1200,
+    };
+    treesServiceMock.getTree.mockReturnValue(of({ id: '1', title: 'Tree', nodes: [childNode, rootNode] }));
+
+    component.loadTree('1');
+    tick();
+
+    const safeCenterX = 360 + (window.innerWidth - 360 - 24) / 2;
+    const safeCenterY = 112 + (window.innerHeight - 112 - 36) / 2;
+
+    expect(component.zoomLevel).toBe(1);
+    expect(component.viewBox.x).toBe(rootNode.positionX - safeCenterX);
+    expect(component.viewBox.y).toBe(rootNode.positionY - safeCenterY);
+  }));
+
+  it('centers the canvas on the root node after AI generation succeeds', fakeAsync(() => {
+    const rootNode = {
+      id: 'generated-root',
+      treeId: '1',
+      title: 'Generated Root',
+      positionX: 900,
+      positionY: 700,
+      progress: 0,
+      createdAt: '',
+      updatedAt: '',
+    };
+    const childNode = {
+      ...rootNode,
+      id: 'generated-child',
+      title: 'Generated Child',
+      parentId: 'generated-root',
+      positionX: 1100,
+      positionY: 900,
+    };
+    treesServiceMock.generateTree.mockReturnValue(of([childNode, rootNode]));
+    component.tree = { id: '1', title: 'Tree', sharedToken: '', userId: 'user', createdAt: '', updatedAt: '' };
+    component.aiPrompt = 'Learn Angular';
+
+    component.generateWithAi();
+    tick();
+
+    const safeCenterX = 360 + (window.innerWidth - 360 - 24) / 2;
+    const safeCenterY = 112 + (window.innerHeight - 112 - 36) / 2;
+
+    expect(component.zoomLevel).toBe(1);
+    expect(component.viewBox.x).toBe(rootNode.positionX - safeCenterX);
+    expect(component.viewBox.y).toBe(rootNode.positionY - safeCenterY);
+  }));
 
   it('does not start a second AI generation while one is pending', () => {
     const pendingGeneration = new Subject<any[]>();

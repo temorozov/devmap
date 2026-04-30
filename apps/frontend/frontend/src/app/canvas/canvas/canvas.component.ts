@@ -283,6 +283,7 @@ export class CanvasComponent implements OnInit, AfterViewInit {
           this.nodes = [...this.nodes, ...generatedNodes];
           this.showAiPrompt = false;
           this.aiPrompt = '';
+          this.centerViewOnRootNode();
           this.cdr.detectChanges();
         },
         error: (err) => {
@@ -363,12 +364,14 @@ export class CanvasComponent implements OnInit, AfterViewInit {
         if (tree.nodes) {
           this.nodes = tree.nodes;
           this.loading = false;
+          this.centerViewOnRootNode();
           this.maybeOpenAiPromptFromQuery();
         } else {
           // Fetch separately if not included
           this.nodesService.getNodesByTree(id).subscribe(nodes => {
             this.nodes = nodes;
             this.loading = false;
+            this.centerViewOnRootNode();
             this.maybeOpenAiPromptFromQuery();
           });
         }
@@ -381,6 +384,7 @@ export class CanvasComponent implements OnInit, AfterViewInit {
             this.loading = false;
             this.nodes = tree.nodes || [];
             this.isDemoTree = false;
+            this.centerViewOnRootNode();
             this.maybeOpenAiPromptFromQuery();
           },
           error: () => {
@@ -1105,6 +1109,32 @@ export class CanvasComponent implements OnInit, AfterViewInit {
     }, 0);
   }
 
+  private centerViewOnRootNode() {
+    const rootNode = this.findRootNode(this.nodes);
+    if (!rootNode) return;
+
+    setTimeout(() => {
+      if (!this.svgCanvas?.nativeElement) {
+        return;
+      }
+
+      const currentRootNode = this.nodes.find(node => node.id === rootNode.id);
+      if (!currentRootNode) {
+        return;
+      }
+
+      this.centerViewOnNode(currentRootNode);
+      this.cdr.detectChanges();
+    }, 0);
+  }
+
+  private findRootNode(nodes: SkillNode[]): SkillNode | undefined {
+    if (!nodes.length) return undefined;
+
+    const nodeIds = new Set(nodes.map(node => node.id));
+    return nodes.find(node => !node.parentId || !nodeIds.has(node.parentId)) ?? nodes[0];
+  }
+
   private centerViewOnNodes(nodes: SkillNode[]) {
     if (!nodes.length) return;
 
@@ -1114,31 +1144,55 @@ export class CanvasComponent implements OnInit, AfterViewInit {
     const minY = Math.min(...nodes.map(node => node.positionY - nodeRadius));
     const maxY = Math.max(...nodes.map(node => node.positionY + nodeRadius));
 
-    const viewportWidth = this.svgCanvas?.nativeElement.clientWidth || window.innerWidth;
-    const viewportHeight = this.svgCanvas?.nativeElement.clientHeight || window.innerHeight;
-    const isCompactViewport = viewportWidth <= 992;
+    const viewport = this.getViewportSafeArea();
+
+    const contentWidth = Math.max(1, maxX - minX);
+    const contentHeight = Math.max(1, maxY - minY);
+    const zoomToFit = Math.min(viewport.availableWidth / contentWidth, viewport.availableHeight / contentHeight);
+    const clampedZoom = Math.min(5, Math.max(0.15, Math.min(1, zoomToFit)));
+
+    this.zoomLevel = clampedZoom;
+    this.viewBox.w = viewport.width / this.zoomLevel;
+    this.viewBox.h = viewport.height / this.zoomLevel;
+
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+    const safeCenterX = viewport.safeLeft + viewport.availableWidth / 2;
+    const safeCenterY = viewport.safeTop + viewport.availableHeight / 2;
+    this.viewBox.x = centerX - safeCenterX / this.zoomLevel;
+    this.viewBox.y = centerY - safeCenterY / this.zoomLevel;
+  }
+
+  private centerViewOnNode(node: SkillNode) {
+    const viewport = this.getViewportSafeArea();
+
+    this.zoomLevel = 1;
+    this.viewBox.w = viewport.width / this.zoomLevel;
+    this.viewBox.h = viewport.height / this.zoomLevel;
+
+    const safeCenterX = viewport.safeLeft + viewport.availableWidth / 2;
+    const safeCenterY = viewport.safeTop + viewport.availableHeight / 2;
+    this.viewBox.x = node.positionX - safeCenterX / this.zoomLevel;
+    this.viewBox.y = node.positionY - safeCenterY / this.zoomLevel;
+  }
+
+  private getViewportSafeArea() {
+    const width = this.svgCanvas?.nativeElement.clientWidth || window.innerWidth;
+    const height = this.svgCanvas?.nativeElement.clientHeight || window.innerHeight;
+    const isCompactViewport = width <= 992;
     const safeTop = isCompactViewport ? 126 : 112;
     const safeBottom = isCompactViewport ? 108 : 36;
     const safeLeft = isCompactViewport ? 12 : 360;
     const safeRight = isCompactViewport ? 12 : 24;
-    const availableWidth = Math.max(1, viewportWidth - safeLeft - safeRight);
-    const availableHeight = Math.max(1, viewportHeight - safeTop - safeBottom);
 
-    const contentWidth = Math.max(1, maxX - minX);
-    const contentHeight = Math.max(1, maxY - minY);
-    const zoomToFit = Math.min(availableWidth / contentWidth, availableHeight / contentHeight);
-    const clampedZoom = Math.min(5, Math.max(0.15, Math.min(1, zoomToFit)));
-
-    this.zoomLevel = clampedZoom;
-    this.viewBox.w = viewportWidth / this.zoomLevel;
-    this.viewBox.h = viewportHeight / this.zoomLevel;
-
-    const centerX = (minX + maxX) / 2;
-    const centerY = (minY + maxY) / 2;
-    const safeCenterX = safeLeft + availableWidth / 2;
-    const safeCenterY = safeTop + availableHeight / 2;
-    this.viewBox.x = centerX - safeCenterX / this.zoomLevel;
-    this.viewBox.y = centerY - safeCenterY / this.zoomLevel;
+    return {
+      width,
+      height,
+      safeTop,
+      safeLeft,
+      availableWidth: Math.max(1, width - safeLeft - safeRight),
+      availableHeight: Math.max(1, height - safeTop - safeBottom),
+    };
   }
 
   setStatusFilter(filter: NodeStatusFilter) {
