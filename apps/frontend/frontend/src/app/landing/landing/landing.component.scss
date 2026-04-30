@@ -10,8 +10,8 @@
 
 .hero-section {
   position: relative;
-  min-height: 88svh;
-  padding: 1.1rem clamp(1rem, 3vw, 2rem) 2.8rem;
+  min-height: 86svh;
+  padding: 1.1rem clamp(1rem, 3vw, 2rem) 2.4rem;
   isolation: isolate;
   background:
     linear-gradient(90deg, rgba(15, 17, 21, 0.99) 0%, rgba(15, 17, 21, 0.9) 42%, rgba(15, 17, 21, 0.42) 100%),
@@ -87,27 +87,28 @@
 .hero-content {
   position: relative;
   z-index: 2;
-  min-height: calc(88svh - 6.6rem);
+  min-height: calc(86svh - 6.2rem);
   display: grid;
-  grid-template-columns: minmax(0, 0.92fr) minmax(420px, 1.08fr);
+  grid-template-columns: minmax(0, 0.84fr) minmax(420px, 1.16fr);
   align-items: center;
-  gap: clamp(1rem, 4vw, 4rem);
+  gap: clamp(1.4rem, 4.6vw, 4.5rem);
   max-width: 1220px;
   margin: 0 auto;
-  padding-top: 2.2rem;
+  padding-top: 1.8rem;
 }
 
 .hero-copy {
-  max-width: 590px;
+  max-width: 540px;
   animation: hero-copy-in 0.65s ease-out both;
 
   h1 {
     margin-top: 0.7rem;
-    font-size: clamp(3.6rem, 7.8vw, 6.8rem);
-    line-height: 0.93;
+    font-size: clamp(3.35rem, 6.6vw, 5.9rem);
+    line-height: 0.95;
     font-weight: 780;
     letter-spacing: 0;
-    max-width: 720px;
+    max-width: 600px;
+    text-wrap: balance;
   }
 }
 
@@ -121,9 +122,9 @@
 }
 
 .hero-subtitle {
-  max-width: 500px;
-  margin-top: 1.2rem;
-  color: rgba(226, 232, 240, 0.82);
+  max-width: 470px;
+  margin-top: 1.05rem;
+  color: rgba(226, 232, 240, 0.84);
   font-size: clamp(1rem, 1.4vw, 1.25rem);
   line-height: 1.55;
 }
@@ -145,12 +146,12 @@
 .hero-secondary,
 .final-button {
   width: auto;
-  padding-inline: 1.05rem;
+  padding-inline: 1.08rem;
 }
 
 .skill-map-preview {
   position: relative;
-  width: min(52vw, 660px);
+  width: min(52vw, 630px);
   aspect-ratio: 1.45;
   justify-self: end;
   animation: map-in 0.7s 0.1s cubic-bezier(0.16, 1, 0.3, 1) both;
@@ -350,6 +351,13 @@
   gap: 0.95rem;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.025));
+  transition: background-color 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.035);
+    border-color: rgba(96, 165, 250, 0.24);
+    transform: translateY(-2px);
+  }
 
   h3 {
     font-size: 1.12rem;
@@ -411,9 +419,14 @@
   align-items: start;
   padding: 1.25rem 1.1rem 1.3rem 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  transition: background-color 0.18s ease;
 
   &:nth-child(2n) {
     padding-left: 1.1rem;
+  }
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.025);
   }
 
   h3 {
@@ -542,7 +555,7 @@
 
   .hero-copy {
     h1 {
-      font-size: clamp(3.3rem, 14vw, 5.2rem);
+      font-size: clamp(3rem, 12vw, 4.8rem);
     }
   }
 
@@ -588,7 +601,7 @@
   }
 
   .hero-copy h1 {
-    font-size: clamp(3rem, 13vw, 3.65rem);
+    font-size: clamp(2.65rem, 12vw, 3.35rem);
   }
 
   .hero-actions {

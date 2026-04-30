@@ -37,7 +37,7 @@ interface LandingCopy {
 const landingCopy: Record<AppLanguage, LandingCopy> = {
   en: {
     eyebrow: 'A simple roadmap for a new field',
-    title: 'Start learning without getting lost',
+    title: 'Map your learning',
     subtitle: 'Skill Tree turns a confusing topic into a clear game map with small steps, levels, and visible progress.',
     primaryCta: 'Build my roadmap',
     secondaryCta: 'Try the demo map',
