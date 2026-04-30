@@ -415,6 +415,10 @@
     white-space: nowrap;
 }
 
+.dock-label-mobile {
+    display: none;
+}
+
 .icon-btn {
     background: transparent;
     border: none;
@@ -688,6 +692,45 @@
     }
 }
 
+.level-stepper {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr) 44px;
+    gap: 0.45rem;
+    align-items: center;
+
+    .detail-input {
+        min-width: 0;
+        text-align: center;
+    }
+}
+
+.stepper-btn {
+    width: 44px;
+    min-height: 44px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.035);
+    color: var(--text-main);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+
+    .material-icons {
+        font-size: 1.2rem;
+    }
+
+    &:hover {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(255, 255, 255, 0.14);
+    }
+
+    &:active {
+        transform: scale(0.97);
+    }
+}
+
 .tooltip-layer {
     isolation: isolate;
 }
@@ -864,6 +907,8 @@
 
     .filter-chip {
         flex: 0 0 auto;
+        min-height: 44px;
+        padding: 0.32rem 0.68rem;
     }
 
     .canvas-header {
@@ -960,7 +1005,20 @@
         }
 
         .panel-body {
-            padding: 0.75rem 0.75rem 0.9rem;
+            padding: 0.75rem 0.75rem 6.5rem;
+        }
+    }
+
+    @media (pointer: coarse) {
+        .skill-node {
+            .link-handle {
+                fill: var(--accent-hover);
+                opacity: 0.82;
+            }
+
+            .link-handle-hit-area {
+                cursor: pointer;
+            }
         }
     }
 
@@ -984,9 +1042,9 @@
     }
 
     .filter-chip {
-        min-height: 26px;
-        padding: 0.18rem 0.42rem;
-        font-size: 0.69rem;
+        min-height: 44px;
+        padding: 0.32rem 0.58rem;
+        font-size: 0.72rem;
     }
 
     .canvas-action-dock {
@@ -995,9 +1053,9 @@
     }
 
     .dock-icon-btn {
-        width: 40px;
-        height: 40px;
-        flex: 0 0 40px;
+        width: 44px;
+        height: 44px;
+        flex: 0 0 44px;
     }
 
     .dock-secondary-action,
@@ -1012,6 +1070,14 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
+    }
+
+    .dock-label-full {
+        display: none;
+    }
+
+    .dock-label-mobile {
+        display: inline;
     }
 
     .detail-block,
@@ -1038,6 +1104,15 @@
     .row-group {
         flex-direction: column;
         gap: 0.75rem;
+    }
+
+    .level-stepper {
+        grid-template-columns: 48px minmax(0, 1fr) 48px;
+
+        .stepper-btn {
+            width: 48px;
+            min-height: 48px;
+        }
     }
 
     .level-inputs {

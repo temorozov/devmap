@@ -13,13 +13,9 @@
                 <span>{{ i18n.t('dashboard.logout') }}</span>
             </button>
             <div *ngIf="isGuest$ | async" class="guest-actions">
-                <a routerLink="/login" class="btn-secondary">
+                <a routerLink="/login" class="btn-primary">
                     <span class="material-icons">login</span>
                     <span>{{ i18n.t('dashboard.login') }}</span>
-                </a>
-                <a routerLink="/register" class="btn-primary">
-                    <span class="material-icons">person_add</span>
-                    <span>{{ i18n.t('dashboard.register') }}</span>
                 </a>
             </div>
         </div>

@@ -686,6 +686,10 @@ export class CanvasComponent implements OnInit, AfterViewInit {
   onNodeContextMenu(event: MouseEvent, node: SkillNode) {
     event.preventDefault();
     event.stopPropagation();
+    this.openNodeProperties(node);
+  }
+
+  private openNodeProperties(node: SkillNode) {
     this.hideNodeTooltip();
     this.interactionState = 'idle';
     this.activePointers.clear();
@@ -696,6 +700,11 @@ export class CanvasComponent implements OnInit, AfterViewInit {
   }
 
   onNodeTap(event: PointerEvent | MouseEvent, node: SkillNode) {
+    if ('pointerType' in event && event.pointerType !== 'mouse') {
+      this.openNodeProperties(node);
+      return;
+    }
+
     const maxLvl = node.maxLevel || DEFAULT_MAX_LEVEL;
     let currLvl = node.level || 0;
 
@@ -717,6 +726,15 @@ export class CanvasComponent implements OnInit, AfterViewInit {
       this.editNodeData.level = currLvl;
       this.syncFilteredStateAfterNodeChange(node);
     }
+  }
+
+  adjustSelectedNodeLevel(delta: number) {
+    if (!this.selectedNode) return;
+
+    const maxLvl = Number(this.editNodeData.maxLevel) || DEFAULT_MAX_LEVEL;
+    const currLvl = Number(this.editNodeData.level) || 0;
+    this.editNodeData.level = Math.min(maxLvl, Math.max(0, currLvl + delta));
+    this.saveNodeProperties();
   }
 
   @HostListener('window:resize')

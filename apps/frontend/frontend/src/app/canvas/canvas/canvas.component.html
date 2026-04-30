@@ -111,7 +111,8 @@
         </button>
         <button type="button" class="btn-secondary dock-secondary-action" (click)="addNode()">
             <span class="material-icons">add</span>
-            <span>{{ i18n.t('canvas.addSkill') }}</span>
+            <span class="dock-label-full">{{ i18n.t('canvas.addSkill') }}</span>
+            <span class="dock-label-mobile">{{ i18n.t('canvas.mobileAddSkill') }}</span>
         </button>
         <button
             type="button"
@@ -121,7 +122,8 @@
             [title]="(isGuest$ | async) ? i18n.t('canvas.guestAiUnavailable') : ''"
         >
             <span class="material-icons" [class.spinning]="isGenerating">{{ isGenerating ? 'refresh' : 'auto_awesome' }}</span>
-            <span>{{ isGenerating ? i18n.t('canvas.aiGenerating') : i18n.t('canvas.aiCta') }}</span>
+            <span class="dock-label-full">{{ isGenerating ? i18n.t('canvas.aiGenerating') : i18n.t('canvas.aiCta') }}</span>
+            <span class="dock-label-mobile">{{ isGenerating ? i18n.t('canvas.aiGenerating') : i18n.t('canvas.mobileAi') }}</span>
         </button>
     </div>
 
@@ -295,8 +297,16 @@
                 <div class="form-group row-group">
                     <div class="half-width">
                         <label class="detail-label">{{ i18n.t('canvas.level') }}</label>
-                        <input class="detail-input" type="number" min="0" [max]="editNodeData.maxLevel || defaultMaxLevel"
-                            [(ngModel)]="editNodeData.level" (ngModelChange)="saveNodeProperties()">
+                        <div class="level-stepper">
+                            <button type="button" class="stepper-btn" (click)="adjustSelectedNodeLevel(-1)" [attr.aria-label]="i18n.t('canvas.levelDown')">
+                                <span class="material-icons">remove</span>
+                            </button>
+                            <input class="detail-input" type="number" min="0" [max]="editNodeData.maxLevel || defaultMaxLevel"
+                                [(ngModel)]="editNodeData.level" (ngModelChange)="saveNodeProperties()">
+                            <button type="button" class="stepper-btn" (click)="adjustSelectedNodeLevel(1)" [attr.aria-label]="i18n.t('canvas.levelUp')">
+                                <span class="material-icons">add</span>
+                            </button>
+                        </div>
                     </div>
 
                     <div class="half-width">

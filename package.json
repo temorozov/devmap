@@ -8,6 +8,7 @@
     "dev:fast": "./scripts/dev-fast.sh",
     "dev:fast:db": "docker compose --env-file .env -f docker-compose.yml -f docker-compose.dev.yml up -d postgres",
     "dev:fast:frontend": "npx nx serve frontend-frontend",
+    "dev:mobile": "npx nx serve frontend-frontend --host=0.0.0.0 --port=4200",
     "dev:fast:backend": "./scripts/dev-fast.sh backend",
     "dev:repair-db": "./scripts/dev-repair-prisma.sh",
     "prod": "./deploy.sh",
