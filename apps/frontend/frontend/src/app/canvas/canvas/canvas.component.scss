@@ -2,6 +2,7 @@
     position: relative;
     width: 100vw;
     height: 100vh;
+    height: 100dvh;
     overflow: hidden;
     background-color: var(--bg-dark);
 }
@@ -907,12 +908,13 @@
     }
 
     .canvas-action-dock {
+        position: fixed;
         display: flex;
         flex-wrap: nowrap;
         gap: 0.45rem;
         left: 50%;
         right: auto;
-        bottom: 0.9rem;
+        bottom: max(0.9rem, calc(env(safe-area-inset-bottom) + 0.65rem));
         transform: translateX(-50%);
 
         button {
