@@ -53,7 +53,7 @@ Main entities:
 - `TreeActivity`: per-tree daily activity counts
 - `AiBatchJob`: tracks OpenAI batch jobs for background node description generation
 
-Important: migration `20260405120000_add_node_requirements_json` adds `Node.requirements`, but the current Prisma schema does not include that field.
+The short-lived `Node.requirements` field was removed: migration `20260602000000_drop_node_requirements` drops the column so the schema and database stay in sync.
 
 ## AI Generation Flow
 
@@ -101,9 +101,8 @@ There is also a separate background flow in `BatchGenerationService`:
 
 ## Confusing Or Important Parts
 
-- `.env.example` still contains Gemini-related variables, but current `AiService.getProviderAttempts()` returns only OpenAI.
-- README/AI docs mention `OPENAI_API_KEY` and `AI_OPENAI_MODEL`; production example defaults `AI_OPENAI_MODEL` to `gpt-5.4-nano`.
-- Batch description generation uses `AI_BATCH_OPENAI_MODEL`, but that variable is not listed in the env example files.
+- AI generation uses OpenAI only. Gemini code and config were removed; env examples list `OPENAI_API_KEY`, `AI_OPENAI_MODEL`, and `AI_BATCH_OPENAI_MODEL`.
+- Production example defaults `AI_OPENAI_MODEL` to `gpt-5.4-nano`; batch description generation uses `AI_BATCH_OPENAI_MODEL`.
 - OAuth env values are optional; missing Google/Discord values should not prevent backend startup, but those login routes will not work.
 - Shared tree route is `tree/:id` in the frontend; the component tries authenticated tree fetch first, then falls back to shared-token lookup.
 - `dev-up.sh` and `dev-down.sh` contain extra logic for hosts where Docker denies normal stop/kill operations.

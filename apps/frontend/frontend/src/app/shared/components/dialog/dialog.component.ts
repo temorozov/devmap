@@ -34,9 +34,9 @@ import { I18nService } from '../../services/i18n.service';
 export class DialogComponent {
   constructor(public i18n: I18nService) {}
 
-  @Input() message: string = '';
-  @Input() title: string = '';
-  @Input() isConfirm: boolean = false;
+  @Input() message = '';
+  @Input() title = '';
+  @Input() isConfirm = false;
   
   @Output() closeEvent = new EventEmitter<boolean>();
   

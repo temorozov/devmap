@@ -9,6 +9,13 @@ interface AuthTokenPayload {
   isGuest?: boolean;
 }
 
+export interface AuthUser {
+  id: string;
+  email?: string | null;
+  name?: string | null;
+  isGuest: boolean;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -50,7 +57,7 @@ export class AuthService {
   }
 
   guestLogin() {
-    return this.http.post<{ access_token: string, user: any }>(`${this.apiUrl}/guest`, {})
+    return this.http.post<{ access_token: string, user: AuthUser }>(`${this.apiUrl}/guest`, {})
       .pipe(
         tap(response => {
           if (response.access_token) {

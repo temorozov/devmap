@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { User } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -11,7 +12,7 @@ export class AuthService {
 
     // Basic auth logic removed
 
-    async validateGoogleUser(profile: { googleId: string; email: string; name: string }): Promise<any> {
+    async validateGoogleUser(profile: { googleId: string; email: string; name: string }): Promise<User> {
         let user = profile.googleId ? await this.prisma.user.findFirst({ where: { googleId: profile.googleId } }) : null;
 
         if (!user && profile.email) {
@@ -39,7 +40,7 @@ export class AuthService {
         return user;
     }
 
-    async validateDiscordUser(profile: { discordId: string; email: string; name: string }): Promise<any> {
+    async validateDiscordUser(profile: { discordId: string; email: string; name: string }): Promise<User> {
         let user = profile.discordId ? await this.prisma.user.findFirst({ where: { discordId: profile.discordId } }) : null;
 
         if (!user && profile.email) {
@@ -67,7 +68,7 @@ export class AuthService {
         return user;
     }
 
-    async login(user: any) {
+    async login(user: User) {
         const payload = { sub: user.id, isGuest: user.isGuest };
         return {
             access_token: this.jwtService.sign(payload),

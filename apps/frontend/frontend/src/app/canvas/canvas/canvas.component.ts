@@ -124,7 +124,7 @@ export class CanvasComponent implements OnInit, AfterViewInit {
     this.selectedNode = null;
   }
 
-  startEditDescription(event: MouseEvent) {
+  startEditDescription(event: Event) {
     if ((event.target as HTMLElement).tagName.toLowerCase() === 'a') {
       return;
     }
@@ -578,19 +578,20 @@ export class CanvasComponent implements OnInit, AfterViewInit {
     } else if (this.interactionState === 'selecting' && this.selectionStart && this.selectionBox) {
       event.preventDefault();
       const svgP = this.getSvgPoint(event.clientX, event.clientY);
-      this.selectionBox.x = Math.min(this.selectionStart.x, svgP.x);
-      this.selectionBox.y = Math.min(this.selectionStart.y, svgP.y);
-      this.selectionBox.w = Math.abs(svgP.x - this.selectionStart.x);
-      this.selectionBox.h = Math.abs(svgP.y - this.selectionStart.y);
+      const box = this.selectionBox;
+      box.x = Math.min(this.selectionStart.x, svgP.x);
+      box.y = Math.min(this.selectionStart.y, svgP.y);
+      box.w = Math.abs(svgP.x - this.selectionStart.x);
+      box.h = Math.abs(svgP.y - this.selectionStart.y);
 
       if (!event.ctrlKey && !event.metaKey) this.selectedNodes.clear();
-      
+
       this.filteredNodes.forEach(node => {
         if (
-          node.positionX >= this.selectionBox!.x &&
-          node.positionX <= this.selectionBox!.x + this.selectionBox!.w &&
-          node.positionY >= this.selectionBox!.y &&
-          node.positionY <= this.selectionBox!.y + this.selectionBox!.h
+          node.positionX >= box.x &&
+          node.positionX <= box.x + box.w &&
+          node.positionY >= box.y &&
+          node.positionY <= box.y + box.h
         ) {
           this.selectedNodes.add(node.id);
         }
@@ -839,7 +840,7 @@ export class CanvasComponent implements OnInit, AfterViewInit {
     this.linkSourceNode = null;
   }
 
-  saveTimeout: any;
+  saveTimeout: ReturnType<typeof setTimeout> | undefined;
 
   saveNodeProperties() {
     if (!this.selectedNode || !this.editNodeData) return;
@@ -992,15 +993,16 @@ export class CanvasComponent implements OnInit, AfterViewInit {
     return {
       title: this.i18n.t('canvas.closestGoalLockedTitle'),
       description: this.i18n.t('canvas.closestGoalLockedText'),
-      items: lockedNodes.map(node => ({
-        title: node.title,
-        meta: this.i18n.t('canvas.closestGoalItemUnlockAfter', {
-          title: this.getParentNode(node.parentId || '')?.title ?? this.i18n.t('canvas.closestGoalParentFallback'),
-        }),
-        progressPercent: this.getParentNode(node.parentId || '')
-          ? this.getNodeProgressPercent(this.getParentNode(node.parentId || '')!)
-          : 0,
-      })),
+      items: lockedNodes.map(node => {
+        const parent = this.getParentNode(node.parentId || '');
+        return {
+          title: node.title,
+          meta: this.i18n.t('canvas.closestGoalItemUnlockAfter', {
+            title: parent?.title ?? this.i18n.t('canvas.closestGoalParentFallback'),
+          }),
+          progressPercent: parent ? this.getNodeProgressPercent(parent) : 0,
+        };
+      }),
     };
   }
 

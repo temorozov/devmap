@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { Router } from '@angular/router';
+import { ActivatedRouteSnapshot, Router, RouterStateSnapshot } from '@angular/router';
 import { authGuard } from './auth.guard';
 import { AuthService } from './auth.service';
 
@@ -23,7 +23,7 @@ describe('authGuard', () => {
 
   it('redirects unauthenticated users to the landing page', () => {
     const result = TestBed.runInInjectionContext(() =>
-      authGuard({} as any, { url: '/dashboard' } as any)
+      authGuard({} as ActivatedRouteSnapshot, { url: '/dashboard' } as unknown as RouterStateSnapshot)
     );
 
     expect(parseUrl).toHaveBeenCalledWith('/');
@@ -34,7 +34,7 @@ describe('authGuard', () => {
     hasValidToken.mockReturnValue(true);
 
     const result = TestBed.runInInjectionContext(() =>
-      authGuard({} as any, { url: '/dashboard' } as any)
+      authGuard({} as ActivatedRouteSnapshot, { url: '/dashboard' } as unknown as RouterStateSnapshot)
     );
 
     expect(result).toBe(true);

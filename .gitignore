@@ -5,6 +5,10 @@ dist
 tmp
 /out-tsc
 
+# local scratch / generated artifacts
+/output
+/.docker-test
+
 # dependencies
 node_modules
 

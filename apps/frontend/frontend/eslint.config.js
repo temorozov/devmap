@@ -28,7 +28,10 @@ module.exports = [
   },
   {
     files: ['**/*.html'],
-    // Override or add rules here
-    rules: {},
+    // TypeScript-only rules from the base config must not run against Angular
+    // templates: their parser produces a different AST and crashes the rule.
+    rules: {
+      '@typescript-eslint/ban-ts-comment': 'off',
+    },
   },
 ];

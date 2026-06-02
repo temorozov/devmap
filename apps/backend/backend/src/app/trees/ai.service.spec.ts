@@ -5,8 +5,6 @@ import { AiService } from './ai.service';
 
 describe('AiService', () => {
   const originalOpenAiApiKey = process.env.OPENAI_API_KEY;
-  const originalAiPrimaryProvider = process.env.AI_PRIMARY_PROVIDER;
-  const originalAiFallbackProvider = process.env.AI_FALLBACK_PROVIDER;
   const originalAiOpenAiModel = process.env.AI_OPENAI_MODEL;
   const originalYoutubeApiKey = process.env.YOUTUBE_API_KEY;
   const originalYoutubeTimeoutMs = process.env.AI_YOUTUBE_REQUEST_TIMEOUT_MS;
@@ -14,8 +12,6 @@ describe('AiService', () => {
   beforeEach(() => {
     jest.restoreAllMocks();
     process.env.OPENAI_API_KEY = 'test-openai-key';
-    process.env.AI_PRIMARY_PROVIDER = 'gemini';
-    process.env.AI_FALLBACK_PROVIDER = 'gemini';
     process.env.AI_OPENAI_MODEL = 'gpt-4o';
     delete process.env.YOUTUBE_API_KEY;
     delete process.env.AI_YOUTUBE_REQUEST_TIMEOUT_MS;
@@ -23,8 +19,6 @@ describe('AiService', () => {
 
   afterAll(() => {
     process.env.OPENAI_API_KEY = originalOpenAiApiKey;
-    process.env.AI_PRIMARY_PROVIDER = originalAiPrimaryProvider;
-    process.env.AI_FALLBACK_PROVIDER = originalAiFallbackProvider;
     process.env.AI_OPENAI_MODEL = originalAiOpenAiModel;
 
     if (originalYoutubeApiKey === undefined) {

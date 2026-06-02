@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ThrottlerModule } from '@nestjs/throttler';
 
 process.env.DATABASE_URL ??= 'postgresql://test:test@localhost:5432/test';
 
@@ -11,6 +12,7 @@ describe('TreesController', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
+      imports: [ThrottlerModule.forRoot([{ ttl: 60000, limit: 60 }])],
       controllers: [TreesController],
       providers: [
         {

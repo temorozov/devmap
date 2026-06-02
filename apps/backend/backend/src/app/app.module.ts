@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ThrottlerModule } from '@nestjs/throttler';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -15,6 +16,7 @@ import { EmailModule } from './email/email.module';
       isGlobal: true,
       ignoreEnvFile: true,
     }),
+    ThrottlerModule.forRoot([{ ttl: 60000, limit: 60 }]),
     PrismaModule, AuthModule, TreesModule, NodesModule, EmailModule
   ],
   controllers: [AppController],

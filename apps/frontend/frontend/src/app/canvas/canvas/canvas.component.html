@@ -251,8 +251,8 @@
 
                     <div class="overview-content">
                         <div class="form-group">
-                            <label class="detail-label">{{ i18n.t('canvas.title') }}</label>
-                            <input class="detail-input" type="text" [(ngModel)]="editNodeData.title"
+                            <label class="detail-label" for="nodeTitleInput">{{ i18n.t('canvas.title') }}</label>
+                            <input id="nodeTitleInput" class="detail-input" type="text" [(ngModel)]="editNodeData.title"
                                 (ngModelChange)="saveNodeProperties()"
                                 (keydown.enter)="showProperties = false; editingDescription = false">
                         </div>
@@ -273,7 +273,7 @@
                     (ngModelChange)="saveNodeProperties()" rows="6" [placeholder]="i18n.t('canvas.descriptionPlaceholder')"
                     (blur)="editingDescription = false"
                     (keydown.enter)="showProperties = false; editingDescription = false; $event.preventDefault()"></textarea>
-                <div *ngIf="!editingDescription" class="description-preview" (click)="startEditDescription($event)">
+                <div *ngIf="!editingDescription" class="description-preview" role="button" tabindex="0" (click)="startEditDescription($event)" (keyup.enter)="startEditDescription($event)">
                     <span *ngIf="editNodeData.description" [innerHTML]="editNodeData.description | linkify"></span>
                     <span *ngIf="!editNodeData.description" class="description-placeholder">{{ i18n.t('canvas.descriptionClick') }}</span>
                 </div>
@@ -296,12 +296,12 @@
 
                 <div class="form-group row-group">
                     <div class="half-width">
-                        <label class="detail-label">{{ i18n.t('canvas.level') }}</label>
+                        <label class="detail-label" for="nodeLevelInput">{{ i18n.t('canvas.level') }}</label>
                         <div class="level-stepper">
                             <button type="button" class="stepper-btn" (click)="adjustSelectedNodeLevel(-1)" [attr.aria-label]="i18n.t('canvas.levelDown')">
                                 <span class="material-icons">remove</span>
                             </button>
-                            <input class="detail-input" type="number" min="0" [max]="editNodeData.maxLevel || defaultMaxLevel"
+                            <input id="nodeLevelInput" class="detail-input" type="number" min="0" [max]="editNodeData.maxLevel || defaultMaxLevel"
                                 [(ngModel)]="editNodeData.level" (ngModelChange)="saveNodeProperties()">
                             <button type="button" class="stepper-btn" (click)="adjustSelectedNodeLevel(1)" [attr.aria-label]="i18n.t('canvas.levelUp')">
                                 <span class="material-icons">add</span>
@@ -310,8 +310,8 @@
                     </div>
 
                     <div class="half-width">
-                        <label class="detail-label">{{ i18n.t('canvas.maxLevel') }}</label>
-                        <input class="detail-input" type="number" min="1" [(ngModel)]="editNodeData.maxLevel"
+                        <label class="detail-label" for="nodeMaxLevelInput">{{ i18n.t('canvas.maxLevel') }}</label>
+                        <input id="nodeMaxLevelInput" class="detail-input" type="number" min="1" [(ngModel)]="editNodeData.maxLevel"
                             (ngModelChange)="saveNodeProperties()">
                     </div>
                 </div>
@@ -359,7 +359,10 @@
         </div>
     </div>
 
+    <!-- Backdrop closes on click; keyboard users dismiss via the close button below. -->
+    <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
     <div class="modal-overlay help-overlay" *ngIf="showHelp" (click)="closeHelp()">
+        <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
         <div class="modal-content help-modal glass-panel" (click)="$event.stopPropagation()">
             <div class="panel-header">
                 <h3>{{ i18n.t('canvas.helpTitle') }}</h3>

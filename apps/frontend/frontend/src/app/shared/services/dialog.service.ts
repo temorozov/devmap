@@ -12,13 +12,13 @@ export class DialogService {
     private injector: EnvironmentInjector
   ) {}
 
-  public async confirm(message: string, title: string = ''): Promise<boolean> {
+  public async confirm(message: string, title = ''): Promise<boolean> {
     return new Promise((resolve) => {
       this.openDialog(message, title, true, (result) => resolve(result));
     });
   }
 
-  public async alert(message: string, title: string = ''): Promise<void> {
+  public async alert(message: string, title = ''): Promise<void> {
     return new Promise((resolve) => {
       this.openDialog(message, title, false, () => resolve());
     });

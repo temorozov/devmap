@@ -125,7 +125,7 @@ npm run prod:down
 
 ## Current Important Gotchas
 
-- Migration `20260405120000_add_node_requirements_json` adds `Node.requirements`, but `prisma/schema.prisma` currently does not list that field.
-- Env examples include Gemini variables, but current `AiService` only attempts OpenAI.
-- Batch node-description generation uses `AI_BATCH_OPENAI_MODEL`, which is not currently listed in the env example files.
+- AI generation uses OpenAI only (Gemini code/config removed). Relevant env vars: `OPENAI_API_KEY`, `AI_OPENAI_MODEL`, `AI_BATCH_OPENAI_MODEL`.
+- AI generation and batch endpoints are rate limited via `@nestjs/throttler` (5 requests/min per client).
+- Global `ValidationPipe` (`whitelist: true, transform: true`) is enabled; request bodies use DTOs in `dto/` folders.
 - Guest users are allowed into the app but blocked from AI generation.

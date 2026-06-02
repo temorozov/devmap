@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { appRuntimeConfig } from './app-config';
+import { SkillNode } from './nodes.service';
 
 export interface Tree {
   id: string;
@@ -9,7 +10,7 @@ export interface Tree {
   userId: string;
   createdAt: string;
   updatedAt: string;
-  nodes?: any[];
+  nodes?: SkillNode[];
   activities?: { date: string; count: number }[];
 }
 
@@ -45,6 +46,6 @@ export class TreesService {
   }
 
   generateTree(id: string, prompt: string) {
-    return this.http.post<any[]>(`${this.apiUrl}/${id}/generate`, { prompt });
+    return this.http.post<SkillNode[]>(`${this.apiUrl}/${id}/generate`, { prompt });
   }
 }

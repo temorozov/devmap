@@ -1,11 +1,13 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { CreateNodeDto } from './dto/create-node.dto';
+import { UpdateNodeDto } from './dto/update-node.dto';
 
 @Injectable()
 export class NodesService {
     constructor(private prisma: PrismaService) { }
 
-    async create(userId: string, createNodeDto: { treeId: string; parentId?: string; title: string; description?: string; icon?: string; positionX: number; positionY: number; level?: number; maxLevel?: number }) {
+    async create(userId: string, createNodeDto: CreateNodeDto) {
         const tree = await this.prisma.tree.findFirst({ where: { id: createNodeDto.treeId, userId } });
         if (!tree) throw new UnauthorizedException('Tree access denied');
 
@@ -13,7 +15,7 @@ export class NodesService {
             ? createNodeDto.maxLevel
             : 3;
         const level = createNodeDto.level ?? 0;
-        const incomingProgress = (createNodeDto as any).progress;
+        const incomingProgress = createNodeDto.progress;
         const progress = typeof incomingProgress === 'number'
             ? incomingProgress
             : Math.round((level / maxLevel) * 100);
@@ -37,7 +39,7 @@ export class NodesService {
         return this.prisma.node.findMany({ where: { treeId } });
     }
 
-    async update(userId: string, id: string, updateNodeDto: any) {
+    async update(userId: string, id: string, updateNodeDto: UpdateNodeDto) {
         const node = await this.prisma.node.findUnique({ where: { id }, include: { tree: true } });
         if (!node || node.tree.userId !== userId) throw new UnauthorizedException('Node access denied');
 
@@ -77,6 +79,6 @@ export class NodesService {
                 date: today,
                 count: 1
             }
-        }).catch((e: any) => console.error('Failed to record activity', e));
+        }).catch((e: unknown) => console.error('Failed to record activity', e));
     }
 }

@@ -4,6 +4,7 @@ import { promises as fs } from 'fs';
 process.env.DATABASE_URL ??= 'postgresql://test:test@localhost:5432/test';
 
 import { BatchGenerationService } from './batch-generation.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 describe('BatchGenerationService', () => {
   const originalOpenAiApiKey = process.env.OPENAI_API_KEY;
@@ -54,7 +55,7 @@ describe('BatchGenerationService', () => {
           status: 'validating',
         }),
       },
-    } as any;
+    } as unknown as PrismaService;
 
     const postSpy = jest.spyOn(axios, 'post')
       .mockResolvedValueOnce({ data: { id: 'file-input-1' } } as never)
@@ -157,7 +158,7 @@ describe('BatchGenerationService', () => {
       node: {
         update: jest.fn().mockResolvedValue({ id: 'node-1' }),
       },
-    } as any;
+    } as unknown as PrismaService;
 
     jest.spyOn(axios, 'get')
       .mockResolvedValueOnce({

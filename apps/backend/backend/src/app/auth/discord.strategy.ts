@@ -1,5 +1,6 @@
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-discord';
+import { VerifyCallback } from 'passport-oauth2';
 import { Injectable } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { getEnv } from '../config/env';
@@ -15,17 +16,17 @@ export class DiscordStrategy extends PassportStrategy(Strategy, 'discord') {
         });
     }
 
-    async validate(accessToken: string, refreshToken: string, profile: any, done: any): Promise<any> {
+    async validate(accessToken: string, refreshToken: string, profile: Strategy.Profile, done: VerifyCallback): Promise<void> {
         const { id, email, username } = profile;
         try {
             const user = await this.authService.validateDiscordUser({
                 discordId: id,
-                email: email,
+                email: email ?? '',
                 name: username,
             });
             done(null, user);
         } catch (err) {
-            done(err, false);
+            done(err as Error);
         }
     }
 }

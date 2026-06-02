@@ -1,5 +1,4 @@
 import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import axios from 'axios';
 
 import { getOptionalEnv } from '../config/env';
@@ -13,14 +12,6 @@ interface GeneratedSkill {
   youtubeSearchQuery?: string;
 }
 
-type AiProvider = 'gemini' | 'openai';
-
-interface ProviderAttempt {
-  provider: AiProvider;
-  model: string;
-}
-
-const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
 const DEFAULT_OPENAI_MODEL = 'gpt-5.4-nano';
 const DEFAULT_REQUEST_TIMEOUT_MS = 30000;
 const DEFAULT_YOUTUBE_REQUEST_TIMEOUT_MS = 2500;
@@ -82,9 +73,7 @@ Example:
 export class AiService {
   private readonly logger = new Logger(AiService.name);
   private readonly youtubeApiKey = getOptionalEnv('YOUTUBE_API_KEY');
-  private readonly geminiApiKey = getOptionalEnv('GEMINI_API_KEY');
   private readonly openAiApiKey = getOptionalEnv('OPENAI_API_KEY');
-  private readonly geminiModel = getOptionalEnv('AI_GEMINI_MODEL', DEFAULT_GEMINI_MODEL) ?? DEFAULT_GEMINI_MODEL;
   private readonly openAiModel = getOptionalEnv('AI_OPENAI_MODEL', DEFAULT_OPENAI_MODEL) ?? DEFAULT_OPENAI_MODEL;
   private readonly requestTimeoutMs = this.getTimeoutMs();
   private readonly youtubeRequestTimeoutMs = this.getYoutubeTimeoutMs();
@@ -92,92 +81,38 @@ export class AiService {
   private readonly providerRetryDelayMs = this.getRetryDelayMs();
 
   async generateSkillTree(prompt: string): Promise<GeneratedSkill[]> {
-    const attempts = this.getProviderAttempts();
-
-    if (!attempts.length) {
-      this.logger.error('No AI providers are configured.');
+    if (!this.openAiApiKey) {
+      this.logger.error('OPENAI_API_KEY is not configured.');
       throw new ServiceUnavailableException('AI generation is not configured right now.');
     }
 
     let lastError: unknown;
 
-    for (let index = 0; index < attempts.length; index += 1) {
-      const attempt = attempts[index];
-      const isLastAttempt = index === attempts.length - 1;
+    for (let retry = 0; retry <= this.providerRetryCount; retry += 1) {
+      try {
+        const generated = await this.generateWithOpenAi(this.openAiModel, prompt);
+        return await this.enrichWithYoutubeLinks(generated);
+      } catch (error) {
+        lastError = error;
+        const errorSummary = this.getErrorSummary(error);
+        const hasRetriesLeft = retry < this.providerRetryCount;
 
-      if (!this.hasCredentials(attempt.provider)) {
-        const message = `Skipping ${attempt.provider}: API key is not configured.`;
-        this.logger.warn(message);
-        lastError = new Error(message);
-        continue;
-      }
-
-      for (let retry = 0; retry <= this.providerRetryCount; retry += 1) {
-        try {
-          const generated = await this.generateWithProvider(attempt, prompt);
-          return await this.enrichWithYoutubeLinks(generated);
-        } catch (error) {
-          lastError = error;
-          const errorSummary = this.getErrorSummary(error);
-          const hasRetriesLeft = retry < this.providerRetryCount;
-
-          if (hasRetriesLeft && this.isProviderRetryableError(error)) {
-            const delayMs = this.providerRetryDelayMs * (retry + 1);
-            this.logger.warn(
-              `AI provider ${attempt.provider} failed (${errorSummary}). Retrying in ${delayMs}ms (${retry + 1}/${this.providerRetryCount}).`,
-            );
-            await this.sleep(delayMs);
-            continue;
-          }
-
-          const shouldFallback = !isLastAttempt && this.isFallbackableError(error);
-
-          if (shouldFallback) {
-            this.logger.warn(
-              `AI provider ${attempt.provider} failed with a retryable error (${errorSummary}). Falling back to ${attempts[index + 1].provider}.`,
-            );
-            break;
-          }
-
-          this.logger.error(`AI provider ${attempt.provider} failed: ${errorSummary}`, error instanceof Error ? error.stack : undefined);
-          throw new ServiceUnavailableException(this.getPublicFailureMessage(error));
+        if (hasRetriesLeft && this.isProviderRetryableError(error)) {
+          const delayMs = this.providerRetryDelayMs * (retry + 1);
+          this.logger.warn(
+            `OpenAI request failed (${errorSummary}). Retrying in ${delayMs}ms (${retry + 1}/${this.providerRetryCount}).`,
+          );
+          await this.sleep(delayMs);
+          continue;
         }
+
+        this.logger.error(`OpenAI request failed: ${errorSummary}`, error instanceof Error ? error.stack : undefined);
+        throw new ServiceUnavailableException(this.getPublicFailureMessage(error));
       }
     }
 
-    this.logger.error(`All AI providers failed. Last error: ${this.getErrorSummary(lastError)}`);
+    this.logger.error(`OpenAI generation failed. Last error: ${this.getErrorSummary(lastError)}`);
     throw new ServiceUnavailableException(this.getPublicFailureMessage(lastError));
-  }
-
-  private async generateWithProvider(attempt: ProviderAttempt, prompt: string): Promise<GeneratedSkill[]> {
-    switch (attempt.provider) {
-      case 'gemini':
-        return this.generateWithGemini(attempt.model, prompt);
-      case 'openai':
-        return this.generateWithOpenAi(attempt.model, prompt);
-      default:
-        throw new Error(`Unsupported AI provider: ${String(attempt.provider)}`);
-    }
-  }
-
-  private async generateWithGemini(modelName: string, prompt: string): Promise<GeneratedSkill[]> {
-    if (!this.geminiApiKey) {
-      throw new Error('Gemini API key is not configured.');
-    }
-
-    const genAI = new GoogleGenerativeAI(this.geminiApiKey);
-    const model = genAI.getGenerativeModel({ model: modelName });
-
-    const result = await this.withTimeout(
-      model.generateContent([
-        SKILL_TREE_SYSTEM_INSTRUCTIONS,
-        SKILL_TREE_PROMPT_PREFIX,
-        this.buildSkillTreePromptSuffix(prompt),
-      ]),
-      `${modelName} request timed out`,
-    );
-
-    return this.parseGeneratedSkills(result.response.text());
   }
 
   private async generateWithOpenAi(modelName: string, prompt: string): Promise<GeneratedSkill[]> {
@@ -273,7 +208,35 @@ ${prompt}`;
       throw new Error('Output was not an array.');
     }
 
-    return parsed;
+    return this.normalizeGeneratedSkills(parsed);
+  }
+
+  /**
+   * Coerces the raw model output into well-formed skills before they reach the
+   * database. Each `parentIndex` must reference an earlier item, which keeps the
+   * generated tree a forest (no self/forward references and therefore no cycles).
+   */
+  private normalizeGeneratedSkills(items: unknown[]): GeneratedSkill[] {
+    return items.map((item, index) => {
+      const record = item && typeof item === 'object' ? (item as Record<string, unknown>) : {};
+
+      const title = typeof record.title === 'string' ? record.title.trim() : '';
+      const description = typeof record.description === 'string' ? record.description : '';
+      const icon = typeof record.icon === 'string' && record.icon.trim() ? record.icon.trim() : 'star';
+      const youtubeSearchQuery =
+        typeof record.youtubeSearchQuery === 'string' && record.youtubeSearchQuery.trim()
+          ? record.youtubeSearchQuery.trim()
+          : undefined;
+
+      const rawParent = record.parentIndex;
+      let parentIndex =
+        typeof rawParent === 'number' && Number.isInteger(rawParent) ? rawParent : null;
+      if (parentIndex !== null && (parentIndex < 0 || parentIndex >= index)) {
+        parentIndex = null;
+      }
+
+      return { title, description, icon, parentIndex, youtubeSearchQuery };
+    });
   }
 
   private async enrichWithYoutubeLinks(skills: GeneratedSkill[]): Promise<GeneratedSkill[]> {
@@ -311,39 +274,6 @@ ${prompt}`;
     }));
 
     return skills;
-  }
-
-  private withTimeout<T>(promise: Promise<T>, message: string): Promise<T> {
-    return new Promise<T>((resolve, reject) => {
-      const timer = setTimeout(() => {
-        const timeoutError = new Error(message);
-        (timeoutError as Error & { code?: string }).code = 'ETIMEDOUT';
-        reject(timeoutError);
-      }, this.requestTimeoutMs);
-
-      promise
-        .then((value) => {
-          clearTimeout(timer);
-          resolve(value);
-        })
-        .catch((error) => {
-          clearTimeout(timer);
-          reject(error);
-        });
-    });
-  }
-
-  private getProviderAttempts(): ProviderAttempt[] {
-    return [
-      {
-        provider: 'openai',
-        model: this.openAiModel,
-      },
-    ];
-  }
-
-  private hasCredentials(provider: AiProvider): boolean {
-    return provider === 'gemini' ? !!this.geminiApiKey : !!this.openAiApiKey;
   }
 
   private isFallbackableError(error: unknown): boolean {

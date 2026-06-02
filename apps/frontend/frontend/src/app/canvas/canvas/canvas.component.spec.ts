@@ -2,10 +2,10 @@ import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testin
 import { CanvasComponent } from './canvas.component';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TreesService } from '../../trees.service';
-import { NodesService } from '../../nodes.service';
+import { NodesService, SkillNode } from '../../nodes.service';
 import { AuthService } from '../../auth.service';
 import { DialogService } from '../../shared/services/dialog.service';
-import { of, Subject, throwError } from 'rxjs';
+import { Observable, of, Subject, throwError } from 'rxjs';
 
 describe('CanvasComponent', () => {
   let component: CanvasComponent;
@@ -58,8 +58,8 @@ describe('CanvasComponent', () => {
 
   it('opens AI prompt and prefills text from query params', async () => {
     const route = TestBed.inject(ActivatedRoute) as {
-      paramMap: any;
-      queryParamMap: any;
+      paramMap: Observable<unknown>;
+      queryParamMap: Observable<unknown>;
     };
 
     route.paramMap = of({ get: (key: string) => (key === 'id' ? '1' : null) });
@@ -169,7 +169,7 @@ describe('CanvasComponent', () => {
   }));
 
   it('does not start a second AI generation while one is pending', () => {
-    const pendingGeneration = new Subject<any[]>();
+    const pendingGeneration = new Subject<SkillNode[]>();
     treesServiceMock.generateTree.mockReturnValue(pendingGeneration.asObservable());
     component.tree = { id: '1', title: 'Tree', sharedToken: '', userId: 'user', createdAt: '', updatedAt: '' };
     component.aiPrompt = 'Learn Angular';
@@ -196,7 +196,7 @@ describe('CanvasComponent', () => {
   });
 
   it('keeps AI generation loader active while the request is pending', () => {
-    const pendingGeneration = new Subject<any[]>();
+    const pendingGeneration = new Subject<SkillNode[]>();
     treesServiceMock.generateTree.mockReturnValue(pendingGeneration.asObservable());
     component.tree = { id: '1', title: 'Tree', sharedToken: '', userId: 'user', createdAt: '', updatedAt: '' };
     component.aiPrompt = 'Learn Angular';

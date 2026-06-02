@@ -1,4 +1,4 @@
-import { SkillNode, SkillRequirementHint } from '../../nodes.service';
+import { SkillNode } from '../../nodes.service';
 
 export type SkillNodeStatus = 'not-started' | 'in-progress' | 'completed';
 
@@ -69,13 +69,6 @@ export function getNodeUiModel(
     maxLevel: getNodeMaxLevel(node, defaultMaxLevel),
     progressPercent: getNodeProgressPercent(node, defaultMaxLevel),
   };
-}
-
-export function cloneRequirements(requirements?: SkillRequirementHint[] | null): SkillRequirementHint[] {
-  return (requirements ?? []).map((requirement) => ({
-    strength: requirement.strength,
-    text: requirement.text,
-  }));
 }
 
 export function formatUnlocksSummary(unlocks: Array<Pick<SkillNode, 'title'>>, maxVisible = 2): string {

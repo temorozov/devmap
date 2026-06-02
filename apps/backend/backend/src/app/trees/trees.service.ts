@@ -71,10 +71,9 @@ export class TreesService {
 
                 generatedSkills.forEach((skill, index) => {
                     if (skill.parentIndex !== null && skill.parentIndex >= 0) {
-                        if (!childrenMap.has(skill.parentIndex)) {
-                            childrenMap.set(skill.parentIndex, []);
-                        }
-                        childrenMap.get(skill.parentIndex)!.push(index);
+                        const siblings = childrenMap.get(skill.parentIndex) ?? [];
+                        siblings.push(index);
+                        childrenMap.set(skill.parentIndex, siblings);
                     }
                 });
 
@@ -117,9 +116,9 @@ export class TreesService {
                     const positionX = ROOT_X + offsetX;
                     const positionY = ROOT_Y + (depth * NODE_SPACING_Y);
 
-                    let parentId = null;
-                    if (skill.parentIndex !== null && idMap.has(skill.parentIndex)) {
-                        parentId = idMap.get(skill.parentIndex)!;
+                    let parentId: string | null = null;
+                    if (skill.parentIndex !== null) {
+                        parentId = idMap.get(skill.parentIndex) ?? null;
                     }
 
                     const node = await tx.node.create({

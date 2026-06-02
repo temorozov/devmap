@@ -2,13 +2,14 @@
 
 Short, actionable improvements based on the current repo state.
 
-## Quick Fixes
+## Recently Done (cleanup pass)
 
-- Add `requirements` back to `prisma/schema.prisma` or remove/replace the migration that added it.
-- Add `AI_BATCH_OPENAI_MODEL` to `.env.example` and `.env.production.example`.
-- Align docs/env examples with actual AI provider behavior: current `AiService` only attempts OpenAI.
-- Add npm scripts for common Nx commands like build, lint, test, and e2e.
-- Validate AI-generated skill JSON shape, especially `parentIndex`, before saving nodes.
+- Removed the half-implemented `requirements` feature and added `20260602000000_drop_node_requirements` so schema and DB agree.
+- Added `AI_BATCH_OPENAI_MODEL` to env examples; removed dead Gemini code/config (OpenAI is the only provider).
+- Added npm scripts for build, lint, test, and e2e.
+- Added DTOs + a global `ValidationPipe`; removed all `any` lint errors; lint is clean across projects.
+- Added rate limiting (`@nestjs/throttler`) on AI generation/batch endpoints.
+- Validate AI-generated skill JSON (including `parentIndex` bounds) before saving nodes.
 
 ## UI/UX Improvements
 
@@ -21,15 +22,11 @@ Short, actionable improvements based on the current repo state.
 ## Backend/API Improvements
 
 - Add DTOs and validation for tree, node, AI generation, and batch endpoints.
-- Replace remaining `any` request/body types in controllers and services.
 - Make shared-token reads clearly separate from authenticated owner reads.
-- Normalize AI provider config: either restore provider selection/fallback or remove unused Gemini config.
-- Add stronger parsing and validation for OpenAI Responses output before database writes.
 - Add API docs for auth, tree, node, shared tree, and batch job endpoints.
 
 ## Database Improvements
 
-- Resolve the `Node.requirements` schema/migration mismatch.
 - Review indexes for common queries like user tree lists, tree nodes, and tree activity lookups.
 - Decide whether node `progress` is stored independently or derived from `level / maxLevel`.
 - Add migration guidance for dev vs prod in docs.
@@ -41,13 +38,11 @@ Short, actionable improvements based on the current repo state.
 - Add a predeploy check for Prisma schema/migration consistency.
 - Document required vs optional env vars in one place.
 - Keep Postgres publishing limited to `docker-compose.dev.yml`; production compose currently keeps it internal.
-- Add rate limiting or usage limits for AI generation endpoints.
 - Review OAuth callback/origin handling after current auth/config changes settle.
 
 ## Technical Debt
 
 - Consolidate duplicated CORS localhost expansion logic.
-- Remove stale Gemini code/config or make provider fallback real again.
 - Move AI prompt/schema validation into shared helpers with tests.
 - Add focused tests for tree generation saving logic and invalid AI output.
 - Add frontend tests around guest AI blocking and generation errors.
