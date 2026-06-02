@@ -703,6 +703,28 @@
         --node-status-color: #86efac;
         --node-status-rgb: 134, 239, 172;
     }
+
+    &.verified {
+        .node-bg {
+            filter: drop-shadow(0 0 6px rgba(74, 222, 128, 0.35));
+        }
+
+        .progress-ring-fill {
+            filter: drop-shadow(0 0 4px rgba(74, 222, 128, 0.5));
+        }
+    }
+
+    .verified-badge-bg {
+        fill: #16a34a;
+        stroke: var(--bg-dark);
+        stroke-width: 2;
+    }
+
+    .verified-badge-icon {
+        fill: #ffffff;
+        font-size: 12px;
+        font-family: 'Material Icons';
+    }
 }
 
 .level-stepper {

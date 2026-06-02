@@ -28,6 +28,7 @@ export class DashboardComponent implements OnInit {
 
   trees: TreeViewModel[] = [];
   loading = true;
+  syncing = false;
   showCreateModal = false;
   newTreeTitle = '';
   isGuest$ = this.authService.isGuest$;
@@ -114,6 +115,24 @@ export class DashboardComponent implements OnInit {
   openCreateModal() {
     this.newTreeTitle = '';
     this.showCreateModal = true;
+  }
+
+  syncGitHub() {
+    this.syncing = true;
+    this.treesService.syncGitHub().subscribe({
+      next: (result) => {
+        this.syncing = false;
+        this.loadTrees();
+        this.dialogService.alert(
+          `Sync complete: ${result.verifiedCount} verified skills detected across ${result.nodeCount} nodes.`
+        );
+      },
+      error: () => {
+        this.syncing = false;
+        this.dialogService.alert('GitHub sync failed. Please try again.');
+        this.cdr.markForCheck();
+      },
+    });
   }
 
   private toViewModel(tree: Tree): TreeViewModel {

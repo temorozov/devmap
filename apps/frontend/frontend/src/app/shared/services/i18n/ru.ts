@@ -12,6 +12,7 @@ export const ru: Record<string, string | ((params?: Record<string, string | numb
   'login.subtitle': 'Визуализируйте рост и развивайте навык шаг за шагом.',
   'login.google': 'Продолжить через Google',
   'login.discord': 'Продолжить через Discord',
+  'login.github': 'Продолжить через GitHub',
   'login.or': 'или',
   'login.guest': 'Продолжить как гость',
   'login.guestError': 'Не удалось войти как гость',

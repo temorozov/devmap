@@ -142,7 +142,7 @@
 
             <defs>
                 <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                    <circle cx="2" cy="2" r="1.5" fill="rgba(255,255,255,0.05)" />
+                    <circle cx="20" cy="20" r="1.2" fill="rgba(255,255,255,0.10)" />
                 </pattern>
             </defs>
 
@@ -170,6 +170,7 @@
                 <g *ngFor="let node of filteredNodes; trackBy: trackByNodeId" class="skill-node" [ngClass]="getNodeStatusClass(node)" [class.selected]="selectedNode?.id === node.id"
                     [class.multi-selected]="selectedNodes.has(node.id)"
                     [class.completed]="node.level === (node.maxLevel || defaultMaxLevel)"
+                    [class.verified]="node.verified"
                     [attr.transform]="'translate(' + node.positionX + ',' + node.positionY + ')'"
                     (pointerdown)="onNodePointerDown($event, node)"
                     (pointerenter)="onNodePointerEnter($event, node)"
@@ -187,6 +188,12 @@
                     <text class="material-icons node-icon" x="0" y="0" text-anchor="middle" dominant-baseline="central">
                         {{ node.icon || 'code' }}
                     </text>
+
+                    <!-- Verified badge: shown for GitHub-verified nodes -->
+                    <g *ngIf="node.verified" class="verified-badge" transform="translate(26, -26)">
+                        <circle cx="0" cy="0" r="11" class="verified-badge-bg" />
+                        <text class="material-icons verified-badge-icon" x="0" y="0" text-anchor="middle" dominant-baseline="central">verified</text>
+                    </g>
 
                     <circle
                         class="link-handle-hit-area"

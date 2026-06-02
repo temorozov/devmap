@@ -64,4 +64,8 @@ export class LoginComponent implements OnInit {
   loginWithDiscord() {
     window.location.href = `${appRuntimeConfig.apiUrl}/auth/discord`;
   }
+
+  loginWithGitHub() {
+    window.location.href = `${appRuntimeConfig.apiUrl}/auth/github`;
+  }
 }

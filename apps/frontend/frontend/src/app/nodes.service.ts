@@ -2,6 +2,12 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { appRuntimeConfig } from './app-config';
 
+export interface NodeEvidence {
+  repo: string;
+  url: string;
+  evidence: string;
+}
+
 export interface SkillNode {
   id: string;
   treeId: string;
@@ -14,6 +20,9 @@ export interface SkillNode {
   progress: number;
   level?: number;
   maxLevel?: number;
+  verified?: boolean;
+  source?: 'manual' | 'github' | 'ai';
+  evidence?: NodeEvidence[] | null;
   createdAt: string;
   updatedAt: string;
 }

@@ -8,6 +8,11 @@
         </div>
         <div class="actions">
             <app-language-switcher></app-language-switcher>
+            <button *ngIf="(isGuest$ | async) === false" class="btn-secondary github-sync-btn" (click)="syncGitHub()" [disabled]="syncing">
+                <span *ngIf="!syncing" class="material-icons">sync</span>
+                <span *ngIf="syncing" class="material-icons spinning">refresh</span>
+                <span>{{ syncing ? 'Syncing…' : 'Sync GitHub' }}</span>
+            </button>
             <button *ngIf="(isGuest$ | async) === false" class="btn-secondary" (click)="logout()">
                 <span class="material-icons">logout</span>
                 <span>{{ i18n.t('dashboard.logout') }}</span>

@@ -7,19 +7,24 @@ datasource db {
 }
 
 model User {
-  id                     String   @id @default(uuid())
-  email                  String?  @unique
+  id                     String        @id @default(uuid())
+  email                  String?       @unique
   passwordHash           String?
   name                   String?
-  googleId               String?  @unique
-  discordId              String?  @unique
-  isGuest                Boolean  @default(false)
-  isEmailConfirmed       Boolean  @default(true)
+  googleId               String?       @unique
+  discordId              String?       @unique
+  githubId               String?       @unique
+  githubUsername         String?
+  githubAccessToken      String?
+  handle                 String?       @unique
+  isGuest                Boolean       @default(false)
+  isEmailConfirmed       Boolean       @default(true)
   emailConfirmationToken String?
   trees                  Tree[]
   aiBatchJobs            AiBatchJob[]
-  createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
+  githubScans            GitHubScan[]
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
 }
 
 model Tree {
@@ -47,9 +52,12 @@ model Node {
   icon        String?
   positionX   Float
   positionY   Float
-  progress    Int      @default(0) // 0 to 100
+  progress    Int      @default(0)
   level       Int      @default(0)
   maxLevel    Int      @default(3)
+  verified    Boolean  @default(false)
+  source      String   @default("manual")
+  evidence    Json?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -62,6 +70,18 @@ model TreeActivity {
   count  Int      @default(1)
 
   @@unique([treeId, date])
+}
+
+model GitHubScan {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scannedAt   DateTime @default(now())
+  repoCount   Int      @default(0)
+  techCount   Int      @default(0)
+  summary     Json?
+
+  @@index([userId, scannedAt])
 }
 
 model AiBatchJob {

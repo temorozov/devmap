@@ -71,6 +71,11 @@ export class TreesController {
         return this.treesService.findBySharedToken(token);
     }
 
+    @Get('profile/:handle')
+    getPublicProfile(@Param('handle') handle: string) {
+        return this.treesService.getPublicProfile(handle);
+    }
+
     @UseGuards(JwtAuthGuard)
     @Patch(':id')
     update(@Request() req: AuthenticatedRequest, @Param('id') id: string, @Body() updateTreeDto: UpdateTreeDto) {

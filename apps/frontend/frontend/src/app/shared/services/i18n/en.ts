@@ -12,6 +12,7 @@ export const en: Record<string, string | ((params?: Record<string, string | numb
   'login.subtitle': 'Visualize your growth, master your craft.',
   'login.google': 'Continue with Google',
   'login.discord': 'Continue with Discord',
+  'login.github': 'Continue with GitHub',
   'login.or': 'or',
   'login.guest': 'Continue as Guest',
   'login.guestError': 'Guest login failed',

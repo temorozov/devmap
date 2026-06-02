@@ -9,6 +9,7 @@ import { AuthModule } from './auth/auth.module';
 import { TreesModule } from './trees/trees.module';
 import { NodesModule } from './nodes/nodes.module';
 import { EmailModule } from './email/email.module';
+import { GitHubModule } from './github/github.module';
 
 @Module({
   imports: [
@@ -17,7 +18,7 @@ import { EmailModule } from './email/email.module';
       ignoreEnvFile: true,
     }),
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 60 }]),
-    PrismaModule, AuthModule, TreesModule, NodesModule, EmailModule
+    PrismaModule, AuthModule, TreesModule, NodesModule, EmailModule, GitHubModule
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -45,6 +45,39 @@ export class TreesService {
         return tree;
     }
 
+    async getPublicProfile(handle: string) {
+        const user = await this.prisma.user.findUnique({
+            where: { handle },
+            select: {
+                id: true,
+                name: true,
+                handle: true,
+                githubUsername: true,
+                createdAt: true,
+                trees: {
+                    where: { title: 'My Dev Map' },
+                    take: 1,
+                    include: { nodes: true, activities: true },
+                },
+            },
+        });
+        if (!user) throw new NotFoundException('Profile not found');
+
+        const devMap = user.trees[0] ?? null;
+        const verifiedCount = devMap?.nodes.filter((n: { verified: boolean }) => n.verified).length ?? 0;
+        const totalNodes = devMap?.nodes.length ?? 0;
+
+        return {
+            handle: user.handle,
+            name: user.name,
+            githubUsername: user.githubUsername,
+            memberSince: user.createdAt,
+            verifiedSkills: verifiedCount,
+            totalSkills: totalNodes,
+            devMap,
+        };
+    }
+
     async update(userId: string, id: string, title: string) {
         return this.prisma.tree.update({
             where: { id, userId }, // Ensure user owns tree

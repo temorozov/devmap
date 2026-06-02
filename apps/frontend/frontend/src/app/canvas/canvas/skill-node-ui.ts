@@ -8,6 +8,8 @@ export interface SkillNodeUiModel {
   level: number;
   maxLevel: number;
   progressPercent: number;
+  verified: boolean;
+  source: string;
 }
 
 export function getNodeMaxLevel(node: Pick<SkillNode, 'maxLevel'>, defaultMaxLevel: number): number {
@@ -57,7 +59,7 @@ export function getNodeStatusLabelKey(status: SkillNodeStatus): string {
 }
 
 export function getNodeUiModel(
-  node: Pick<SkillNode, 'level' | 'maxLevel'>,
+  node: Pick<SkillNode, 'level' | 'maxLevel' | 'verified' | 'source'>,
   defaultMaxLevel: number
 ): SkillNodeUiModel {
   const status = getNodeStatus(node, defaultMaxLevel);
@@ -68,6 +70,8 @@ export function getNodeUiModel(
     level: getNodeLevel(node),
     maxLevel: getNodeMaxLevel(node, defaultMaxLevel),
     progressPercent: getNodeProgressPercent(node, defaultMaxLevel),
+    verified: node.verified ?? false,
+    source: node.source ?? 'manual',
   };
 }
 

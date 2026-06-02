@@ -3,6 +3,16 @@ import { HttpClient } from '@angular/common/http';
 import { appRuntimeConfig } from './app-config';
 import { SkillNode } from './nodes.service';
 
+export interface PublicProfile {
+  handle: string;
+  name: string | null;
+  githubUsername: string | null;
+  memberSince: string;
+  verifiedSkills: number;
+  totalSkills: number;
+  devMap: Tree | null;
+}
+
 export interface Tree {
   id: string;
   title: string;
@@ -47,5 +57,16 @@ export class TreesService {
 
   generateTree(id: string, prompt: string) {
     return this.http.post<SkillNode[]>(`${this.apiUrl}/${id}/generate`, { prompt });
+  }
+
+  getPublicProfile(handle: string) {
+    return this.http.get<PublicProfile>(`${this.apiUrl}/profile/${handle}`);
+  }
+
+  syncGitHub() {
+    return this.http.post<{ nodeCount: number; verifiedCount: number }>(
+      `${appRuntimeConfig.apiUrl}/github/sync`,
+      {},
+    );
   }
 }

@@ -15,3 +15,11 @@ export function isDiscordOAuthEnabled(): boolean {
     'DISCORD_CALLBACK_URL',
   );
 }
+
+export function isGitHubOAuthEnabled(): boolean {
+  return hasEnvValues(
+    'GITHUB_CLIENT_ID',
+    'GITHUB_CLIENT_SECRET',
+    'GITHUB_CALLBACK_URL',
+  );
+}

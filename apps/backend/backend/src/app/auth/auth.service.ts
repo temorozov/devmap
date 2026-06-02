@@ -50,6 +50,32 @@ export class AuthService {
         );
     }
 
+    async validateGitHubUser(profile: {
+        githubId: string;
+        githubUsername: string;
+        githubAccessToken: string;
+        email: string;
+        name: string;
+    }): Promise<User> {
+        return this.upsertOAuthUser(
+            () => profile.githubId ? this.prisma.user.findFirst({ where: { githubId: profile.githubId } }) : Promise.resolve(null),
+            (existingUser) => ({
+                githubId: profile.githubId,
+                githubUsername: profile.githubUsername,
+                githubAccessToken: profile.githubAccessToken,
+                name: existingUser.name || profile.name,
+            }),
+            {
+                githubId: profile.githubId,
+                githubUsername: profile.githubUsername,
+                githubAccessToken: profile.githubAccessToken,
+                email: profile.email || undefined,
+                name: profile.name,
+                handle: profile.githubUsername || undefined,
+            },
+        );
+    }
+
     async login(user: User) {
         const payload = { sub: user.id, isGuest: user.isGuest };
         return {

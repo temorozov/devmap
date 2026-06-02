@@ -250,6 +250,17 @@
     }
 }
 
+.btn-github {
+    background: #24292e;
+    color: #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+
+    &:hover:not(:disabled) {
+        background: #2f363d;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    }
+}
+
 .btn-google {
     background: #ffffff;
     color: #444;
