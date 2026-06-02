@@ -4,22 +4,26 @@
     height: 100vh;
     height: 100dvh;
     overflow: hidden;
-    background-color: var(--bg-dark);
+    background-color: var(--bg);
+    background-image: radial-gradient(rgba(255,255,255,0.04) 1px, transparent 1px);
+    background-size: 28px 28px;
 }
 
 .canvas-header {
     position: absolute;
-    top: 1rem;
-    left: 1rem;
-    right: 1rem;
+    top: 0;
+    left: 0;
+    right: 0;
     z-index: 10;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.85rem 1.15rem;
-    border-radius: 14px;
-    background: rgba(24, 27, 33, 0.88);
-    border-color: rgba(255, 255, 255, 0.06);
+    padding: 0 1.25rem;
+    height: 52px;
+    border-radius: 0;
+    background: rgba(13, 17, 23, 0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
 
     .left-section {
         display: flex;
@@ -105,7 +109,7 @@
 
         .progress-fill {
             height: 100%;
-            background: var(--accent-color);
+            background: var(--success-color);
             transition: width 0.3s ease;
         }
 
@@ -133,15 +137,18 @@
 .empty-map-callout {
     position: absolute;
     left: 50%;
-    top: 52%;
+    top: calc(52% + 26px);
     z-index: 6;
     width: min(420px, calc(100vw - 2rem));
     transform: translate(-50%, -50%);
-    padding: 1.15rem;
+    padding: 1.5rem;
     text-align: center;
-    border-radius: 18px;
-    background: rgba(24, 27, 33, 0.82);
-    border-color: rgba(255, 255, 255, 0.065);
+    border-radius: 12px;
+    background: rgba(22, 27, 34, 0.94);
+    border: 1px solid var(--border) !important;
+    border-color: var(--border) !important;
+    backdrop-filter: blur(12px);
+    box-shadow: var(--shadow-xl);
 }
 
 .empty-map-icon {
@@ -183,10 +190,10 @@
 
 .canvas-side-panel {
     position: absolute;
-    top: 6.7rem;
+    top: 4rem;
     left: 1rem;
     z-index: 9;
-    width: min(330px, calc(100vw - 2rem));
+    width: min(310px, calc(100vw - 2rem));
     display: flex;
     flex-direction: column;
     gap: 0.65rem;
@@ -197,12 +204,12 @@
     display: flex;
     flex-direction: column;
     gap: 0.52rem;
-    border-radius: 14px;
-    background:
-        linear-gradient(180deg, rgba(59, 130, 246, 0.04), transparent 58%),
-        rgba(24, 27, 33, 0.78);
-    border-color: rgba(255, 255, 255, 0.05);
-    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.11);
+    border-radius: 10px;
+    background: rgba(22, 27, 34, 0.92);
+    border: 1px solid var(--border) !important;
+    border-color: var(--border) !important;
+    box-shadow: var(--shadow-lg);
+    backdrop-filter: blur(12px);
 }
 
 .insight-card-header {
@@ -285,11 +292,12 @@
 
 .map-filters {
     padding: 0.46rem;
-    border-radius: 16px;
-    background: rgba(24, 27, 33, 0.52);
-    border-color: rgba(255, 255, 255, 0.03);
-    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
-    backdrop-filter: blur(14px);
+    border-radius: 10px;
+    background: rgba(22, 27, 34, 0.92);
+    border: 1px solid var(--border) !important;
+    border-color: var(--border) !important;
+    box-shadow: var(--shadow-lg);
+    backdrop-filter: blur(12px);
 }
 
 .map-filter-controls {
@@ -332,23 +340,27 @@
     }
 
     &.filter-all.active {
-        border-color: rgba(96, 165, 250, 0.32);
-        background: rgba(59, 130, 246, 0.14);
+        border-color: var(--blue-border);
+        background: var(--blue-dim);
+        color: var(--blue);
     }
 
     &.status-not-started.active {
-        border-color: rgba(168, 181, 201, 0.26);
-        background: rgba(148, 163, 184, 0.14);
+        border-color: rgba(110, 118, 129, 0.3);
+        background: rgba(110, 118, 129, 0.1);
+        color: var(--text-muted);
     }
 
     &.status-in-progress.active {
-        border-color: rgba(125, 211, 252, 0.3);
-        background: rgba(14, 165, 233, 0.14);
+        border-color: var(--blue-border);
+        background: var(--blue-dim);
+        color: var(--blue);
     }
 
     &.status-completed.active {
-        border-color: rgba(134, 239, 172, 0.3);
-        background: rgba(34, 197, 94, 0.14);
+        border-color: var(--green-border);
+        background: var(--green-dim);
+        color: var(--green);
     }
 }
 
@@ -463,7 +475,7 @@
 
 .canvas-linking-status {
     position: absolute;
-    top: 6.7rem;
+    top: 4rem;
     right: 1rem;
     z-index: 11;
     display: flex;
@@ -517,12 +529,13 @@
 /* Connections */
 .connection-line {
     fill: none;
-    stroke: var(--border-color);
-    stroke-width: 3;
+    stroke: rgba(255, 255, 255, 0.12);
+    stroke-width: 2;
     stroke-linecap: round;
 
     &.completed {
-        stroke: var(--success-color);
+        stroke: rgba(63, 185, 80, 0.5);
+        stroke-width: 2.5;
     }
 }
 
@@ -563,8 +576,8 @@
     .node-bg {
         fill: var(--bg-card);
         stroke: var(--node-status-color);
-        fill: color-mix(in srgb, var(--bg-card) 88%, rgb(var(--node-status-rgb)) 12%);
-        stroke: color-mix(in srgb, var(--border-color) 62%, var(--node-status-color) 38%);
+        fill: color-mix(in srgb, var(--bg-card) 78%, rgb(var(--node-status-rgb)) 22%);
+        stroke: color-mix(in srgb, var(--border-color) 40%, var(--node-status-color) 60%);
         stroke-width: 2;
         transition: stroke 0.28s ease, fill 0.28s ease, stroke-width 0.28s ease, filter 0.28s ease, transform 0.28s ease;
     }
@@ -614,10 +627,10 @@
     }
 
     .node-label {
-        fill: var(--text-muted);
+        fill: var(--text-main);
         font-size: 11px;
         font-family: 'Inter', 'Roboto', sans-serif;
-        font-weight: 500;
+        font-weight: 600;
         transition: fill 0.2s ease;
     }
 
@@ -689,19 +702,19 @@
     }
 
     &.status-not-started {
-        --node-status-color: #d5dbe5;
-        --node-status-rgb: 168, 181, 201;
+        --node-status-color: #6e7681;
+        --node-status-rgb: 110, 118, 129;
     }
 
     &.status-in-progress {
-        --node-status-color: #7dd3fc;
-        --node-status-rgb: 125, 211, 252;
+        --node-status-color: #58a6ff;
+        --node-status-rgb: 88, 166, 255;
     }
 
     &.status-completed,
     &.completed {
-        --node-status-color: #86efac;
-        --node-status-rgb: 134, 239, 172;
+        --node-status-color: #3fb950;
+        --node-status-rgb: 63, 185, 80;
     }
 
     &.verified {
@@ -914,7 +927,7 @@
     }
 
     .canvas-side-panel {
-        top: 5rem;
+        top: 3.75rem;
         left: 0.75rem;
         right: 0.75rem;
         width: auto;
