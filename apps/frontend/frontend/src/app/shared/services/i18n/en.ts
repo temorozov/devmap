@@ -82,7 +82,7 @@ export const en: Record<string, string | ((params?: Record<string, string | numb
   'canvas.helpBody': 'AI Generate builds a draft. On a phone, tap a skill to open details and change its level there. On desktop, click levels up, Shift-click levels down, and right-click opens editing. Drag a skill to move it. Drag from the top point to connect skills.',
   'canvas.helpFirstVisit': 'Shown automatically once.',
   'canvas.helpButton': 'Got it',
-  'canvas.nodeProperties': 'Node Properties',
+  'canvas.nodeProperties': 'Edit Skill',
   'canvas.title': 'Title',
   'canvas.icon': 'Icon',
   'canvas.description': 'Description',

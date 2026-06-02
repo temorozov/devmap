@@ -82,7 +82,7 @@ export const uk: Record<string, string | ((params?: Record<string, string | numb
   'canvas.helpBody': 'AI Generate створює чернетку дерева. На телефоні натисніть навичку, щоб відкрити деталі й змінити рівень там. На desktop клік підвищує рівень, Shift + клік знижує, правий клік відкриває редагування. Перетягуйте навичку, щоб рухати її. Потягніть зв’язок із верхньої точки до іншої навички, щоб з’єднати їх.',
   'canvas.helpFirstVisit': 'Ця підказка показується автоматично лише під час першого входу.',
   'canvas.helpButton': 'Зрозуміло',
-  'canvas.nodeProperties': 'Властивості вузла',
+  'canvas.nodeProperties': 'Редагувати скіл',
   'canvas.title': 'Назва',
   'canvas.icon': 'Іконка',
   'canvas.description': 'Опис',

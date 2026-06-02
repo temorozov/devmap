@@ -6,7 +6,7 @@
             </button>
             <div *ngIf="tree" class="title-container">
                 <ng-container *ngIf="!isEditingTreeTitle">
-                    <h2>{{ tree.title }}</h2>
+                    <h2 [title]="tree.title">{{ tree.title }}</h2>
                     <span *ngIf="isDemoTree" class="demo-inline-badge">{{ i18n.t('canvas.demoBadge') }}</span>
                     <button class="icon-btn edit-title-btn" (click)="startEditingTreeTitle()" [title]="i18n.t('canvas.renameTree')">
                         <span class="material-icons">edit</span>
@@ -198,6 +198,8 @@
                         [attr.title]="i18n.t('canvas.mobileLinking')"
                     />
                     <circle class="link-handle" cx="0" cy="-40" r="8" pointer-events="none" />
+
+                    <text class="node-label" x="0" y="52" text-anchor="middle" dominant-baseline="hanging" pointer-events="none">{{ node.title.length > 15 ? node.title.substring(0, 14) + '…' : node.title }}</text>
                 </g>
             </g>
 

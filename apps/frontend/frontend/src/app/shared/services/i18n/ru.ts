@@ -82,7 +82,7 @@ export const ru: Record<string, string | ((params?: Record<string, string | numb
   'canvas.helpBody': 'AI Generate создаёт черновик дерева. На телефоне нажмите навык, чтобы открыть детали и изменить уровень там. На desktop клик повышает уровень, Shift + клик понижает, правый клик открывает редактирование. Перетаскивайте навык, чтобы двигать его. Потяните связь из верхней точки к другому навыку, чтобы соединить их.',
   'canvas.helpFirstVisit': 'Эта подсказка показывается автоматически только при первом входе.',
   'canvas.helpButton': 'Понятно',
-  'canvas.nodeProperties': 'Свойства узла',
+  'canvas.nodeProperties': 'Редактировать скилл',
   'canvas.title': 'Название',
   'canvas.icon': 'Иконка',
   'canvas.description': 'Описание',

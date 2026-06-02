@@ -55,6 +55,7 @@
                 font-weight: 600;
                 letter-spacing: 0.04em;
                 text-transform: uppercase;
+                white-space: nowrap;
             }
 
             .edit-title-btn {
@@ -316,9 +317,7 @@
     transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
 
     span:first-child {
-        min-width: 0;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
     &:hover {
@@ -612,6 +611,20 @@
         fill: var(--accent-hover);
         r: 10;
         opacity: 1;
+    }
+
+    .node-label {
+        fill: var(--text-muted);
+        font-size: 11px;
+        font-family: 'Inter', 'Roboto', sans-serif;
+        font-weight: 500;
+        transition: fill 0.2s ease;
+    }
+
+    &:hover .node-label,
+    &.selected .node-label,
+    &.multi-selected .node-label {
+        fill: var(--text-main);
     }
 
     /* Node States */
@@ -1027,6 +1040,17 @@
 @media (max-width: 640px) {
     .canvas-side-panel {
         width: auto;
+    }
+
+    .map-filter-controls {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        flex-wrap: unset;
+        justify-content: unset;
+    }
+
+    .filter-chip {
+        border-radius: 12px;
     }
 
     .insight-card {

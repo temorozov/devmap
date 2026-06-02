@@ -429,8 +429,23 @@ app-canvas {
   }
 
   .danger-action {
-    min-height: 40px;
+    min-height: 36px;
     justify-content: center;
+    background: transparent !important;
+    border-color: transparent !important;
+    color: rgba(239, 68, 68, 0.6) !important;
+    font-size: 0.82rem;
+    font-weight: 500;
+
+    .material-icons {
+      font-size: 1rem;
+    }
+
+    &:hover {
+      background: rgba(239, 68, 68, 0.06) !important;
+      border-color: rgba(239, 68, 68, 0.18) !important;
+      color: #ef4444 !important;
+    }
   }
 
   .sticky-footer {
