@@ -1,151 +1,217 @@
-<div class="dashboard-layout">
-    <header class="topbar">
-        <div class="logo-area">
-            <span class="material-icons logo-icon">account_tree</span>
-            <a class="brand-link" routerLink="/">
-                <h2>{{ i18n.t('app.name') }}</h2>
-            </a>
+<div class="dashboard">
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <a class="topbar-brand" routerLink="/">
+      <svg class="topbar-logo" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="12" cy="12" r="3" fill="currentColor"/>
+        <circle cx="4" cy="6" r="2" fill="currentColor" opacity=".6"/>
+        <circle cx="20" cy="6" r="2" fill="currentColor" opacity=".6"/>
+        <circle cx="4" cy="18" r="2" fill="currentColor" opacity=".6"/>
+        <circle cx="20" cy="18" r="2" fill="currentColor" opacity=".6"/>
+        <line x1="12" y1="12" x2="4" y2="6" stroke="currentColor" stroke-width="1.5" opacity=".4"/>
+        <line x1="12" y1="12" x2="20" y2="6" stroke="currentColor" stroke-width="1.5" opacity=".4"/>
+        <line x1="12" y1="12" x2="4" y2="18" stroke="currentColor" stroke-width="1.5" opacity=".4"/>
+        <line x1="12" y1="12" x2="20" y2="18" stroke="currentColor" stroke-width="1.5" opacity=".4"/>
+      </svg>
+      <span class="topbar-brand-name">DevMap</span>
+    </a>
+
+    <div class="topbar-actions">
+      <!-- GitHub sync button (registered users) -->
+      <button
+        *ngIf="(isGuest$ | async) === false"
+        class="btn-sync"
+        (click)="syncGitHub()"
+        [disabled]="syncing"
+      >
+        <svg *ngIf="!syncing" class="btn-icon" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
+        </svg>
+        <span *ngIf="syncing" class="material-icons spinning" style="font-size:1rem">refresh</span>
+        {{ syncing ? 'Syncing…' : 'Re-sync GitHub' }}
+      </button>
+
+      <!-- Public profile link -->
+      <a
+        *ngIf="(isGuest$ | async) === false && trees.length > 0"
+        class="btn-profile-link"
+        [routerLink]="'/u/' + (authService.handle$ | async)"
+        target="_blank"
+      >
+        <span class="material-icons" style="font-size:0.9rem">open_in_new</span>
+        Public profile
+      </a>
+
+      <!-- Guest CTA -->
+      <a *ngIf="isGuest$ | async" class="btn-signup" routerLink="/login">
+        <svg class="btn-icon btn-icon-sm" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
+        </svg>
+        Connect GitHub
+      </a>
+
+      <!-- Logout -->
+      <button *ngIf="(isGuest$ | async) === false" class="btn-logout" (click)="logout()">
+        <span class="material-icons" style="font-size:1rem">logout</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT -->
+  <main class="main">
+
+    <!-- Loading -->
+    <div class="state-loading" *ngIf="loading">
+      <span class="material-icons spinning" style="font-size:1.5rem;color:var(--text-subtle)">refresh</span>
+      <span style="color:var(--text-muted);font-size:0.9rem">Loading your skill map…</span>
+    </div>
+
+    <!-- Empty state — no trees yet, show GitHub connect prompt -->
+    <div class="state-empty" *ngIf="!loading && trees.length === 0 && (isGuest$ | async) === false">
+      <div class="empty-card">
+        <div class="empty-icon">
+          <svg viewBox="0 0 24 24" fill="currentColor" class="empty-gh-icon">
+            <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
+          </svg>
         </div>
-        <div class="actions">
-            <app-language-switcher></app-language-switcher>
-            <button *ngIf="(isGuest$ | async) === false" class="btn-secondary github-sync-btn" (click)="syncGitHub()" [disabled]="syncing">
-                <span *ngIf="!syncing" class="material-icons">sync</span>
-                <span *ngIf="syncing" class="material-icons spinning">refresh</span>
-                <span>{{ syncing ? 'Syncing…' : 'Sync GitHub' }}</span>
+        <h2>Build your skill map</h2>
+        <p>
+          Connect GitHub and we'll scan your repos — detecting languages, frameworks, and tools
+          you've actually used.
+        </p>
+        <button class="btn-connect-gh" (click)="syncGitHub()" [disabled]="syncing">
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
+          </svg>
+          {{ syncing ? 'Scanning your repos…' : 'Scan GitHub repos now' }}
+        </button>
+        <div class="empty-note">
+          <span class="material-icons" style="font-size:0.85rem">lock</span>
+          Read-only access · never writes to your repos
+        </div>
+      </div>
+    </div>
+
+    <!-- Guest empty state -->
+    <div class="state-empty" *ngIf="!loading && (isGuest$ | async)">
+      <div class="empty-card">
+        <div class="empty-icon">
+          <span class="material-icons" style="font-size:2rem;color:var(--text-muted)">explore</span>
+        </div>
+        <h2>You're browsing as a guest</h2>
+        <p>Connect GitHub to build your own verified skill map and get a shareable public profile.</p>
+        <a class="btn-connect-gh" routerLink="/login">
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
+          </svg>
+          Connect GitHub
+        </a>
+        <div class="empty-divider">
+          <span>or view an example</span>
+        </div>
+        <button class="btn-demo" (click)="openDemoTree()">
+          <span class="material-icons" style="font-size:0.9rem">hub</span>
+          Open example skill map
+        </button>
+      </div>
+    </div>
+
+    <!-- Skill maps list -->
+    <div class="maps-section" *ngIf="!loading && trees.length > 0">
+
+      <!-- Section header -->
+      <div class="maps-header">
+        <div>
+          <h1 class="maps-title">Your skill map</h1>
+          <p class="maps-sub">Verified from GitHub · tap a map to explore it</p>
+        </div>
+        <button class="btn-new-map" (click)="openCreateModal()">
+          <span class="material-icons" style="font-size:0.9rem">add</span>
+          New map
+        </button>
+      </div>
+
+      <!-- Grid of maps -->
+      <div class="maps-grid">
+
+        <!-- Each skill map card -->
+        <div
+          class="map-card"
+          *ngFor="let tree of trees; trackBy: trackByTreeId"
+          tabindex="0"
+          (click)="openTree(tree.id)"
+          (keyup.enter)="openTree(tree.id)"
+          role="button"
+          [attr.aria-label]="'Open ' + tree.title"
+        >
+          <div class="map-card-body">
+            <div class="map-card-top">
+              <div class="map-card-icon">
+                <span class="material-icons" style="font-size:1.1rem">hub</span>
+              </div>
+              <div class="map-card-meta">
+                <span class="map-card-title">{{ tree.title }}</span>
+                <span class="map-card-updated">{{ tree.updatedLabel }}</span>
+              </div>
+            </div>
+
+            <!-- Activity calendar if available -->
+            <div class="map-card-calendar" *ngIf="tree.activities && tree.activities.length > 0">
+              <app-activity-calendar [activities]="tree.activities"></app-activity-calendar>
+            </div>
+          </div>
+
+          <div class="map-card-actions">
+            <button
+              type="button"
+              class="map-action-btn"
+              (click)="copyShareLink($event, tree.sharedToken)"
+              title="Copy share link"
+              aria-label="Copy share link"
+            >
+              <span class="material-icons">link</span>
             </button>
-            <button *ngIf="(isGuest$ | async) === false" class="btn-secondary" (click)="logout()">
-                <span class="material-icons">logout</span>
-                <span>{{ i18n.t('dashboard.logout') }}</span>
+            <button
+              type="button"
+              class="map-action-btn map-action-btn-danger"
+              (click)="deleteTree($event, tree.id)"
+              title="Delete map"
+              aria-label="Delete map"
+            >
+              <span class="material-icons">delete</span>
             </button>
-            <div *ngIf="isGuest$ | async" class="guest-actions">
-                <a routerLink="/login" class="btn-primary">
-                    <span class="material-icons">login</span>
-                    <span>{{ i18n.t('dashboard.login') }}</span>
-                </a>
-            </div>
-        </div>
-    </header>
-
-    <main class="content">
-        <div class="dashboard-header">
-            <div class="header-copy">
-                <span class="section-kicker">{{ i18n.t('app.name') }}</span>
-                <h1>{{ i18n.t('dashboard.heading') }}</h1>
-            </div>
-            <button class="btn-primary prominent-btn" (click)="openCreateModal()">
-                <span class="material-icons">add</span>
-                <span>{{ i18n.t('dashboard.newTree') }}</span>
-            </button>
+          </div>
         </div>
 
-        <div *ngIf="loading" class="loading-state">
-            <span class="material-icons spinning">refresh</span>
-            <p>{{ i18n.t('dashboard.loading') }}</p>
-        </div>
+      </div>
+    </div>
 
-        <div *ngIf="!loading && trees.length === 0" class="empty-state glass-panel">
-            <span class="material-icons">park</span>
-            <h3>{{ i18n.t('dashboard.emptyTitle') }}</h3>
-            <p>{{ i18n.t('dashboard.emptyText') }}</p>
-            <div class="empty-state-actions">
-                <button class="btn-primary prominent-btn" (click)="openCreateModal()">
-                    <span class="material-icons">add</span>
-                    <span>{{ i18n.t('dashboard.emptyCreate') }}</span>
-                </button>
-                <button class="btn-secondary" (click)="openDemoTree()">
-                    <span class="material-icons">school</span>
-                    <span>{{ i18n.t('dashboard.exampleAction') }}</span>
-                </button>
-            </div>
-        </div>
-
-        <div class="trees-grid" *ngIf="!loading">
-            <div class="tree-card glass-panel example-card" role="button" tabindex="0" (click)="openDemoTree()" (keyup.enter)="openDemoTree()">
-                <div class="example-orbit" aria-hidden="true">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </div>
-                <div class="card-content">
-                    <div class="card-topline">
-                        <div class="card-badge">{{ i18n.t('dashboard.exampleBadge') }}</div>
-                    </div>
-                    <div class="icon-wrapper">
-                        <span class="material-icons">explore</span>
-                    </div>
-                    <h3>{{ i18n.t('dashboard.exampleTitle') }}</h3>
-                    <p class="date">{{ i18n.t('dashboard.exampleText') }}</p>
-                </div>
-                <div class="card-footer-link">
-                    <span>{{ i18n.t('dashboard.exampleAction') }}</span>
-                    <span class="material-icons">arrow_forward</span>
-                </div>
-            </div>
-
-            <div class="tree-card glass-panel" *ngFor="let tree of trees; trackBy: trackByTreeId" tabindex="0" (click)="openTree(tree.id)" (keyup.enter)="openTree(tree.id)">
-                <div class="card-content">
-                    <div class="card-topline">
-                        <div class="icon-wrapper">
-                            <span class="material-icons">account_tree</span>
-                        </div>
-                    </div>
-                    <h3>{{ tree.title }}</h3>
-                    <p class="date">{{ tree.updatedLabel }}</p>
-
-                    <div class="calendar-preview" *ngIf="tree.activities && tree.activities.length > 0">
-                        <app-activity-calendar [activities]="tree.activities"></app-activity-calendar>
-                    </div>
-                </div>
-
-                <div class="card-actions">
-                    <button
-                        type="button"
-                        class="action-btn share-btn"
-                        (click)="copyShareLink($event, tree.sharedToken)"
-                        [title]="i18n.t('dashboard.copyLink')"
-                        [attr.aria-label]="i18n.t('dashboard.copyLink')"
-                    >
-                        <span class="material-icons">share</span>
-                    </button>
-                    <button
-                        type="button"
-                        class="action-btn delete-btn"
-                        (click)="deleteTree($event, tree.id)"
-                        [title]="i18n.t('dashboard.deleteTree')"
-                        [attr.aria-label]="i18n.t('dashboard.deleteTree')"
-                    >
-                        <span class="material-icons">delete</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </main>
+  </main>
 </div>
 
-<!-- Backdrop closes on click; keyboard users dismiss via the close/cancel buttons. -->
-<!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
-<div class="modal-overlay" *ngIf="showCreateModal" (click)="showCreateModal = false">
-    <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
-    <div class="modal-content glass-panel" (click)="$event.stopPropagation()">
-        <div class="modal-header">
-            <h3>{{ i18n.t('dashboard.createTitle') }}</h3>
-            <button class="close-btn" (click)="showCreateModal = false">
-                <span class="material-icons">close</span>
-            </button>
-        </div>
-        <div class="modal-body">
-            <div class="input-group">
-                <input
-                    type="text"
-                    [(ngModel)]="newTreeTitle"
-                    [placeholder]="i18n.t('dashboard.createPlaceholder')"
-                    (keyup.enter)="createTree()"
-                >
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button class="btn-secondary" (click)="showCreateModal = false">{{ i18n.t('dashboard.cancel') }}</button>
-            <button class="btn-primary" [disabled]="!newTreeTitle.trim()" (click)="createTree()">{{ i18n.t('dashboard.create') }}</button>
-        </div>
+<!-- Create map modal -->
+<div class="modal-backdrop" *ngIf="showCreateModal" (click)="showCreateModal = false">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2 class="modal-title">New skill map</h2>
+      <button class="modal-close" (click)="showCreateModal = false">
+        <span class="material-icons">close</span>
+      </button>
     </div>
+    <div class="modal-body">
+      <input
+        class="modal-input"
+        type="text"
+        [(ngModel)]="newTreeTitle"
+        placeholder="e.g. Backend, Full-stack 2024"
+        (keyup.enter)="createTree()"
+        autofocus
+      />
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" (click)="showCreateModal = false">Cancel</button>
+      <button class="btn-primary" [disabled]="!newTreeTitle.trim()" (click)="createTree()">Create map</button>
+    </div>
+  </div>
 </div>

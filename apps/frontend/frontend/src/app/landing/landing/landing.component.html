@@ -1,179 +1,352 @@
-<main class="landing-page">
-  <section class="hero-section">
-    <header class="landing-nav">
-      <a class="brand-link" routerLink="/" aria-label="Skill Tree">
-        <span class="material-icons logo-icon">account_tree</span>
-        <span>{{ i18n.t('app.name') }}</span>
+<div class="page">
+
+  <!-- NAV -->
+  <header class="nav">
+    <a class="nav-brand" routerLink="/">
+      <svg class="nav-logo" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="12" cy="12" r="3" fill="currentColor"/>
+        <circle cx="4" cy="6" r="2" fill="currentColor" opacity=".6"/>
+        <circle cx="20" cy="6" r="2" fill="currentColor" opacity=".6"/>
+        <circle cx="4" cy="18" r="2" fill="currentColor" opacity=".6"/>
+        <circle cx="20" cy="18" r="2" fill="currentColor" opacity=".6"/>
+        <line x1="12" y1="12" x2="4" y2="6" stroke="currentColor" stroke-width="1.5" opacity=".4"/>
+        <line x1="12" y1="12" x2="20" y2="6" stroke="currentColor" stroke-width="1.5" opacity=".4"/>
+        <line x1="12" y1="12" x2="4" y2="18" stroke="currentColor" stroke-width="1.5" opacity=".4"/>
+        <line x1="12" y1="12" x2="20" y2="18" stroke="currentColor" stroke-width="1.5" opacity=".4"/>
+      </svg>
+      <span class="nav-brand-name">DevMap</span>
+    </a>
+    <nav class="nav-links">
+      <a class="nav-link" [routerLink]="authEntryRoute">Sign in</a>
+      <a class="nav-cta" [routerLink]="authEntryRoute">
+        <svg class="gh-icon-xs" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg>
+        Connect GitHub
       </a>
+    </nav>
+  </header>
 
-      <div class="nav-actions">
-        <app-language-switcher></app-language-switcher>
-        <a class="nav-login" [routerLink]="authEntryRoute">{{ copy.login }}</a>
-      </div>
-    </header>
-
-    <div class="hero-content">
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-inner">
       <div class="hero-copy">
-        <p class="eyebrow">{{ copy.eyebrow }}</p>
-        <h1>{{ copy.title }}</h1>
-        <p class="hero-subtitle">{{ copy.subtitle }}</p>
+        <div class="hero-eyebrow">
+          <span class="eyebrow-dot"></span>
+          GitHub-verified developer portfolio
+        </div>
+
+        <h1 class="hero-h1">Your skills,<br>proven by code.</h1>
+
+        <p class="hero-sub">
+          Connect GitHub. DevMap scans your repos and builds a verified skill map —
+          showing what you've actually shipped, not what you claim.
+        </p>
 
         <div class="hero-actions">
-          <a class="btn-primary hero-primary" [routerLink]="authEntryRoute">
-            <span>{{ copy.primaryCta }}</span>
-            <span class="material-icons">arrow_forward</span>
+          <a class="hero-cta-primary" [routerLink]="authEntryRoute">
+            <svg class="gh-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg>
+            Connect GitHub — free
           </a>
-          <a class="btn-secondary hero-secondary" [routerLink]="demoTreeUrl">
-            <span class="material-icons">explore</span>
-            <span>{{ copy.secondaryCta }}</span>
+          <a class="hero-cta-secondary" [routerLink]="demoTreeUrl">
+            See an example map
+            <span class="material-icons" style="font-size:1rem">arrow_forward</span>
           </a>
         </div>
+
+        <div class="hero-proof">
+          <span class="proof-item">
+            <span class="material-icons proof-icon">lock</span>
+            Read-only access
+          </span>
+          <span class="proof-sep">·</span>
+          <span class="proof-item">
+            <span class="material-icons proof-icon">flash_on</span>
+            Scans in &lt;30s
+          </span>
+          <span class="proof-sep">·</span>
+          <span class="proof-item">
+            <span class="material-icons proof-icon">share</span>
+            Public at /u/yourhandle
+          </span>
+        </div>
       </div>
 
-      <div class="skill-map-preview" aria-hidden="true">
-        <svg class="preview-lines" viewBox="0 0 640 430" role="img">
-          <path d="M320 334 C320 276 210 268 210 210" />
-          <path d="M320 334 C320 268 320 250 320 174" />
-          <path d="M320 334 C320 276 430 268 430 210" />
-          <path d="M210 210 C210 154 146 146 146 92" />
-          <path d="M430 210 C430 154 494 146 494 92" />
-        </svg>
-
-        <div class="map-node root-node">
-          <span class="material-icons">code</span>
-        </div>
-        <div class="map-node node-html complete">
-          <span class="material-icons">view_quilt</span>
-        </div>
-        <div class="map-node node-css active">
-          <span class="material-icons">palette</span>
-        </div>
-        <div class="map-node node-js">
-          <span class="material-icons">data_object</span>
-        </div>
-        <div class="map-node node-project">
-          <span class="material-icons">rocket_launch</span>
-        </div>
-        <div class="map-node node-share">
-          <span class="material-icons">share</span>
-        </div>
-
-        <div class="map-status glass-panel">
-          <span>{{ copy.visualBadge }}</span>
-          <strong>{{ copy.visualTitle }}</strong>
-          <div class="status-progress" aria-hidden="true">
-            <span></span>
+      <!-- Skill map visual preview -->
+      <div class="hero-visual" aria-hidden="true">
+        <div class="visual-card">
+          <div class="visual-header">
+            <div class="visual-avatar">
+              <span class="material-icons" style="font-size:1.1rem;color:var(--text-muted)">person</span>
+            </div>
+            <div>
+              <div class="visual-name">alexdev</div>
+              <div class="visual-handle">devmap.sh/u/alexdev</div>
+            </div>
+            <div class="visual-verified-badge">
+              <span class="material-icons" style="font-size:0.85rem">verified</span>
+              Verified
+            </div>
           </div>
-          <small>{{ copy.visualMeta }}</small>
-        </div>
-      </div>
-    </div>
-  </section>
 
-  <section class="how-section" aria-labelledby="how-title">
-    <div class="section-heading">
-      <h2 id="how-title">{{ copy.howTitle }}</h2>
-      <p>{{ copy.howSubtitle }}</p>
-    </div>
-
-    <div class="steps-list">
-      <article class="step-item" *ngFor="let step of copy.steps; let index = index">
-        <div class="step-index">{{ index + 1 }}</div>
-        <div class="step-icon">
-          <span class="material-icons">{{ step.icon }}</span>
-        </div>
-        <div>
-          <h3>{{ step.title }}</h3>
-          <p>{{ step.text }}</p>
-        </div>
-      </article>
-    </div>
-  </section>
-
-  <section class="skill-intro-section" aria-labelledby="skill-intro-title">
-    <div class="skill-intro-copy">
-      <p class="section-kicker">{{ copy.skillIntroPanelTitle }}</p>
-      <h2 id="skill-intro-title">{{ copy.skillIntroTitle }}</h2>
-      <p>{{ copy.skillIntroSubtitle }}</p>
-
-      <div class="skill-hints">
-        <article class="skill-hint" *ngFor="let hint of copy.skillIntroHints">
-          <span class="material-icons">{{ hint.icon }}</span>
-          <div>
-            <h3>{{ hint.title }}</h3>
-            <p>{{ hint.text }}</p>
+          <div class="visual-stats">
+            <div class="vstat">
+              <span class="vstat-num">14</span>
+              <span class="vstat-label">Verified skills</span>
+            </div>
+            <div class="vstat">
+              <span class="vstat-num">23</span>
+              <span class="vstat-label">Repos scanned</span>
+            </div>
+            <div class="vstat">
+              <span class="vstat-num">4</span>
+              <span class="vstat-label">Categories</span>
+            </div>
           </div>
-        </article>
-      </div>
-    </div>
 
-    <div class="skill-panel-preview glass-panel" aria-hidden="true">
-      <div class="skill-panel-header">
-        <h3>{{ copy.skillIntroPanelTitle }}</h3>
-        <span class="material-icons">close</span>
-      </div>
-
-      <div class="skill-panel-overview">
-        <div class="skill-panel-node">
-          <span class="material-icons">palette</span>
-        </div>
-        <div>
-          <span class="skill-panel-label">{{ copy.skillIntroTitleLabel }}</span>
-          <strong>{{ copy.skillIntroNodeTitle }}</strong>
-          <small>{{ copy.skillIntroStatus }}</small>
-        </div>
-      </div>
-
-      <div class="skill-panel-block">
-        <span class="skill-panel-label">{{ copy.skillIntroDescriptionLabel }}</span>
-        <p>{{ copy.skillIntroDescription }}</p>
-      </div>
-
-      <div class="skill-panel-grid">
-        <div class="skill-panel-block">
-          <span class="skill-panel-label">{{ copy.skillIntroIconLabel }}</span>
-          <div class="mini-icons">
-            <span class="material-icons active">palette</span>
-            <span class="material-icons">code</span>
-            <span class="material-icons">menu_book</span>
-            <span class="material-icons">lightbulb</span>
+          <div class="visual-skills">
+            <div class="vskill-group">
+              <div class="vskill-label">Languages</div>
+              <div class="vskill-chips">
+                <span class="vchip vchip-verified">TypeScript</span>
+                <span class="vchip vchip-verified">Python</span>
+                <span class="vchip vchip-verified">Go</span>
+              </div>
+            </div>
+            <div class="vskill-group">
+              <div class="vskill-label">Frontend</div>
+              <div class="vskill-chips">
+                <span class="vchip vchip-verified">React</span>
+                <span class="vchip vchip-verified">Tailwind CSS</span>
+                <span class="vchip vchip-dim">Svelte</span>
+              </div>
+            </div>
+            <div class="vskill-group">
+              <div class="vskill-label">Backend</div>
+              <div class="vskill-chips">
+                <span class="vchip vchip-verified">Node.js</span>
+                <span class="vchip vchip-verified">NestJS</span>
+                <span class="vchip vchip-verified">FastAPI</span>
+              </div>
+            </div>
+            <div class="vskill-group">
+              <div class="vskill-label">DevOps</div>
+              <div class="vskill-chips">
+                <span class="vchip vchip-verified">Docker</span>
+                <span class="vchip vchip-verified">GitHub Actions</span>
+              </div>
+            </div>
           </div>
-          <p>{{ copy.skillIntroIconText }}</p>
-        </div>
 
-        <div class="skill-panel-block level-card">
-          <span class="skill-panel-label">{{ copy.skillIntroLevelLabel }}</span>
-          <strong>{{ copy.skillIntroLevelText }}</strong>
-          <div class="level-preview" aria-hidden="true">
-            <span></span>
+          <div class="visual-footer">
+            <span class="material-icons" style="font-size:0.85rem;color:var(--green)">sync</span>
+            Synced from GitHub · 23 repos · today
           </div>
         </div>
       </div>
     </div>
   </section>
 
-  <section class="features-section" aria-labelledby="features-title">
-    <h2 id="features-title">{{ copy.featuresTitle }}</h2>
+  <!-- HOW IT WORKS -->
+  <section class="how">
+    <div class="section-inner">
+      <div class="section-head">
+        <h2>Verified in 30 seconds</h2>
+        <p>No forms, no self-reporting. Your repos speak for themselves.</p>
+      </div>
 
-    <div class="features-list">
-      <article class="feature-item" *ngFor="let feature of copy.features">
-        <span class="material-icons">{{ feature.icon }}</span>
-        <div>
-          <h3>{{ feature.title }}</h3>
-          <p>{{ feature.text }}</p>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <div class="step-icon-wrap">
+              <svg class="step-gh-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg>
+            </div>
+            <h3>Connect GitHub</h3>
+            <p>One click. We request read-only access to your public repos — nothing is written back.</p>
+          </div>
         </div>
-      </article>
+
+        <div class="step-arrow">
+          <span class="material-icons">arrow_forward</span>
+        </div>
+
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <div class="step-icon-wrap">
+              <span class="material-icons step-icon">search</span>
+            </div>
+            <h3>We scan your repos</h3>
+            <p>DevMap reads your package.json, Dockerfiles, and CI workflows — detecting 50+ technologies automatically.</p>
+          </div>
+        </div>
+
+        <div class="step-arrow">
+          <span class="material-icons">arrow_forward</span>
+        </div>
+
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <div class="step-icon-wrap">
+              <span class="material-icons step-icon">verified</span>
+            </div>
+            <h3>Skills appear verified</h3>
+            <p>Each skill links back to the repos that prove it. Share the URL and let your code do the talking.</p>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 
+  <!-- PROOF SECTION: Skill detail mockup -->
+  <section class="proof-section">
+    <div class="section-inner proof-inner">
+      <div class="proof-copy">
+        <p class="proof-kicker">How it looks</p>
+        <h2>Every skill links to real evidence</h2>
+        <p class="proof-sub">
+          Verified skills show exactly which repos they come from — not a badge you clicked yourself.
+        </p>
+
+        <ul class="proof-bullets">
+          <li>
+            <span class="material-icons proof-bullet-icon">verified</span>
+            <div>
+              <strong>Code-verified, not self-reported</strong>
+              <span>Skills come from your actual package.json, Dockerfiles, and workflow files.</span>
+            </div>
+          </li>
+          <li>
+            <span class="material-icons proof-bullet-icon">link</span>
+            <div>
+              <strong>Repo evidence attached</strong>
+              <span>Click any skill to see which repos prove it, with direct links.</span>
+            </div>
+          </li>
+          <li>
+            <span class="material-icons proof-bullet-icon">person</span>
+            <div>
+              <strong>Shareable public profile</strong>
+              <span>Your map lives at /u/yourhandle — no login needed for viewers.</span>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Skill detail card mockup -->
+      <div class="proof-panel" aria-hidden="true">
+        <div class="pp-header">
+          <span class="pp-title">Skill detail</span>
+          <span class="material-icons pp-close">close</span>
+        </div>
+
+        <div class="pp-skill-row">
+          <div class="pp-skill-icon">
+            <span class="material-icons">web</span>
+          </div>
+          <div class="pp-skill-info">
+            <div class="pp-skill-name">React</div>
+            <div class="pp-verified-badge">
+              <span class="material-icons" style="font-size:0.8rem">verified</span>
+              Verified by GitHub
+            </div>
+          </div>
+        </div>
+
+        <div class="pp-block">
+          <div class="pp-block-label">CATEGORY</div>
+          <div class="pp-block-val">Frontend</div>
+        </div>
+
+        <div class="pp-block">
+          <div class="pp-block-label">EVIDENCE</div>
+          <div class="pp-block-val">Detected in 8 repos</div>
+          <div class="pp-repos">
+            <span class="pp-repo">my-portfolio</span>
+            <span class="pp-repo">saas-app</span>
+            <span class="pp-repo">react-dashboard</span>
+            <span class="pp-repo">+5 more</span>
+          </div>
+        </div>
+
+        <div class="pp-block">
+          <div class="pp-block-label">LAST SEEN</div>
+          <div class="pp-block-val pp-mono">3 days ago</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="features">
+    <div class="section-inner">
+      <div class="section-head">
+        <h2>Why it's more than a resume</h2>
+      </div>
+
+      <div class="feat-grid">
+        <div class="feat-card">
+          <div class="feat-icon feat-icon-green">
+            <span class="material-icons">verified</span>
+          </div>
+          <h3>Code-verified, not self-reported</h3>
+          <p>Every skill shows which repos contain it. Credible because it's automatic, not because you said so.</p>
+        </div>
+
+        <div class="feat-card">
+          <div class="feat-icon feat-icon-blue">
+            <span class="material-icons">share</span>
+          </div>
+          <h3>Public profile to share</h3>
+          <p>/u/yourhandle is a living portfolio page that updates each time you sync — link it anywhere.</p>
+        </div>
+
+        <div class="feat-card">
+          <div class="feat-icon feat-icon-purple">
+            <span class="material-icons">auto_awesome</span>
+          </div>
+          <h3>Visual skill map</h3>
+          <p>Skills are organized into an interactive map — grouped by category, with connections between related skills.</p>
+        </div>
+
+        <div class="feat-card">
+          <div class="feat-icon feat-icon-orange">
+            <span class="material-icons">sync</span>
+          </div>
+          <h3>Stays current automatically</h3>
+          <p>Re-sync any time. New repos, new deps — your map reflects where you are today.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FINAL CTA -->
   <section class="final-cta">
-    <div>
-      <h2>{{ copy.finalTitle }}</h2>
-      <p>{{ copy.finalText }}</p>
+    <div class="final-inner">
+      <h2>Let your repos speak.</h2>
+      <p>Connect GitHub. Get your verified dev map in under a minute. Share it, use it for job applications, or keep it for yourself.</p>
+      <a class="hero-cta-primary" [routerLink]="authEntryRoute">
+        <svg class="gh-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg>
+        Connect GitHub — free
+      </a>
     </div>
-    <a class="btn-primary final-button" [routerLink]="authEntryRoute">
-      <span>{{ copy.finalCta }}</span>
-      <span class="material-icons">arrow_forward</span>
-    </a>
   </section>
-</main>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <a class="nav-brand" routerLink="/">
+        <svg class="nav-logo" style="width:16px;height:16px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="3" fill="currentColor"/>
+          <circle cx="4" cy="6" r="2" fill="currentColor" opacity=".6"/>
+          <circle cx="20" cy="6" r="2" fill="currentColor" opacity=".6"/>
+          <circle cx="4" cy="18" r="2" fill="currentColor" opacity=".6"/>
+          <circle cx="20" cy="18" r="2" fill="currentColor" opacity=".6"/>
+        </svg>
+        DevMap
+      </a>
+      <span class="footer-copy">GitHub-verified developer skill maps</span>
+    </div>
+  </footer>
+
+</div>

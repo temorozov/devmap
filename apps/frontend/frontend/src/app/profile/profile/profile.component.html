@@ -1,64 +1,176 @@
 <div class="profile-page">
-    <div *ngIf="loading" class="profile-loading">
-        <span class="material-icons spinning">refresh</span>
-    </div>
 
-    <div *ngIf="error && !loading" class="profile-error">
-        <span class="material-icons">person_off</span>
-        <h2>{{ error }}</h2>
-        <a routerLink="/" class="btn-secondary">Go to homepage</a>
-    </div>
+  <!-- NAV -->
+  <header class="profile-nav">
+    <a class="nav-brand" routerLink="/">
+      <svg class="nav-logo" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="12" cy="12" r="3" fill="currentColor"/>
+        <circle cx="4" cy="6" r="2" fill="currentColor" opacity=".6"/>
+        <circle cx="20" cy="6" r="2" fill="currentColor" opacity=".6"/>
+        <circle cx="4" cy="18" r="2" fill="currentColor" opacity=".6"/>
+        <circle cx="20" cy="18" r="2" fill="currentColor" opacity=".6"/>
+        <line x1="12" y1="12" x2="4" y2="6" stroke="currentColor" stroke-width="1.5" opacity=".4"/>
+        <line x1="12" y1="12" x2="20" y2="6" stroke="currentColor" stroke-width="1.5" opacity=".4"/>
+        <line x1="12" y1="12" x2="4" y2="18" stroke="currentColor" stroke-width="1.5" opacity=".4"/>
+        <line x1="12" y1="12" x2="20" y2="18" stroke="currentColor" stroke-width="1.5" opacity=".4"/>
+      </svg>
+      DevMap
+    </a>
+    <button class="share-btn" (click)="copyProfileLink()" title="Copy profile link">
+      <span class="material-icons" style="font-size:0.9rem">link</span>
+      Share
+    </button>
+  </header>
 
-    <div *ngIf="profile && !loading" class="profile-content">
-        <header class="profile-header glass-panel">
-            <div class="profile-avatar">
-                <img
-                    *ngIf="profile.githubUsername"
-                    [src]="'https://avatars.githubusercontent.com/' + profile.githubUsername"
-                    [alt]="profile.name || profile.handle"
-                    class="avatar-img"
-                />
-                <span *ngIf="!profile.githubUsername" class="material-icons avatar-placeholder">person</span>
-            </div>
+  <!-- LOADING -->
+  <div class="page-state" *ngIf="loading">
+    <span class="material-icons spinning" style="font-size:1.5rem;color:var(--text-subtle)">refresh</span>
+    <span style="color:var(--text-muted);font-size:0.9rem">Loading profile…</span>
+  </div>
 
-            <div class="profile-info">
-                <h1 class="profile-name">{{ profile.name || profile.handle }}</h1>
-                <div class="profile-meta">
-                    <a *ngIf="githubUrl" [href]="githubUrl" target="_blank" rel="noopener" class="profile-github-link">
-                        <svg viewBox="0 0 24 24" class="github-icon" xmlns="http://www.w3.org/2000/svg">
-                            <path fill="currentColor" d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
-                        </svg>
-                        {{ '@' + profile.githubUsername }}
-                    </a>
-                </div>
-            </div>
+  <!-- ERROR -->
+  <div class="page-state" *ngIf="error && !loading">
+    <span class="material-icons" style="font-size:2rem;color:var(--text-subtle)">person_off</span>
+    <h2 style="font-size:1.1rem;color:var(--text)">Profile not found</h2>
+    <p style="color:var(--text-muted);font-size:0.88rem">This profile doesn't exist or hasn't connected GitHub.</p>
+    <a routerLink="/" class="btn-secondary" style="margin-top:0.5rem">Go to homepage</a>
+  </div>
 
-            <div class="profile-stats">
-                <div class="stat-item">
-                    <span class="stat-value">{{ profile.verifiedSkills }}</span>
-                    <span class="stat-label">Verified Skills</span>
-                </div>
-                <div class="stat-divider"></div>
-                <div class="stat-item">
-                    <span class="stat-value">{{ profile.totalSkills }}</span>
-                    <span class="stat-label">Total Skills</span>
-                </div>
-                <div class="stat-divider"></div>
-                <div class="stat-item">
-                    <span class="stat-value">{{ verifiedPercent }}%</span>
-                    <span class="stat-label">Verified</span>
-                </div>
-            </div>
-        </header>
+  <!-- PROFILE CONTENT -->
+  <div class="profile-content" *ngIf="profile && !loading">
 
-        <div *ngIf="!profile.devMap" class="profile-empty">
-            <span class="material-icons">hub</span>
-            <p>No skill map yet — this user hasn't synced with GitHub.</p>
+    <!-- HEADER -->
+    <div class="profile-header">
+      <div class="profile-avatar-wrap">
+        <img
+          *ngIf="profile.githubUsername"
+          [src]="'https://avatars.githubusercontent.com/' + profile.githubUsername"
+          [alt]="profile.name || profile.handle"
+          class="avatar-img"
+        />
+        <div class="avatar-placeholder" *ngIf="!profile.githubUsername">
+          <span class="material-icons">person</span>
         </div>
-
-        <div *ngIf="profile.devMap" class="profile-map-hint">
-            <span class="material-icons">verified</span>
-            <span>Skill map verified from {{ profile.verifiedSkills }} GitHub repositories</span>
+        <div class="avatar-verified" *ngIf="profile.verifiedSkills > 0" title="GitHub-verified">
+          <span class="material-icons" style="font-size:0.75rem">verified</span>
         </div>
+      </div>
+
+      <div class="profile-identity">
+        <h1 class="profile-name">{{ profile.name || profile.handle }}</h1>
+        <div class="profile-handle">&#64;{{ profile.handle }}</div>
+
+        <div class="profile-links">
+          <a
+            *ngIf="githubUrl"
+            [href]="githubUrl"
+            target="_blank"
+            rel="noopener"
+            class="profile-gh-link"
+          >
+            <svg class="gh-icon-sm" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
+            </svg>
+            {{ profile.githubUsername }}
+          </a>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="profile-stats">
+        <div class="stat">
+          <span class="stat-num">{{ profile.verifiedSkills }}</span>
+          <span class="stat-label">Verified skills</span>
+        </div>
+        <div class="stat">
+          <span class="stat-num">{{ profile.totalSkills }}</span>
+          <span class="stat-label">Total skills</span>
+        </div>
+        <div class="stat">
+          <span class="stat-num">{{ verifiedPercent }}%</span>
+          <span class="stat-label">Verified rate</span>
+        </div>
+        <div class="stat">
+          <span class="stat-num">{{ memberSinceYear }}</span>
+          <span class="stat-label">Member since</span>
+        </div>
+      </div>
     </div>
+
+    <!-- Verified banner -->
+    <div class="verified-banner" *ngIf="profile.verifiedSkills > 0">
+      <span class="material-icons" style="font-size:0.9rem;color:var(--green)">verified</span>
+      <span>Skill map verified from GitHub — {{ profile.verifiedSkills }} skills detected in real repos</span>
+      <a
+        *ngIf="profile.devMap"
+        [routerLink]="'/tree/' + profile.devMap.sharedToken"
+        class="banner-view-map"
+      >
+        <span class="material-icons" style="font-size:0.85rem">hub</span>
+        View interactive map
+      </a>
+    </div>
+
+    <!-- No skill map yet -->
+    <div class="no-map" *ngIf="!profile.devMap">
+      <span class="material-icons" style="font-size:1.5rem;color:var(--text-subtle)">hub</span>
+      <div>
+        <strong style="color:var(--text);font-size:0.95rem">No skill map yet</strong>
+        <p style="color:var(--text-muted);font-size:0.85rem;margin-top:0.2rem">This user hasn't synced with GitHub yet.</p>
+      </div>
+    </div>
+
+    <!-- Skill map available — show nodes grouped by category -->
+    <div class="skill-categories" *ngIf="profile.devMap && profile.devMap.nodes && profile.devMap.nodes.length > 0">
+
+      <ng-container *ngFor="let group of skillGroups">
+        <div class="skill-group" *ngIf="group.skills.length > 0">
+          <div class="skill-group-header">
+            <span class="skill-group-icon material-icons">{{ group.icon }}</span>
+            <h2 class="skill-group-title">{{ group.label }}</h2>
+            <span class="skill-group-count">{{ group.skills.length }}</span>
+          </div>
+
+          <div class="skill-chips">
+            <div
+              class="skill-chip"
+              *ngFor="let skill of group.skills"
+              [class.skill-chip-verified]="skill.verified"
+            >
+              <div class="skill-chip-inner">
+                <span class="skill-chip-name">{{ skill.title }}</span>
+                <div class="skill-chip-badge" *ngIf="skill.verified">
+                  <span class="material-icons" style="font-size:0.7rem">verified</span>
+                </div>
+              </div>
+              <div class="skill-chip-evidence" *ngIf="skill.evidence">
+                {{ getEvidenceLabel(skill.evidence) }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+    </div>
+
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="profile-footer">
+    <div class="footer-inner">
+      <span class="footer-text">Powered by</span>
+      <a routerLink="/" class="footer-brand">
+        <svg style="width:14px;height:14px;color:var(--green)" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="3" fill="currentColor"/>
+          <circle cx="4" cy="6" r="2" fill="currentColor" opacity=".6"/>
+          <circle cx="20" cy="6" r="2" fill="currentColor" opacity=".6"/>
+          <circle cx="4" cy="18" r="2" fill="currentColor" opacity=".6"/>
+          <circle cx="20" cy="18" r="2" fill="currentColor" opacity=".6"/>
+        </svg>
+        DevMap
+      </a>
+      <span class="footer-text">— GitHub-verified developer skill maps</span>
+      <a routerLink="/login" class="footer-cta">Build yours →</a>
+    </div>
+  </footer>
+
 </div>

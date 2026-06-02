@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, effect, inject, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -6,24 +6,21 @@ import { TreesService, Tree } from '../../trees.service';
 import { AuthService } from '../../auth.service';
 import { ActivityCalendarComponent } from '../../canvas/activity-calendar/activity-calendar.component';
 import { DialogService } from '../../shared/services/dialog.service';
-import { I18nService } from '../../shared/services/i18n.service';
-import { LanguageSwitcherComponent } from '../../shared/components/language-switcher/language-switcher.component';
 import { DEMO_TREE_ID } from '../../shared/data/demo-sample';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, ActivityCalendarComponent, LanguageSwitcherComponent],
+  imports: [CommonModule, FormsModule, RouterModule, ActivityCalendarComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardComponent implements OnInit {
-  treesService = inject(TreesService);
-  authService = inject(AuthService);
-  router = inject(Router);
-  dialogService = inject(DialogService);
-  i18n = inject(I18nService);
+  readonly treesService = inject(TreesService);
+  readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
+  private readonly dialogService = inject(DialogService);
   private readonly cdr = inject(ChangeDetectorRef);
 
   trees: TreeViewModel[] = [];
@@ -31,13 +28,9 @@ export class DashboardComponent implements OnInit {
   syncing = false;
   showCreateModal = false;
   newTreeTitle = '';
+
   isGuest$ = this.authService.isGuest$;
   readonly demoTreeId = DEMO_TREE_ID;
-  private readonly syncTreeLabelsWithLanguage = effect(() => {
-    this.i18n.currentLanguage();
-    this.trees = this.trees.map(tree => this.toViewModel(tree));
-    this.cdr.markForCheck();
-  });
 
   ngOnInit() {
     this.loadTrees();
@@ -47,19 +40,24 @@ export class DashboardComponent implements OnInit {
     this.loading = true;
     this.treesService.getTrees().subscribe({
       next: (data) => {
-        this.trees = data.map(tree => this.toViewModel(tree));
+        this.trees = data.map(t => this.toViewModel(t));
         this.loading = false;
         this.cdr.markForCheck();
       },
       error: () => {
         this.loading = false;
         this.cdr.markForCheck();
-      }
+      },
     });
   }
 
   openTree(id: string) {
     this.router.navigate(['/tree', id]);
+  }
+
+  openCreateModal() {
+    this.newTreeTitle = '';
+    this.showCreateModal = true;
   }
 
   createTree() {
@@ -71,24 +69,19 @@ export class DashboardComponent implements OnInit {
         this.showCreateModal = false;
         this.newTreeTitle = '';
         this.cdr.markForCheck();
-        this.router.navigate(['/tree', tree.id], {
-          queryParams: {
-            aiPrompt: title,
-            openAi: '1',
-          },
-        });
-      }
+        this.router.navigate(['/tree', tree.id], { queryParams: { aiPrompt: title, openAi: '1' } });
+      },
     });
   }
 
   async deleteTree(event: Event, id: string) {
     event.stopPropagation();
-    if (await this.dialogService.confirm(this.i18n.t('dashboard.confirmDeleteTree'))) {
+    if (await this.dialogService.confirm('Delete this skill map? This cannot be undone.')) {
       this.treesService.deleteTree(id).subscribe({
         next: () => {
           this.trees = this.trees.filter(t => t.id !== id);
           this.cdr.markForCheck();
-        }
+        },
       });
     }
   }
@@ -101,30 +94,22 @@ export class DashboardComponent implements OnInit {
     event.stopPropagation();
     const url = `${window.location.origin}/tree/${token}`;
     navigator.clipboard.writeText(url);
-    this.dialogService.alert(this.i18n.t('dashboard.shareCopied'));
+    this.dialogService.alert('Share link copied to clipboard.');
   }
 
   openDemoTree() {
     this.router.navigate(['/tree', this.demoTreeId]);
   }
 
-  trackByTreeId(_index: number, tree: TreeViewModel) {
-    return tree.id;
-  }
-
-  openCreateModal() {
-    this.newTreeTitle = '';
-    this.showCreateModal = true;
-  }
-
   syncGitHub() {
     this.syncing = true;
+    this.cdr.markForCheck();
     this.treesService.syncGitHub().subscribe({
       next: (result) => {
         this.syncing = false;
         this.loadTrees();
         this.dialogService.alert(
-          `Sync complete: ${result.verifiedCount} verified skills detected across ${result.nodeCount} nodes.`
+          `Sync complete — ${result.verifiedCount} verified skills detected across ${result.nodeCount} nodes.`
         );
       },
       error: () => {
@@ -135,15 +120,15 @@ export class DashboardComponent implements OnInit {
     });
   }
 
+  trackByTreeId(_index: number, tree: TreeViewModel) {
+    return tree.id;
+  }
+
   private toViewModel(tree: Tree): TreeViewModel {
-    const formattedDate = new Date(tree.updatedAt).toLocaleDateString(this.i18n.currentLanguage());
-    return {
-      ...tree,
-      updatedLabel: this.i18n.t('dashboard.cardUpdated', { date: formattedDate }),
-    };
+    const d = new Date(tree.updatedAt);
+    const formatted = d.toLocaleDateString('en', { month: 'short', day: 'numeric', year: 'numeric' });
+    return { ...tree, updatedLabel: formatted };
   }
 }
 
-type TreeViewModel = Tree & {
-  updatedLabel: string;
-};
+type TreeViewModel = Tree & { updatedLabel: string };

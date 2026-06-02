@@ -7,6 +7,8 @@ import { appRuntimeConfig } from './app-config';
 interface AuthTokenPayload {
   exp?: number;
   isGuest?: boolean;
+  handle?: string | null;
+  githubUsername?: string | null;
 }
 
 export interface AuthUser {
@@ -33,6 +35,14 @@ export class AuthService {
 
   isGuest$ = this.user$.pipe(
     map(user => !!user?.isGuest)
+  );
+
+  handle$ = this.user$.pipe(
+    map(user => user?.handle ?? null)
+  );
+
+  githubUsername$ = this.user$.pipe(
+    map(user => user?.githubUsername ?? null)
   );
 
   // Removed basic login, register, confirmEmail
