@@ -21,7 +21,7 @@
   --red: #f85149;
 
   --accent: #238636;
-  --accent-hover: #2ea043;
+  --cta-hover: #2ea043;
   --accent-fg: #3fb950;
 
   --radius-sm: 4px;
@@ -38,6 +38,7 @@
   --font-sans: 'Inter', -apple-system, sans-serif;
 
   /* Legacy aliases used by canvas component */
+  --border-color: #30363d;
   --bg-dark: #0d1117;
   --bg-card-hover: #2d333b;
   --accent-color: #58a6ff;
@@ -89,7 +90,7 @@ button { font-family: inherit; cursor: pointer; }
   white-space: nowrap;
 
   &:hover:not(:disabled) {
-    background: var(--accent-hover);
+    background: var(--cta-hover);
     box-shadow: 0 0 0 3px rgba(63, 185, 80, 0.15);
   }
 

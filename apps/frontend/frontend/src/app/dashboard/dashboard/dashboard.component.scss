@@ -105,7 +105,7 @@
   text-decoration: none;
   transition: background 0.15s;
 
-  &:hover { background: var(--accent-hover); }
+  &:hover { background: var(--cta-hover); }
 }
 
 .btn-logout {
@@ -217,7 +217,7 @@
   justify-content: center;
 
   &:hover:not(:disabled) {
-    background: var(--accent-hover);
+    background: var(--cta-hover);
     box-shadow: 0 0 0 3px rgba(63,185,80,0.15);
   }
 
