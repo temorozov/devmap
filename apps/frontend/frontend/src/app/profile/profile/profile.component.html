@@ -112,12 +112,21 @@
     </div>
 
     <!-- No skill map yet -->
-    <div class="no-map" *ngIf="!profile.devMap">
-      <span class="material-icons" style="font-size:1.5rem;color:var(--text-subtle)">hub</span>
-      <div>
-        <strong style="color:var(--text);font-size:0.95rem">No skill map yet</strong>
-        <p style="color:var(--text-muted);font-size:0.85rem;margin-top:0.2rem">This user hasn't synced with GitHub yet.</p>
+    <div class="no-map-card" *ngIf="!profile.devMap">
+      <div class="no-map-icon">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:28px;height:28px">
+          <circle cx="12" cy="12" r="3" fill="currentColor" opacity=".4"/>
+          <circle cx="4" cy="6" r="2" fill="currentColor" opacity=".2"/>
+          <circle cx="20" cy="6" r="2" fill="currentColor" opacity=".2"/>
+          <circle cx="4" cy="18" r="2" fill="currentColor" opacity=".2"/>
+          <circle cx="20" cy="18" r="2" fill="currentColor" opacity=".2"/>
+        </svg>
       </div>
+      <div class="no-map-text">
+        <strong>Skill map not yet built</strong>
+        <p>{{ profile.name || profile.handle }} hasn't synced with GitHub yet.</p>
+      </div>
+      <a routerLink="/login" class="no-map-cta">Build yours →</a>
     </div>
 
     <!-- Skill map available — show nodes grouped by category -->

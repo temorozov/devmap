@@ -704,17 +704,35 @@
     &.status-not-started {
         --node-status-color: #6e7681;
         --node-status-rgb: 110, 118, 129;
+
+        .node-bg {
+            stroke-dasharray: 5 3;
+            stroke-width: 1.5;
+        }
     }
 
     &.status-in-progress {
         --node-status-color: #58a6ff;
         --node-status-rgb: 88, 166, 255;
+
+        .node-bg {
+            stroke-width: 2.5;
+        }
     }
 
     &.status-completed,
     &.completed {
         --node-status-color: #3fb950;
         --node-status-rgb: 63, 185, 80;
+
+        .node-bg {
+            stroke-width: 2.5;
+            filter: drop-shadow(0 0 8px rgba(63, 185, 80, 0.3));
+        }
+
+        .node-icon {
+            fill: #d2f8d7;
+        }
     }
 
     &.verified {
