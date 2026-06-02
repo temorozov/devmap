@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { take } from 'rxjs/operators';
 import { TreesService, Tree } from '../../trees.service';
 import { AuthService } from '../../auth.service';
 import { ActivityCalendarComponent } from '../../canvas/activity-calendar/activity-calendar.component';
@@ -20,6 +21,7 @@ export class DashboardComponent implements OnInit {
   readonly treesService = inject(TreesService);
   readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly dialogService = inject(DialogService);
   private readonly cdr = inject(ChangeDetectorRef);
 
@@ -28,12 +30,29 @@ export class DashboardComponent implements OnInit {
   syncing = false;
   showCreateModal = false;
   newTreeTitle = '';
+  syncSuccess = false;
+  syncedProfileUrl = '';
 
   isGuest$ = this.authService.isGuest$;
+  handle$ = this.authService.handle$;
+  githubUsername$ = this.authService.githubUsername$;
   readonly demoTreeId = DEMO_TREE_ID;
 
   ngOnInit() {
+    // Load fresh user data (handle/githubUsername may not be in old JWT)
+    this.authService.loadMe().subscribe(() => this.cdr.markForCheck());
+
     this.loadTrees();
+
+    // Auto-trigger GitHub scan after GitHub OAuth redirect
+    this.route.queryParams.subscribe(params => {
+      if (params['scan'] === '1') {
+        this.router.navigate([], { replaceUrl: true, queryParams: {} });
+        this.isGuest$.subscribe(isGuest => {
+          if (!isGuest) this.syncGitHub();
+        }).unsubscribe();
+      }
+    });
   }
 
   loadTrees() {
@@ -103,14 +122,18 @@ export class DashboardComponent implements OnInit {
 
   syncGitHub() {
     this.syncing = true;
+    this.syncSuccess = false;
     this.cdr.markForCheck();
     this.treesService.syncGitHub().subscribe({
       next: (result) => {
         this.syncing = false;
         this.loadTrees();
-        this.dialogService.alert(
-          `Sync complete — ${result.verifiedCount} verified skills detected across ${result.nodeCount} nodes.`
-        );
+        // Show inline success state with profile URL
+        const handle = this.authService['user'].getValue()?.handle
+          ?? this.authService['user'].getValue()?.githubUsername;
+        this.syncSuccess = true;
+        this.syncedProfileUrl = handle ? `${window.location.origin}/u/${handle}` : '';
+        this.cdr.markForCheck();
       },
       error: () => {
         this.syncing = false;
@@ -118,6 +141,11 @@ export class DashboardComponent implements OnInit {
         this.cdr.markForCheck();
       },
     });
+  }
+
+  copyProfileUrl() {
+    navigator.clipboard.writeText(this.syncedProfileUrl);
+    this.dialogService.alert('Profile link copied to clipboard!');
   }
 
   trackByTreeId(_index: number, tree: TreeViewModel) {

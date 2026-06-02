@@ -64,6 +64,7 @@ export class AuthService {
                 githubUsername: profile.githubUsername,
                 githubAccessToken: profile.githubAccessToken,
                 name: existingUser.name || profile.name,
+                handle: existingUser.handle || profile.githubUsername || undefined,
             }),
             {
                 githubId: profile.githubId,
@@ -74,6 +75,14 @@ export class AuthService {
                 handle: profile.githubUsername || undefined,
             },
         );
+    }
+
+    async getMe(userId: string) {
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            select: { id: true, name: true, handle: true, githubUsername: true, email: true, isGuest: true },
+        });
+        return user;
     }
 
     async login(user: User) {

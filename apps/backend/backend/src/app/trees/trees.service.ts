@@ -46,8 +46,9 @@ export class TreesService {
     }
 
     async getPublicProfile(handle: string) {
-        const user = await this.prisma.user.findUnique({
-            where: { handle },
+        // Accept handle OR githubUsername so /u/githubUsername always works
+        const user = await this.prisma.user.findFirst({
+            where: { OR: [{ handle }, { githubUsername: handle }] },
             select: {
                 id: true,
                 name: true,

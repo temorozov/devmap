@@ -22,9 +22,7 @@ export class AuthController {
 
     @Get('google')
     @UseGuards(GoogleOauthGuard)
-    async googleAuth() {
-        // Initiates the Google OAuth flow
-    }
+    async googleAuth() {}
 
     @Get('google/callback')
     @UseGuards(GoogleOauthGuard)
@@ -36,9 +34,7 @@ export class AuthController {
 
     @Get('discord')
     @UseGuards(DiscordOauthGuard)
-    async discordAuth() {
-        // Initiates the Discord OAuth flow
-    }
+    async discordAuth() {}
 
     @Get('discord/callback')
     @UseGuards(DiscordOauthGuard)
@@ -50,16 +46,22 @@ export class AuthController {
 
     @Get('github')
     @UseGuards(GitHubOauthGuard)
-    async githubAuth() {
-        // Initiates the GitHub OAuth flow
-    }
+    async githubAuth() {}
 
     @Get('github/callback')
     @UseGuards(GitHubOauthGuard)
     async githubAuthRedirect(@Req() req: AuthenticatedRequest, @Res() res: ExpressResponse) {
         const result = await this.authService.login(req.user);
         const frontendUrl = getEnv('FRONTEND_URL');
-        res.redirect(`${frontendUrl}/login?token=${result.access_token}`);
+        // Pass scan=1 so the dashboard auto-triggers GitHub scan for new GitHub connections
+        res.redirect(`${frontendUrl}/login?token=${result.access_token}&scan=1`);
+    }
+
+    // Returns current authenticated user's profile info (fresh from DB, not just JWT)
+    @UseGuards(JwtAuthGuard)
+    @Get('me')
+    async getMe(@Request() req: AuthenticatedRequest) {
+        return this.authService.getMe(req.user.id);
     }
 
     @UseGuards(JwtAuthGuard)

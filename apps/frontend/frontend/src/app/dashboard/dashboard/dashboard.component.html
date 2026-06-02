@@ -32,15 +32,15 @@
         {{ syncing ? 'Syncing…' : 'Re-sync GitHub' }}
       </button>
 
-      <!-- Public profile link -->
+      <!-- Public profile link - show when user has a handle or githubUsername -->
       <a
-        *ngIf="(isGuest$ | async) === false && trees.length > 0"
+        *ngIf="(isGuest$ | async) === false && ((handle$ | async) || (githubUsername$ | async))"
         class="btn-profile-link"
-        [routerLink]="'/u/' + (authService.handle$ | async)"
+        [routerLink]="'/u/' + ((handle$ | async) || (githubUsername$ | async))"
         target="_blank"
       >
         <span class="material-icons" style="font-size:0.9rem">open_in_new</span>
-        Public profile
+        /u/{{ (handle$ | async) || (githubUsername$ | async) }}
       </a>
 
       <!-- Guest CTA -->
@@ -57,6 +57,25 @@
       </button>
     </div>
   </header>
+
+  <!-- SYNC SUCCESS BANNER -->
+  <div class="sync-banner" *ngIf="syncSuccess && syncedProfileUrl">
+    <div class="sync-banner-inner">
+      <span class="material-icons" style="font-size:1rem;color:var(--green)">verified</span>
+      <span class="sync-banner-text">Your skill map is live!</span>
+      <code class="sync-banner-url">{{ syncedProfileUrl }}</code>
+      <button class="sync-banner-copy" (click)="copyProfileUrl()">
+        <span class="material-icons" style="font-size:0.85rem">content_copy</span>
+        Copy link
+      </button>
+      <a class="sync-banner-view" [href]="syncedProfileUrl" target="_blank">
+        View profile →
+      </a>
+      <button class="sync-banner-close" (click)="syncSuccess = false">
+        <span class="material-icons" style="font-size:0.9rem">close</span>
+      </button>
+    </div>
+  </div>
 
   <!-- MAIN CONTENT -->
   <main class="main">

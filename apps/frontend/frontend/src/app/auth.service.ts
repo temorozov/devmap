@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, tap, map } from 'rxjs';
+import { BehaviorSubject, tap, map, of } from 'rxjs';
 import { Router } from '@angular/router';
 import { appRuntimeConfig } from './app-config';
 
@@ -45,7 +45,23 @@ export class AuthService {
     map(user => user?.githubUsername ?? null)
   );
 
-  // Removed basic login, register, confirmEmail
+  // Fetch fresh user data from server (handle, githubUsername may not be in old JWTs)
+  loadMe() {
+    if (!this.hasValidToken()) {
+      return of(null as null);
+    }
+    return this.http.get<{ id: string; name: string | null; handle: string | null; githubUsername: string | null; email: string | null; isGuest: boolean }>(
+      `${this.apiUrl}/me`
+    ).pipe(
+      tap(me => {
+        if (me) {
+          const current = this.user.getValue();
+          this.user.next({ ...current, handle: me.handle, githubUsername: me.githubUsername });
+        }
+      }),
+      map(() => null as null)
+    );
+  }
 
   hasValidToken(token = localStorage.getItem('token')): boolean {
     const decoded = this.decodeToken(token);
