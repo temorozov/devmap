@@ -1,10 +1,12 @@
-import { Injectable, NotFoundException, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, NotFoundException, InternalServerErrorException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from './ai.service';
 import { randomBytes } from 'crypto';
 
 @Injectable()
 export class TreesService {
+    private readonly logger = new Logger(TreesService.name);
+
     constructor(private prisma: PrismaService, private aiService: AiService) { }
 
     async create(userId: string, title: string) {
@@ -61,6 +63,11 @@ export class TreesService {
         if (!tree) throw new NotFoundException('Tree not found');
 
         const generatedSkills = await this.aiService.generateSkillTree(prompt);
+
+        const MAX_GENERATED_NODES = 60;
+        if (generatedSkills.length > MAX_GENERATED_NODES) {
+            generatedSkills.splice(MAX_GENERATED_NODES);
+        }
 
         try {
             return await this.prisma.$transaction(async (tx) => {
@@ -142,7 +149,7 @@ export class TreesService {
                 return createdNodes;
             });
         } catch (error) {
-            console.error('[Trees Service] Error inside transaction during tree generation:', error);
+            this.logger.error('[Trees Service] Error inside transaction during tree generation:', error instanceof Error ? error.stack : String(error));
             throw new InternalServerErrorException('Database failed to save generated skills.');
         }
     }

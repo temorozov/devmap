@@ -15,6 +15,8 @@
     "prod:recreate-db": "docker compose --env-file .env.production -f docker-compose.yml down -v && docker compose --env-file .env.production -f docker-compose.yml up -d --build",
     "dev:down": "./scripts/dev-down.sh",
     "prod:down": "docker compose --env-file .env.production -f docker-compose.yml down",
+    "format": "prettier --write \"apps/**/*.{ts,html,scss}\"",
+    "format:check": "prettier --check \"apps/**/*.{ts,html,scss}\"",
     "build": "nx run-many -t build",
     "lint": "nx run-many -t lint",
     "test": "nx run-many -t test",

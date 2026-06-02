@@ -10,6 +10,7 @@ import { AuthService } from '../../auth.service';
 import { DialogService } from '../../shared/services/dialog.service';
 import { I18nService } from '../../shared/services/i18n.service';
 import { DEMO_TREE_ID, getDemoSampleNodes, getDemoSampleTitle } from '../../shared/data/demo-sample';
+import { CanvasFocusService, FocusAction, FocusActionItem } from './canvas-focus.service';
 
 interface ViewBox {
   x: number;
@@ -21,17 +22,6 @@ interface ViewBox {
 type NodeStatusClass = 'status-not-started' | 'status-in-progress' | 'status-completed';
 type NodeStatusFilter = 'all' | NodeStatusClass;
 
-interface FocusActionItem {
-  title: string;
-  meta: string;
-  progressPercent: number;
-}
-
-interface FocusAction {
-  title: string;
-  description: string;
-  items: FocusActionItem[];
-}
 
 const HELP_STORAGE_KEY = 'skill-tree-help-seen';
 const DEFAULT_MAX_LEVEL = 3;
@@ -53,6 +43,7 @@ export class CanvasComponent implements OnInit, AfterViewInit {
   dialogService = inject(DialogService);
   i18n = inject(I18nService);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly focusService = inject(CanvasFocusService);
 
   isGuest$ = this.authService.isGuest$;
 
@@ -173,32 +164,14 @@ export class CanvasComponent implements OnInit, AfterViewInit {
   }
 
   getNodeStatusClass(node: Pick<SkillNode, 'level' | 'maxLevel'>): NodeStatusClass {
-    const level = Math.max(0, Number(node.level) || 0);
-    const maxLevel = Number(node.maxLevel) > 0 ? Number(node.maxLevel) : DEFAULT_MAX_LEVEL;
-
-    if (level <= 0) {
-      return 'status-not-started';
-    }
-
-    if (level >= maxLevel) {
-      return 'status-completed';
-    }
-
-    return 'status-in-progress';
+    return this.focusService.getNodeStatusClass(node);
   }
 
   getNodeStatusKey(node: Pick<SkillNode, 'level' | 'maxLevel'>): string {
     const level = Math.max(0, Number(node.level) || 0);
     const maxLevel = Number(node.maxLevel) > 0 ? Number(node.maxLevel) : DEFAULT_MAX_LEVEL;
-
-    if (level <= 0) {
-      return 'canvas.statusNotStarted';
-    }
-
-    if (level >= maxLevel) {
-      return 'canvas.statusCompleted';
-    }
-
+    if (level <= 0) return 'canvas.statusNotStarted';
+    if (level >= maxLevel) return 'canvas.statusCompleted';
     return 'canvas.statusInProgress';
   }
 
@@ -938,72 +911,7 @@ export class CanvasComponent implements OnInit, AfterViewInit {
   }
 
   get nextFocus(): FocusAction {
-    if (!this.nodes.length) {
-      return {
-        title: this.i18n.t('canvas.closestGoalEmptyTitle'),
-        description: this.i18n.t('canvas.closestGoalEmptyText'),
-        items: [],
-      };
-    }
-
-    const incompleteNodes = this.nodes.filter(node => this.getNodeStatusClass(node) !== 'status-completed');
-    if (!incompleteNodes.length) {
-      return {
-        title: this.i18n.t('canvas.closestGoalDoneTitle'),
-        description: this.i18n.t('canvas.closestGoalDoneText'),
-        items: [],
-      };
-    }
-
-    const activeNodes = incompleteNodes
-      .filter(node => this.getNodeStatusClass(node) === 'status-in-progress')
-      .sort((a, b) => this.compareFocusNodes(a, b));
-
-    if (activeNodes.length) {
-      const items = activeNodes.slice(0, 3);
-      return {
-        title: this.i18n.t('canvas.closestGoalActiveTitle', { count: items.length }),
-        description: this.i18n.t('canvas.closestGoalActiveText'),
-        items: items.map(node => ({
-          title: node.title,
-          meta: this.i18n.t('canvas.closestGoalItemLevels', { count: this.getRemainingLevels(node) }),
-          progressPercent: this.getNodeProgressPercent(node),
-        })),
-      };
-    }
-
-    const readyNodes = incompleteNodes
-      .filter(node => this.getNodeStatusClass(node) === 'status-not-started' && this.isNodeUnlocked(node))
-      .sort((a, b) => this.compareFocusNodes(a, b));
-
-    if (readyNodes.length) {
-      const items = readyNodes.slice(0, 3);
-      return {
-        title: this.i18n.t('canvas.closestGoalReadyTitle', { count: items.length }),
-        description: this.i18n.t('canvas.closestGoalReadyText'),
-        items: items.map(node => ({
-          title: node.title,
-          meta: this.i18n.t('canvas.closestGoalItemStart'),
-          progressPercent: 0,
-        })),
-      };
-    }
-
-    const lockedNodes = incompleteNodes.sort((a, b) => this.compareFocusNodes(a, b)).slice(0, 3);
-    return {
-      title: this.i18n.t('canvas.closestGoalLockedTitle'),
-      description: this.i18n.t('canvas.closestGoalLockedText'),
-      items: lockedNodes.map(node => {
-        const parent = this.getParentNode(node.parentId || '');
-        return {
-          title: node.title,
-          meta: this.i18n.t('canvas.closestGoalItemUnlockAfter', {
-            title: parent?.title ?? this.i18n.t('canvas.closestGoalParentFallback'),
-          }),
-          progressPercent: parent ? this.getNodeProgressPercent(parent) : 0,
-        };
-      }),
-    };
+    return this.focusService.computeNextFocus(this.nodes, this.i18n, (id) => this.getParentNode(id));
   }
 
   get primaryFocusItem(): FocusActionItem | null {
@@ -1019,55 +927,15 @@ export class CanvasComponent implements OnInit, AfterViewInit {
   }
 
   get currentStreak(): number {
-    const activeDays = this.getActivityDayKeys();
-    if (!activeDays.size) return 0;
-
-    const today = this.getStartOfDay(new Date());
-    const startDate = activeDays.has(this.toDayKey(today))
-      ? today
-      : this.getStartOfDay(new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1));
-
-    let streak = 0;
-    const cursor = new Date(startDate);
-    while (activeDays.has(this.toDayKey(cursor))) {
-      streak += 1;
-      cursor.setDate(cursor.getDate() - 1);
-    }
-
-    return streak;
+    return this.focusService.computeStreak(this.calendarActivities);
   }
 
   get activeDaysThisMonth(): number {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = today.getMonth();
-    const uniqueDays = new Set(
-      this.calendarActivities
-        .filter(activity => activity.count > 0)
-        .map(activity => this.getStartOfDay(new Date(activity.date)))
-        .filter(date => date.getFullYear() === year && date.getMonth() === month)
-        .map(date => this.toDayKey(date))
-    );
-
-    return uniqueDays.size;
+    return this.focusService.computeActiveDaysThisMonth(this.calendarActivities);
   }
 
   get activeDaysLast7(): number {
-    const activeDays = this.getActivityDayKeys();
-    if (!activeDays.size) return 0;
-
-    const today = this.getStartOfDay(new Date());
-    let count = 0;
-
-    for (let offset = 0; offset < 7; offset += 1) {
-      const date = new Date(today);
-      date.setDate(today.getDate() - offset);
-      if (activeDays.has(this.toDayKey(date))) {
-        count += 1;
-      }
-    }
-
-    return count;
+    return this.focusService.computeActiveDaysLast7(this.calendarActivities);
   }
 
   get consistencyToneClass(): string {
@@ -1257,67 +1125,6 @@ export class CanvasComponent implements OnInit, AfterViewInit {
 
   trackByNodeId(_index: number, node: SkillNode): string {
     return node.id;
-  }
-
-  private getNodeLevel(node: Pick<SkillNode, 'level'>): number {
-    return Math.max(0, Number(node.level) || 0);
-  }
-
-  private getNodeMaxLevel(node: Pick<SkillNode, 'maxLevel'>): number {
-    const maxLevel = Number(node.maxLevel) || DEFAULT_MAX_LEVEL;
-    return maxLevel > 0 ? maxLevel : DEFAULT_MAX_LEVEL;
-  }
-
-  private getRemainingLevels(node: Pick<SkillNode, 'level' | 'maxLevel'>): number {
-    return Math.max(0, this.getNodeMaxLevel(node) - this.getNodeLevel(node));
-  }
-
-  private getNodeProgressPercent(node: Pick<SkillNode, 'level' | 'maxLevel'>): number {
-    const maxLevel = this.getNodeMaxLevel(node);
-    return maxLevel === 0 ? 0 : Math.round((this.getNodeLevel(node) / maxLevel) * 100);
-  }
-
-  private isNodeUnlocked(node: SkillNode): boolean {
-    if (!node.parentId) return true;
-
-    const parent = this.getParentNode(node.parentId);
-    return !!parent && this.getNodeStatusClass(parent) === 'status-completed';
-  }
-
-  private compareFocusNodes(a: SkillNode, b: SkillNode): number {
-    const remainingDelta = this.getRemainingLevels(a) - this.getRemainingLevels(b);
-    if (remainingDelta !== 0) {
-      return remainingDelta;
-    }
-
-    const levelDelta = this.getNodeLevel(b) - this.getNodeLevel(a);
-    if (levelDelta !== 0) {
-      return levelDelta;
-    }
-
-    return a.title.localeCompare(b.title);
-  }
-
-  private getActivityDayKeys(): Set<string> {
-    return new Set(
-      this.calendarActivities
-        .filter(activity => activity.count > 0)
-        .map(activity => this.toDayKey(activity.date))
-    );
-  }
-
-  private getStartOfDay(date: Date): Date {
-    const normalized = new Date(date);
-    normalized.setHours(0, 0, 0, 0);
-    return normalized;
-  }
-
-  private toDayKey(value: string | Date): string {
-    const date = this.getStartOfDay(new Date(value));
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
   }
 
   private syncFilteredStateAfterNodeChange(node: SkillNode) {

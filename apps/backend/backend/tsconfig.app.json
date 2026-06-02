@@ -6,6 +6,7 @@
     "types": ["node"],
     "emitDecoratorMetadata": true,
     "target": "es2021",
+    "strict": true,
     "strictNullChecks": true,
     "noImplicitAny": true,
     "strictBindCallApply": true,

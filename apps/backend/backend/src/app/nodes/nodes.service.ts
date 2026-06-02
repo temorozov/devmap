@@ -1,10 +1,12 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateNodeDto } from './dto/create-node.dto';
 import { UpdateNodeDto } from './dto/update-node.dto';
 
 @Injectable()
 export class NodesService {
+    private readonly logger = new Logger(NodesService.name);
+
     constructor(private prisma: PrismaService) { }
 
     async create(userId: string, createNodeDto: CreateNodeDto) {
@@ -79,6 +81,6 @@ export class NodesService {
                 date: today,
                 count: 1
             }
-        }).catch((e: unknown) => console.error('Failed to record activity', e));
+        }).catch((e: unknown) => this.logger.error('Failed to record activity', e instanceof Error ? e.stack : String(e)));
     }
 }

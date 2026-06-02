@@ -266,7 +266,8 @@ ${prompt}`;
           const videoId = ytResponse.data.items[0].id.videoId;
           const videoTitle = ytResponse.data.items[0].snippet.title;
           const videoLink = `https://www.youtube.com/watch?v=${videoId}`;
-          skill.description += `\n\nRecommended Video: [${videoTitle}](${videoLink})`;
+          const safeTitle = videoTitle.replace(/\[/g, '\\[').replace(/\]/g, '\\]');
+          skill.description += `\n\nRecommended Video: [${safeTitle}](${videoLink})`;
         }
       } catch (error) {
         this.logger.warn(`Failed to fetch YouTube video for "${skill.youtubeSearchQuery}": ${this.getErrorSummary(error)}`);
@@ -276,7 +277,7 @@ ${prompt}`;
     return skills;
   }
 
-  private isFallbackableError(error: unknown): boolean {
+  private isRetryableHttpError(error: unknown): boolean {
     const status = this.getStatusCode(error);
     if (status && [408, 429, 500, 502, 503, 504].includes(status)) {
       return true;
@@ -301,7 +302,7 @@ ${prompt}`;
   }
 
   private isProviderRetryableError(error: unknown): boolean {
-    if (!this.isFallbackableError(error)) {
+    if (!this.isRetryableHttpError(error)) {
       return false;
     }
 

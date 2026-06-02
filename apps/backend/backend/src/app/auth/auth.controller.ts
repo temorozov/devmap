@@ -1,4 +1,5 @@
 import { Controller, Post, UseGuards, Request, Get, Req, Res } from '@nestjs/common';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { Response as ExpressResponse } from 'express';
@@ -11,8 +12,8 @@ import { AuthenticatedRequest } from './authenticated-request';
 export class AuthController {
     constructor(private authService: AuthService) { }
 
-    // Removed basic auth endpoints
-
+    @UseGuards(ThrottlerGuard)
+    @Throttle({ default: { limit: 10, ttl: 60000 } })
     @Post('guest')
     async createGuest() {
         return this.authService.registerGuest();

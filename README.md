@@ -85,3 +85,10 @@ cp .env.production.example .env.production
 - `OPENAI_API_KEY`
 - `AI_OPENAI_MODEL`
 
+## Docs
+
+- [Project Context](docs/PROJECT_CONTEXT.md)
+- [Deployment](docs/DEPLOYMENT_INSTRUCTIONS.md)
+- [Roadmap](docs/ROADMAP.md)
+- [AI Agents](docs/AGENTS.md)
+- [AI Instructions](docs/AI_INSTRUCTIONS.md)

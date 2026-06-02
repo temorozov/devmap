@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { User } from '@prisma/client';
+import { Prisma, User } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -10,62 +10,44 @@ export class AuthService {
         private readonly jwtService: JwtService
     ) { }
 
-    // Basic auth logic removed
+    private async upsertOAuthUser(
+        findByProvider: () => Promise<User | null>,
+        providerUpdate: (existingUser: User) => Prisma.UserUpdateInput,
+        createData: Prisma.UserCreateInput,
+    ): Promise<User> {
+        let user = await findByProvider();
 
-    async validateGoogleUser(profile: { googleId: string; email: string; name: string }): Promise<User> {
-        let user = profile.googleId ? await this.prisma.user.findFirst({ where: { googleId: profile.googleId } }) : null;
-
-        if (!user && profile.email) {
-            user = await this.prisma.user.findUnique({ where: { email: profile.email } });
+        if (!user && createData.email) {
+            user = await this.prisma.user.findUnique({ where: { email: createData.email as string } });
             if (user) {
-                // Link account
                 user = await this.prisma.user.update({
-                    where: { email: profile.email },
-                    data: { googleId: profile.googleId, name: user.name || profile.name },
+                    where: { email: createData.email as string },
+                    data: providerUpdate(user),
                 });
             }
         }
 
         if (!user) {
-            // Create new account
-            user = await this.prisma.user.create({
-                data: {
-                    googleId: profile.googleId,
-                    email: profile.email,
-                    name: profile.name,
-                },
-            });
+            user = await this.prisma.user.create({ data: createData });
         }
 
         return user;
     }
 
+    async validateGoogleUser(profile: { googleId: string; email: string; name: string }): Promise<User> {
+        return this.upsertOAuthUser(
+            () => profile.googleId ? this.prisma.user.findFirst({ where: { googleId: profile.googleId } }) : Promise.resolve(null),
+            (existingUser) => ({ googleId: profile.googleId, name: existingUser.name || profile.name }),
+            { googleId: profile.googleId, email: profile.email, name: profile.name },
+        );
+    }
+
     async validateDiscordUser(profile: { discordId: string; email: string; name: string }): Promise<User> {
-        let user = profile.discordId ? await this.prisma.user.findFirst({ where: { discordId: profile.discordId } }) : null;
-
-        if (!user && profile.email) {
-            user = await this.prisma.user.findUnique({ where: { email: profile.email } });
-            if (user) {
-                // Link account
-                user = await this.prisma.user.update({
-                    where: { email: profile.email },
-                    data: { discordId: profile.discordId, name: user.name || profile.name },
-                });
-            }
-        }
-
-        if (!user) {
-            // Create new account
-            user = await this.prisma.user.create({
-                data: {
-                    discordId: profile.discordId,
-                    email: profile.email,
-                    name: profile.name,
-                },
-            });
-        }
-
-        return user;
+        return this.upsertOAuthUser(
+            () => profile.discordId ? this.prisma.user.findFirst({ where: { discordId: profile.discordId } }) : Promise.resolve(null),
+            (existingUser) => ({ discordId: profile.discordId, name: existingUser.name || profile.name }),
+            { discordId: profile.discordId, email: profile.email, name: profile.name },
+        );
     }
 
     async login(user: User) {
