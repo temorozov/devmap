@@ -5,7 +5,6 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { TreesService, Tree, ProfileViewStats } from '../../trees.service';
 import { AuthService } from '../../auth.service';
 import { DialogService } from '../../shared/services/dialog.service';
-import { DEMO_TREE_ID } from '../../shared/data/demo-sample';
 import { ROLE_PROFILES, ROLE_PROFILE_KEYS, RoleProfile } from '../../shared/data/role-profiles';
 
 @Component({
@@ -27,8 +26,6 @@ export class DashboardComponent implements OnInit {
   trees: TreeViewModel[] = [];
   loading = true;
   syncing = false;
-  showCreateModal = false;
-  newTreeTitle = '';
   syncSuccess = false;
   syncedProfileUrl = '';
   viewStats: ProfileViewStats | null = null;
@@ -40,6 +37,10 @@ export class DashboardComponent implements OnInit {
   targetRoleKey = localStorage.getItem('devmap_target_role') ?? '';
   myVerifiedSkills: string[] = [];
   get targetRole(): RoleProfile | null { return this.roleProfiles[this.targetRoleKey] ?? null; }
+
+  get devMap(): TreeViewModel | null { return this.trees.find(t => t.title === 'My Dev Map') ?? null; }
+  get otherMaps(): TreeViewModel[] { return this.trees.filter(t => t.title !== 'My Dev Map'); }
+  get topSkillsPreview(): string[] { return this.myVerifiedSkills.slice(0, 6); }
 
   private resolveSlot(slot: import('../../shared/data/role-profiles').SkillRequirement): { label: string; matched: string | null } {
     if (typeof slot === 'string') {
@@ -68,7 +69,6 @@ export class DashboardComponent implements OnInit {
   isGuest$ = this.authService.isGuest$;
   handle$ = this.authService.handle$;
   githubUsername$ = this.authService.githubUsername$;
-  readonly demoTreeId = DEMO_TREE_ID;
 
   ngOnInit() {
     // Load fresh user data (handle/githubUsername may not be in old JWT)
@@ -135,25 +135,6 @@ export class DashboardComponent implements OnInit {
     this.router.navigate(['/tree', id]);
   }
 
-  openCreateModal() {
-    this.newTreeTitle = '';
-    this.showCreateModal = true;
-  }
-
-  createTree() {
-    const title = this.newTreeTitle.trim();
-    if (!title) return;
-    this.treesService.createTree(title).subscribe({
-      next: (tree) => {
-        this.trees.unshift(this.toViewModel(tree));
-        this.showCreateModal = false;
-        this.newTreeTitle = '';
-        this.cdr.markForCheck();
-        this.router.navigate(['/tree', tree.id], { queryParams: { aiPrompt: title, openAi: '1' } });
-      },
-    });
-  }
-
   async deleteTree(event: Event, id: string) {
     event.stopPropagation();
     if (await this.dialogService.confirm('Delete this skill map? This cannot be undone.')) {
@@ -175,10 +156,6 @@ export class DashboardComponent implements OnInit {
     const url = `${window.location.origin}/tree/${token}`;
     navigator.clipboard.writeText(url);
     this.dialogService.alert('Share link copied to clipboard.');
-  }
-
-  openDemoTree() {
-    this.router.navigate(['/tree', this.demoTreeId]);
   }
 
   syncGitHub() {
