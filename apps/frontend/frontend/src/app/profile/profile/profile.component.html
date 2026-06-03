@@ -116,31 +116,58 @@
     </div>
 
     <!-- Target role section -->
-    <div class="role-section" *ngIf="targetRoleProfile">
+    <div class="role-section" *ngIf="gapAnalysis as gap">
       <div class="role-header">
         <span class="role-badge">
           <span class="material-icons" style="font-size:0.85rem">track_changes</span>
           Targeting
         </span>
-        <span class="role-label">{{ targetRoleProfile.label }}</span>
-        <span class="role-pct">{{ roleGapPercent }}% ready</span>
+        <span class="role-label">{{ gap.role.label }}</span>
+        <span class="role-pct">{{ gap.readinessPercent }}% ready</span>
       </div>
       <div class="role-progress-wrap">
         <div class="role-progress-bar">
-          <div class="role-progress-fill" [style.width.%]="roleGapPercent"></div>
+          <div class="role-progress-fill" [style.width.%]="gap.readinessPercent"></div>
         </div>
       </div>
-      <div class="role-chips-row">
-        <div class="role-chips-group">
-          <span class="role-chips-label">Has</span>
-          <span class="role-chip role-chip-have" *ngFor="let s of roleRequiredHave">{{ s }}</span>
-          <span class="role-chip-empty" *ngIf="roleRequiredHave.length === 0">none yet</span>
+
+      <!-- Core skills -->
+      <div class="role-tier">
+        <span class="tier-label tier-label-core">Core</span>
+        <div class="tier-chips">
+          <span
+            *ngFor="let slot of gap.core"
+            class="role-chip"
+            [class.role-chip-have]="slot.matched"
+            [class.role-chip-missing]="!slot.matched"
+            [title]="slot.matched ? slot.matched : slot.label"
+          >
+            <span class="material-icons chip-check" *ngIf="slot.matched">check</span>
+            {{ slot.matched || slot.label }}
+          </span>
         </div>
-        <div class="role-chips-group">
-          <span class="role-chips-label">Missing</span>
-          <span class="role-chip role-chip-missing" *ngFor="let s of roleRequiredMissing">{{ s }}</span>
-          <span class="role-chip-empty" *ngIf="roleRequiredMissing.length === 0">all covered</span>
+      </div>
+
+      <!-- Recommended skills -->
+      <div class="role-tier" *ngIf="gap.recommended.length > 0">
+        <span class="tier-label tier-label-rec">Recommended</span>
+        <div class="tier-chips">
+          <span
+            *ngFor="let slot of gap.recommended"
+            class="role-chip role-chip-sm"
+            [class.role-chip-have]="slot.matched"
+            [class.role-chip-rec-missing]="!slot.matched"
+            [title]="slot.matched ? slot.matched : slot.label"
+          >
+            {{ slot.matched || slot.label }}
+          </span>
         </div>
+      </div>
+
+      <!-- Near-ready hints -->
+      <div class="near-ready-hint" *ngFor="let hint of nearReadyHints">
+        <span class="material-icons near-ready-icon">bolt</span>
+        <span>Close to <strong>{{ hint.title }}</strong> — you already have {{ hint.prereqs.join(' + ') }}</span>
       </div>
     </div>
 

@@ -494,34 +494,48 @@
   transition: width 0.4s ease;
 }
 
-.role-chips-row {
+.role-tier {
   display: flex;
-  gap: 1.25rem;
+  align-items: flex-start;
+  gap: 0.6rem;
   flex-wrap: wrap;
 }
 
-.role-chips-group {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  flex-wrap: wrap;
-}
-
-.role-chips-label {
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: var(--text-muted);
+.tier-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  margin-right: 0.2rem;
+  padding-top: 0.25rem;
+  flex-shrink: 0;
+  width: 90px;
+}
+
+.tier-label-core { color: var(--text-muted); }
+.tier-label-rec  { color: var(--text-subtle); }
+
+.tier-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  flex: 1;
 }
 
 .role-chip {
-  font-size: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.78rem;
   font-weight: 500;
-  padding: 0.15rem 0.5rem;
+  padding: 0.22rem 0.6rem;
   border-radius: 20px;
   border: 1px solid transparent;
+  transition: opacity 0.15s;
+}
+
+.role-chip-sm {
+  font-size: 0.73rem;
+  padding: 0.16rem 0.5rem;
 }
 
 .role-chip-have {
@@ -531,13 +545,37 @@
 }
 
 .role-chip-missing {
-  background: rgba(88, 166, 255, 0.08);
-  border-color: rgba(88, 166, 255, 0.22);
+  background: rgba(88, 166, 255, 0.07);
+  border-color: rgba(88, 166, 255, 0.18);
   color: #58a6ff;
 }
 
-.role-chip-empty {
-  font-size: 0.75rem;
+.role-chip-rec-missing {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.08);
   color: var(--text-subtle);
-  font-style: italic;
+}
+
+.chip-check {
+  font-size: 0.72rem !important;
+}
+
+.near-ready-hint {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 0.75rem;
+  background: rgba(251, 146, 60, 0.06);
+  border: 1px solid rgba(251, 146, 60, 0.18);
+  border-radius: 8px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+
+  strong { color: var(--text); font-weight: 600; }
+}
+
+.near-ready-icon {
+  font-size: 0.95rem !important;
+  color: #fb923c;
+  flex-shrink: 0;
 }

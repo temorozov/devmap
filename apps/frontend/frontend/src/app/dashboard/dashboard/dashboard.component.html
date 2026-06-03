@@ -253,7 +253,7 @@
               <div class="gap-progress-fill" [style.width.%]="gapPercent"></div>
             </div>
             <span class="gap-progress-label">
-              {{ requiredHave.length }}/{{ targetRole.required.length }} required skills verified
+              {{ requiredHave.length }}/{{ coreSlots.length }} core skills verified
               <span class="gap-percent">{{ gapPercent }}%</span>
             </span>
           </div>
@@ -280,19 +280,19 @@
             </div>
           </div>
 
-          <!-- Nice-to-have -->
-          <div class="gap-row" *ngIf="targetRole.nice.length > 0">
+          <!-- Recommended skills -->
+          <div class="gap-row" *ngIf="recommendedSlots.length > 0">
             <span class="gap-row-label gap-nice">
               <span class="material-icons" style="font-size:0.8rem">star_outline</span>
-              Nice to have
+              Recommended
             </span>
             <div class="gap-chips">
               <span
                 class="gap-chip"
-                *ngFor="let s of targetRole.nice"
-                [class.gap-chip-have]="myVerifiedSkills.includes(s)"
-                [class.gap-chip-dim]="!myVerifiedSkills.includes(s)"
-              >{{ s }}</span>
+                *ngFor="let s of recommendedSlots"
+                [class.gap-chip-have]="s.matched"
+                [class.gap-chip-dim]="!s.matched"
+              >{{ s.matched || s.label }}</span>
             </div>
           </div>
         </div>

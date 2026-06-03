@@ -4,7 +4,7 @@ import { Title, Meta } from '@angular/platform-browser';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { TreesService, PublicProfile } from '../../trees.service';
 import { NodeEvidence, SkillNode } from '../../nodes.service';
-import { ROLE_PROFILES, RoleProfile } from '../../shared/data/role-profiles';
+import { ROLE_PROFILES, RoleProfile, SkillRequirement, SKILL_PREREQUISITES } from '../../shared/data/role-profiles';
 
 const CATEGORY_META: Record<string, { label: string; icon: string; order: number }> = {
   language: { label: 'Languages',  icon: 'code',           order: 1 },
@@ -22,6 +22,24 @@ interface SkillGroup {
   label: string;
   icon: string;
   skills: Array<{ title: string; verified: boolean; evidence: NodeEvidence[] | null | undefined }>;
+}
+
+interface SlotResult {
+  label: string;
+  matched: string | null;
+}
+
+interface GapAnalysis {
+  role: RoleProfile;
+  core: SlotResult[];
+  recommended: SlotResult[];
+  emerging: SlotResult[];
+  readinessPercent: number;
+}
+
+interface NearReadyHint {
+  title: string;
+  prereqs: string[];
 }
 
 @Component({
@@ -86,17 +104,51 @@ export class ProfileComponent implements OnInit, OnDestroy {
     return this.skillGroups.flatMap(g => g.skills.filter(s => s.verified).map(s => s.title));
   }
 
-  get roleRequiredHave(): string[] {
-    return (this.targetRoleProfile?.required ?? []).filter(s => this.verifiedSkillTitles.includes(s));
+  get gapAnalysis(): GapAnalysis | null {
+    const role = this.targetRoleProfile;
+    if (!role) return null;
+    const verified = this.verifiedSkillTitles;
+
+    const resolveSlots = (slots: SkillRequirement[]): SlotResult[] =>
+      slots.map(slot => {
+        if (typeof slot === 'string') {
+          return { label: slot, matched: verified.includes(slot) ? slot : null };
+        }
+        const hit = slot.any.find(s => verified.includes(s)) ?? null;
+        return { label: slot.label, matched: hit };
+      });
+
+    const core        = resolveSlots(role.core);
+    const recommended = resolveSlots(role.recommended);
+    const emerging    = role.emerging.map(s => ({ label: s, matched: verified.includes(s) ? s : null }));
+
+    const score = (slots: SlotResult[]) =>
+      slots.length === 0 ? 1 : slots.filter(s => s.matched).length / slots.length;
+
+    const readinessPercent = Math.round(
+      (score(core) * 0.6 + score(recommended) * 0.3 + score(emerging) * 0.1) * 100
+    );
+
+    return { role, core, recommended, emerging, readinessPercent };
   }
 
-  get roleRequiredMissing(): string[] {
-    return (this.targetRoleProfile?.required ?? []).filter(s => !this.verifiedSkillTitles.includes(s));
-  }
+  get nearReadyHints(): NearReadyHint[] {
+    const analysis = this.gapAnalysis;
+    if (!analysis) return [];
+    const verified = this.verifiedSkillTitles;
 
-  get roleGapPercent(): number {
-    const total = this.targetRoleProfile?.required.length ?? 0;
-    return total ? Math.round((this.roleRequiredHave.length / total) * 100) : 0;
+    const missingSkills = [
+      ...analysis.core.filter(s => !s.matched).map(s => s.label),
+      ...analysis.recommended.filter(s => !s.matched).map(s => s.label),
+    ];
+
+    return missingSkills
+      .filter(skill => {
+        const prereqs = SKILL_PREREQUISITES[skill];
+        return prereqs && prereqs.length > 0 && prereqs.every(p => verified.includes(p));
+      })
+      .slice(0, 2)
+      .map(skill => ({ title: skill, prereqs: SKILL_PREREQUISITES[skill] }));
   }
 
   ngOnDestroy() {

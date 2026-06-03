@@ -40,10 +40,28 @@ export class DashboardComponent implements OnInit {
   targetRoleKey = localStorage.getItem('devmap_target_role') ?? '';
   myVerifiedSkills: string[] = [];
   get targetRole(): RoleProfile | null { return this.roleProfiles[this.targetRoleKey] ?? null; }
-  get requiredHave(): string[] { return (this.targetRole?.required ?? []).filter(s => this.myVerifiedSkills.includes(s)); }
-  get requiredMissing(): string[] { return (this.targetRole?.required ?? []).filter(s => !this.myVerifiedSkills.includes(s)); }
+
+  private resolveSlot(slot: import('../../shared/data/role-profiles').SkillRequirement): { label: string; matched: string | null } {
+    if (typeof slot === 'string') {
+      return { label: slot, matched: this.myVerifiedSkills.includes(slot) ? slot : null };
+    }
+    const hit = slot.any.find(s => this.myVerifiedSkills.includes(s)) ?? null;
+    return { label: slot.label, matched: hit };
+  }
+
+  get coreSlots(): { label: string; matched: string | null }[] {
+    return (this.targetRole?.core ?? []).map(s => this.resolveSlot(s));
+  }
+
+  get recommendedSlots(): { label: string; matched: string | null }[] {
+    return (this.targetRole?.recommended ?? []).map(s => this.resolveSlot(s));
+  }
+
+  get requiredHave(): string[] { return this.coreSlots.filter(s => s.matched).map(s => s.matched!); }
+  get requiredMissing(): string[] { return this.coreSlots.filter(s => !s.matched).map(s => s.label); }
+
   get gapPercent(): number {
-    const total = this.targetRole?.required.length ?? 0;
+    const total = this.coreSlots.length;
     return total ? Math.round((this.requiredHave.length / total) * 100) : 0;
   }
 
