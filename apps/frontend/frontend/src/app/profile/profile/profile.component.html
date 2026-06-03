@@ -138,12 +138,16 @@
           <span
             *ngFor="let slot of gap.core"
             class="role-chip"
-            [class.role-chip-have]="slot.matched"
-            [class.role-chip-missing]="!slot.matched"
-            [title]="slot.matched ? slot.matched : slot.label"
+            [class.role-chip-strong]="slot.strength === 'strong'"
+            [class.role-chip-medium]="slot.strength === 'medium'"
+            [class.role-chip-weak]="slot.strength === 'weak'"
+            [class.role-chip-missing]="slot.strength === 'missing'"
+            [title]="slot.strength === 'weak' ? (slot.matched + ' — only in isolated repos, not alongside other role skills') : ''"
           >
-            <span class="material-icons chip-check" *ngIf="slot.matched">check</span>
+            <span class="material-icons chip-icon" *ngIf="slot.matched && slot.strength !== 'weak'">check</span>
+            <span class="material-icons chip-icon chip-icon-weak" *ngIf="slot.strength === 'weak'">warning_amber</span>
             {{ slot.matched || slot.label }}
+            <span class="chip-repos" *ngIf="slot.matched && slot.repoCount > 0">· {{ slot.repoCount }}</span>
           </span>
         </div>
       </div>
@@ -157,11 +161,17 @@
             class="role-chip role-chip-sm"
             [class.role-chip-have]="slot.matched"
             [class.role-chip-rec-missing]="!slot.matched"
-            [title]="slot.matched ? slot.matched : slot.label"
           >
             {{ slot.matched || slot.label }}
+            <span class="chip-repos" *ngIf="slot.matched && slot.repoCount > 1">· {{ slot.repoCount }}</span>
           </span>
         </div>
+      </div>
+
+      <!-- Top project callout -->
+      <div class="top-project" *ngIf="topProject">
+        <span class="material-icons top-project-icon">folder_special</span>
+        <span>Best coverage: <code class="top-project-repo">{{ topProject.repo }}</code> has {{ topProject.skills.join(' + ') }}</span>
       </div>
 
       <!-- Near-ready hints -->

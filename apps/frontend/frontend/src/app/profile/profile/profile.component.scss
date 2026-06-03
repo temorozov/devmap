@@ -538,12 +538,28 @@
   padding: 0.16rem 0.5rem;
 }
 
-.role-chip-have {
-  background: rgba(63, 185, 80, 0.1);
-  border-color: rgba(63, 185, 80, 0.3);
+// strong: co-occurs with 2+ other role skills in same repo
+.role-chip-strong {
+  background: rgba(63, 185, 80, 0.12);
+  border-color: rgba(63, 185, 80, 0.35);
   color: var(--green);
 }
 
+// medium: co-occurs with 1 other role skill, or recommended
+.role-chip-medium, .role-chip-have {
+  background: rgba(63, 185, 80, 0.07);
+  border-color: rgba(63, 185, 80, 0.22);
+  color: #6db87a;
+}
+
+// weak: verified but only in isolated repos — no other role skills nearby
+.role-chip-weak {
+  background: rgba(234, 179, 8, 0.07);
+  border-color: rgba(234, 179, 8, 0.22);
+  color: #ca8a04;
+}
+
+// missing: not found in any repos
 .role-chip-missing {
   background: rgba(88, 166, 255, 0.07);
   border-color: rgba(88, 166, 255, 0.18);
@@ -556,15 +572,52 @@
   color: var(--text-subtle);
 }
 
-.chip-check {
+.chip-icon {
   font-size: 0.72rem !important;
+}
+
+.chip-icon-weak {
+  color: #ca8a04;
+}
+
+.chip-repos {
+  opacity: 0.65;
+  font-size: 0.68rem;
+  font-family: var(--font-mono, monospace);
+}
+
+.top-project {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 8px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.top-project-icon {
+  font-size: 0.95rem !important;
+  color: var(--text-subtle);
+  flex-shrink: 0;
+}
+
+.top-project-repo {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.78rem;
+  color: var(--text);
+  background: rgba(255,255,255,0.06);
+  padding: 0.05rem 0.35rem;
+  border-radius: 4px;
 }
 
 .near-ready-hint {
   display: flex;
   align-items: center;
   gap: 0.45rem;
-  padding: 0.55rem 0.75rem;
+  padding: 0.5rem 0.75rem;
   background: rgba(251, 146, 60, 0.06);
   border: 1px solid rgba(251, 146, 60, 0.18);
   border-radius: 8px;

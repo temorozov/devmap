@@ -27,6 +27,8 @@ interface SkillGroup {
 interface SlotResult {
   label: string;
   matched: string | null;
+  repoCount: number;
+  strength: 'strong' | 'medium' | 'weak' | 'missing';
 }
 
 interface GapAnalysis {
@@ -40,6 +42,11 @@ interface GapAnalysis {
 interface NearReadyHint {
   title: string;
   prereqs: string[];
+}
+
+interface TopProject {
+  repo: string;
+  skills: string[];
 }
 
 @Component({
@@ -104,48 +111,120 @@ export class ProfileComponent implements OnInit, OnDestroy {
     return this.skillGroups.flatMap(g => g.skills.filter(s => s.verified).map(s => s.title));
   }
 
+  private buildRepoSkillsMap(): Map<string, Set<string>> {
+    const map = new Map<string, Set<string>>();
+    for (const group of this.skillGroups) {
+      for (const skill of group.skills) {
+        if (!skill.verified || !skill.evidence?.length) continue;
+        for (const ev of skill.evidence) {
+          if (!map.has(ev.repo)) map.set(ev.repo, new Set());
+          map.get(ev.repo)!.add(skill.title);
+        }
+      }
+    }
+    return map;
+  }
+
+  private coOccurrenceStrength(
+    title: string,
+    otherCoreMatches: string[],
+    repoMap: Map<string, Set<string>>
+  ): { strength: 'strong' | 'medium' | 'weak'; repoCount: number } {
+    let maxCoOccurring = 0;
+    let repoCount = 0;
+    for (const [, skills] of repoMap) {
+      if (!skills.has(title)) continue;
+      repoCount++;
+      const n = otherCoreMatches.filter(s => s !== title && skills.has(s)).length;
+      if (n > maxCoOccurring) maxCoOccurring = n;
+    }
+    const strength = maxCoOccurring >= 2 ? 'strong' : maxCoOccurring >= 1 ? 'medium' : 'weak';
+    return { strength, repoCount };
+  }
+
+  private repoCount(title: string, repoMap: Map<string, Set<string>>): number {
+    let n = 0;
+    for (const skills of repoMap.values()) if (skills.has(title)) n++;
+    return n;
+  }
+
   get gapAnalysis(): GapAnalysis | null {
     const role = this.targetRoleProfile;
     if (!role) return null;
     const verified = this.verifiedSkillTitles;
+    const repoMap = this.buildRepoSkillsMap();
 
-    const resolveSlots = (slots: SkillRequirement[]): SlotResult[] =>
-      slots.map(slot => {
-        if (typeof slot === 'string') {
-          return { label: slot, matched: verified.includes(slot) ? slot : null };
-        }
-        const hit = slot.any.find(s => verified.includes(s)) ?? null;
-        return { label: slot.label, matched: hit };
-      });
+    const matchTitle = (slot: SkillRequirement): string | null =>
+      typeof slot === 'string'
+        ? (verified.includes(slot) ? slot : null)
+        : (slot.any.find(s => verified.includes(s)) ?? null);
 
-    const core        = resolveSlots(role.core);
-    const recommended = resolveSlots(role.recommended);
-    const emerging    = role.emerging.map(s => ({ label: s, matched: verified.includes(s) ? s : null }));
+    const slotLabel = (slot: SkillRequirement): string =>
+      typeof slot === 'string' ? slot : slot.label;
 
-    const score = (slots: SlotResult[]) =>
-      slots.length === 0 ? 1 : slots.filter(s => s.matched).length / slots.length;
+    const coreMatches = role.core.map(matchTitle).filter(Boolean) as string[];
 
-    const readinessPercent = Math.round(
-      (score(core) * 0.6 + score(recommended) * 0.3 + score(emerging) * 0.1) * 100
-    );
+    const core: SlotResult[] = role.core.map(slot => {
+      const matched = matchTitle(slot);
+      if (!matched) return { label: slotLabel(slot), matched: null, repoCount: 0, strength: 'missing' };
+      const { strength, repoCount } = this.coOccurrenceStrength(matched, coreMatches, repoMap);
+      return { label: slotLabel(slot), matched, repoCount, strength };
+    });
+
+    const recommended: SlotResult[] = role.recommended.map(slot => {
+      const matched = matchTitle(slot);
+      const rc = matched ? this.repoCount(matched, repoMap) : 0;
+      return { label: slotLabel(slot), matched, repoCount: rc, strength: matched ? 'medium' : 'missing' };
+    });
+
+    const emerging: SlotResult[] = role.emerging.map(s => ({
+      label: s, matched: verified.includes(s) ? s : null,
+      repoCount: verified.includes(s) ? this.repoCount(s, repoMap) : 0,
+      strength: (verified.includes(s) ? 'medium' : 'missing') as 'medium' | 'missing',
+    }));
+
+    const strengthScore = (s: SlotResult['strength']) =>
+      ({ strong: 1.0, medium: 0.7, weak: 0.4, missing: 0 })[s];
+
+    const coreScore = core.length === 0 ? 1
+      : core.reduce((sum, s) => sum + strengthScore(s.strength), 0) / core.length;
+    const recScore  = recommended.length === 0 ? 1
+      : recommended.filter(s => s.matched).length / recommended.length;
+    const emgScore  = emerging.length === 0 ? 1
+      : emerging.filter(s => s.matched).length / emerging.length;
+
+    const readinessPercent = Math.round((coreScore * 0.6 + recScore * 0.3 + emgScore * 0.1) * 100);
 
     return { role, core, recommended, emerging, readinessPercent };
+  }
+
+  get topProject(): TopProject | null {
+    const gap = this.gapAnalysis;
+    if (!gap) return null;
+    const repoMap = this.buildRepoSkillsMap();
+    const coreMatched = gap.core.filter(s => s.matched).map(s => s.matched!);
+    let best: TopProject | null = null;
+    for (const [repo, skills] of repoMap) {
+      const covered = coreMatched.filter(s => skills.has(s));
+      if (covered.length >= 2 && (!best || covered.length > best.skills.length)) {
+        best = { repo, skills: covered };
+      }
+    }
+    return best;
   }
 
   get nearReadyHints(): NearReadyHint[] {
     const analysis = this.gapAnalysis;
     if (!analysis) return [];
     const verified = this.verifiedSkillTitles;
-
-    const missingSkills = [
+    const missing = [
       ...analysis.core.filter(s => !s.matched).map(s => s.label),
       ...analysis.recommended.filter(s => !s.matched).map(s => s.label),
     ];
-
-    return missingSkills
+    return missing
       .filter(skill => {
         const prereqs = SKILL_PREREQUISITES[skill];
-        return prereqs && prereqs.length > 0 && prereqs.every(p => verified.includes(p));
+        return prereqs?.length && prereqs.every(p => verified.includes(p));
       })
       .slice(0, 2)
       .map(skill => ({ title: skill, prereqs: SKILL_PREREQUISITES[skill] }));
