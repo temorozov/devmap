@@ -43,8 +43,14 @@
       <a routerLink="/login" class="btn-primary" style="margin-top:0.5rem">Connect GitHub →</a>
     </div>
 
+    <!-- Early stage banner -->
+    <div class="ex-early-banner" *ngIf="!loading && profiles.length > 0 && profiles.length < 10">
+      <span class="material-icons" style="font-size:0.9rem;color:var(--green)">bolt</span>
+      Early access — be among the first developers to publish a verified skill map.
+    </div>
+
     <!-- Profile grid -->
-    <div class="profile-grid" *ngIf="!loading && profiles.length > 0">
+    <div class="profile-grid" *ngIf="!loading && profiles.length > 0" [class.profile-grid-few]="profiles.length < 4">
       <a
         class="profile-card"
         *ngFor="let p of profiles"

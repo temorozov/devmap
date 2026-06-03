@@ -90,11 +90,11 @@
           <span class="stat-num">{{ verifiedPercent }}%</span>
           <span class="stat-label">Verified rate</span>
         </div>
-        <div class="stat" *ngIf="profile.views && profile.views.thisWeek > 0">
+        <div class="stat" *ngIf="profile.views && profile.views.thisWeek > 4">
           <span class="stat-num stat-num-views">{{ profile.views.thisWeek }}</span>
           <span class="stat-label">Views this week</span>
         </div>
-        <div class="stat" *ngIf="!profile.views || profile.views.thisWeek === 0">
+        <div class="stat" *ngIf="!profile.views || profile.views.thisWeek <= 4">
           <span class="stat-num">{{ memberSinceYear }}</span>
           <span class="stat-label">Member since</span>
         </div>

@@ -673,33 +673,8 @@ export class CanvasComponent implements OnInit, AfterViewInit {
     this.editingDescription = false;
   }
 
-  onNodeTap(event: PointerEvent | MouseEvent, node: SkillNode) {
-    if ('pointerType' in event && event.pointerType !== 'mouse') {
-      this.openNodeProperties(node);
-      return;
-    }
-
-    const maxLvl = node.maxLevel || DEFAULT_MAX_LEVEL;
-    let currLvl = node.level || 0;
-
-    if (event.shiftKey) {
-      currLvl = Math.max(0, currLvl - 1);
-    } else {
-      currLvl = Math.min(maxLvl, currLvl + 1);
-    }
-
-    this.selectedNode = node;
-    this.editNodeData = { ...node };
-
-    if (node.level !== currLvl) {
-      node.level = currLvl;
-      node.progress = (currLvl / maxLvl) * 100;
-      if (!this.isDemoTree) {
-        this.nodesService.updateNode(node.id, { level: currLvl, progress: node.progress }).subscribe();
-      }
-      this.editNodeData.level = currLvl;
-      this.syncFilteredStateAfterNodeChange(node);
-    }
+  onNodeTap(_event: PointerEvent | MouseEvent, node: SkillNode) {
+    this.openNodeProperties(node);
   }
 
   adjustSelectedNodeLevel(delta: number) {
@@ -936,6 +911,12 @@ export class CanvasComponent implements OnInit, AfterViewInit {
 
   get activeDaysLast7(): number {
     return this.focusService.computeActiveDaysLast7(this.calendarActivities);
+  }
+
+  fitToScreen() {
+    if (this.nodes.length === 0) return;
+    this.centerViewOnNodes(this.nodes);
+    this.cdr.detectChanges();
   }
 
   get consistencyToneClass(): string {

@@ -91,11 +91,29 @@
   font-size: 0.9rem;
 }
 
+/* ── EARLY BANNER ── */
+.ex-early-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1rem;
+  background: rgba(63,185,80,0.06);
+  border: 1px solid rgba(63,185,80,0.18);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 1.5rem;
+}
+
 /* ── PROFILE GRID ── */
 .profile-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 1rem;
+
+  &.profile-grid-few {
+    grid-template-columns: repeat(auto-fill, minmax(260px, 320px));
+  }
 }
 
 .profile-card {

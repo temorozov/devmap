@@ -54,11 +54,13 @@
 
             <div class="insight-footer">
                 <div class="insight-footer-copy">
-                    <span class="insight-metric streak">
-                        <span class="material-icons insight-metric-icon">local_fire_department</span>
-                        <span>{{ i18n.t('canvas.calendarStreak', { count: currentStreak }) }}</span>
-                    </span>
-                    <span class="insight-footer-separator">·</span>
+                    <ng-container *ngIf="currentStreak > 1">
+                        <span class="insight-metric streak">
+                            <span class="material-icons insight-metric-icon">local_fire_department</span>
+                            <span>{{ i18n.t('canvas.calendarStreak', { count: currentStreak }) }}</span>
+                        </span>
+                        <span class="insight-footer-separator">·</span>
+                    </ng-container>
                     <span class="insight-metric">{{ i18n.t('canvas.calendarActiveDaysCompact', { count: activeDaysThisMonth }) }}</span>
                 </div>
             </div>
@@ -100,6 +102,14 @@
     </section>
 
     <div class="canvas-action-dock glass-panel" *ngIf="!loading && !isEmptyTree">
+        <button
+            type="button"
+            class="dock-icon-btn"
+            (click)="fitToScreen()"
+            title="Fit all skills in view"
+        >
+            <span class="material-icons">center_focus_strong</span>
+        </button>
         <button
             type="button"
             class="dock-icon-btn"

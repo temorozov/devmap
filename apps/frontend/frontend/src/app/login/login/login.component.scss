@@ -228,3 +228,28 @@
   text-align: center;
   line-height: 1.5;
 }
+
+.login-footer {
+  position: absolute;
+  bottom: 1.5rem;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+}
+
+.login-footer-link {
+  font-size: 0.78rem;
+  color: var(--text-subtle);
+  text-decoration: none;
+  transition: color 0.15s;
+
+  &:hover { color: var(--text-muted); }
+}
+
+.login-footer-sep {
+  font-size: 0.78rem;
+  color: var(--border);
+}
