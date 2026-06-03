@@ -4,6 +4,7 @@ import { Title, Meta } from '@angular/platform-browser';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { TreesService, PublicProfile } from '../../trees.service';
 import { NodeEvidence, SkillNode } from '../../nodes.service';
+import { ROLE_PROFILES, RoleProfile } from '../../shared/data/role-profiles';
 
 const CATEGORY_META: Record<string, { label: string; icon: string; order: number }> = {
   language: { label: 'Languages',  icon: 'code',           order: 1 },
@@ -75,6 +76,27 @@ export class ProfileComponent implements OnInit, OnDestroy {
   get memberSinceYear(): string {
     if (!this.profile?.memberSince) return '—';
     return new Date(this.profile.memberSince).getFullYear().toString();
+  }
+
+  get targetRoleProfile(): RoleProfile | null {
+    return this.profile?.targetRole ? (ROLE_PROFILES[this.profile.targetRole] ?? null) : null;
+  }
+
+  get verifiedSkillTitles(): string[] {
+    return this.skillGroups.flatMap(g => g.skills.filter(s => s.verified).map(s => s.title));
+  }
+
+  get roleRequiredHave(): string[] {
+    return (this.targetRoleProfile?.required ?? []).filter(s => this.verifiedSkillTitles.includes(s));
+  }
+
+  get roleRequiredMissing(): string[] {
+    return (this.targetRoleProfile?.required ?? []).filter(s => !this.verifiedSkillTitles.includes(s));
+  }
+
+  get roleGapPercent(): number {
+    const total = this.targetRoleProfile?.required.length ?? 0;
+    return total ? Math.round((this.roleRequiredHave.length / total) * 100) : 0;
   }
 
   ngOnDestroy() {

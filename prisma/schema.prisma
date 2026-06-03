@@ -17,6 +17,7 @@ model User {
   githubUsername         String?
   githubAccessToken      String?
   handle                 String?        @unique
+  targetRole             String?
   isGuest                Boolean        @default(false)
   isEmailConfirmed       Boolean        @default(true)
   emailConfirmationToken String?

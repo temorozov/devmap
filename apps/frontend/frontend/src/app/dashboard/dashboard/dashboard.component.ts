@@ -84,6 +84,7 @@ export class DashboardComponent implements OnInit {
   setTargetRole(key: string) {
     this.targetRoleKey = key;
     localStorage.setItem('devmap_target_role', key);
+    this.treesService.saveTargetRole(key).subscribe();
     this.cdr.markForCheck();
   }
 

@@ -13,6 +13,7 @@ export interface PublicProfile {
   handle: string;
   name: string | null;
   githubUsername: string | null;
+  targetRole: string | null;
   memberSince: string;
   verifiedSkills: number;
   totalSkills: number;
@@ -87,6 +88,10 @@ export class TreesService {
 
   getExploreProfiles() {
     return this.http.get<ExploreProfile[]>(`${this.apiUrl}/explore`);
+  }
+
+  saveTargetRole(roleKey: string) {
+    return this.http.put(`${this.apiUrl}/my/target-role`, { roleKey });
   }
 }
 

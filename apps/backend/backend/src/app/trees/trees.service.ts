@@ -54,6 +54,7 @@ export class TreesService {
                 name: true,
                 handle: true,
                 githubUsername: true,
+                targetRole: true,
                 createdAt: true,
                 trees: {
                     where: { title: 'My Dev Map' },
@@ -97,6 +98,7 @@ export class TreesService {
             handle: user.handle ?? user.githubUsername,
             name: user.name,
             githubUsername: user.githubUsername,
+            targetRole: user.targetRole ?? null,
             memberSince: user.createdAt,
             verifiedSkills: verifiedCount,
             totalSkills: totalNodes,
@@ -211,6 +213,10 @@ export class TreesService {
                 verifiedSkills: u.trees[0]?.nodes.length ?? 0,
                 topSkills: u.trees[0]?.nodes.slice(0, 5).map(n => n.title) ?? [],
             }));
+    }
+
+    async setTargetRole(userId: string, roleKey: string) {
+        await this.prisma.user.update({ where: { id: userId }, data: { targetRole: roleKey || null } });
     }
 
     async getProfileViewStats(userId: string) {

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, ForbiddenException, Req, Res, Header, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, ForbiddenException, Req, Res, Header, NotFoundException, Put } from '@nestjs/common';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { createHash } from 'crypto';
 import { Request as ExpressRequest, Response } from 'express';
@@ -68,6 +68,12 @@ export class TreesController {
     @Get('my/skills')
     getMySkills(@Request() req: AuthenticatedRequest) {
         return this.treesService.getMyVerifiedSkills(req.user.id);
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Put('my/target-role')
+    setTargetRole(@Request() req: AuthenticatedRequest, @Body() body: { roleKey: string }) {
+        return this.treesService.setTargetRole(req.user.id, body.roleKey ?? '');
     }
 
     @Get('explore')
