@@ -50,7 +50,7 @@ export const ROLE_PROFILES: Record<string, RoleProfile> = {
   },
 
   'senior-backend': {
-    label: 'Senior Backend Engineer',
+    label: 'Backend Engineer',
     core: [
       { label: 'Primary language', any: ['TypeScript', 'Go', 'Python', 'Java', 'Rust'] },
       { label: 'Runtime / platform', any: ['Node.js', 'Python', 'Go', 'Java'] },
@@ -69,7 +69,7 @@ export const ROLE_PROFILES: Record<string, RoleProfile> = {
   },
 
   'senior-frontend': {
-    label: 'Senior Frontend Engineer',
+    label: 'Frontend Engineer',
     core: [
       'TypeScript',
       { label: 'UI framework', any: ['React', 'Vue.js', 'Angular', 'Svelte'] },
@@ -86,7 +86,7 @@ export const ROLE_PROFILES: Record<string, RoleProfile> = {
   },
 
   'devops': {
-    label: 'DevOps / Platform Engineer',
+    label: 'DevOps Engineer',
     core: [
       'Docker',
       'Kubernetes',
@@ -103,7 +103,7 @@ export const ROLE_PROFILES: Record<string, RoleProfile> = {
   },
 
   'ml-engineer': {
-    label: 'ML / AI Engineer',
+    label: 'ML Engineer',
     core: [
       'Python',
       { label: 'ML framework', any: ['PyTorch', 'TensorFlow', 'scikit-learn'] },
@@ -120,7 +120,7 @@ export const ROLE_PROFILES: Record<string, RoleProfile> = {
   },
 
   'mobile': {
-    label: 'Mobile Engineer',
+    label: 'Mobile Developer',
     core: [
       { label: 'Cross-platform', any: ['React Native', 'Flutter'] },
       { label: 'Language', any: ['TypeScript', 'Dart'] },
