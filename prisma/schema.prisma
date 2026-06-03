@@ -7,24 +7,26 @@ datasource db {
 }
 
 model User {
-  id                     String        @id @default(uuid())
-  email                  String?       @unique
+  id                     String         @id @default(uuid())
+  email                  String?        @unique
   passwordHash           String?
   name                   String?
-  googleId               String?       @unique
-  discordId              String?       @unique
-  githubId               String?       @unique
+  googleId               String?        @unique
+  discordId              String?        @unique
+  githubId               String?        @unique
   githubUsername         String?
   githubAccessToken      String?
-  handle                 String?       @unique
-  isGuest                Boolean       @default(false)
-  isEmailConfirmed       Boolean       @default(true)
+  handle                 String?        @unique
+  isGuest                Boolean        @default(false)
+  isEmailConfirmed       Boolean        @default(true)
   emailConfirmationToken String?
   trees                  Tree[]
   aiBatchJobs            AiBatchJob[]
   githubScans            GitHubScan[]
-  createdAt              DateTime      @default(now())
-  updatedAt              DateTime      @updatedAt
+  profileViews           ProfileView[]
+  githubWebhooks         GitHubWebhook[]
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @updatedAt
 }
 
 model Tree {
@@ -82,6 +84,28 @@ model GitHubScan {
   summary     Json?
 
   @@index([userId, scannedAt])
+}
+
+model ProfileView {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  viewerIpHash String?
+  createdAt   DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model GitHubWebhook {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  repoFullName String
+  webhookId    Int
+  createdAt    DateTime @default(now())
+
+  @@unique([userId, repoFullName])
+  @@index([userId])
 }
 
 model AiBatchJob {

@@ -1,4 +1,5 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import axios from 'axios';
 import { PrismaService } from '../prisma/prisma.service';
 import { GitHubService } from './github.service';
 import { computeTreeLayout } from './tree-layout.util';
@@ -64,7 +65,7 @@ export class GitHubSyncService {
 
         let parentId: string | null = null;
         if (item.parentTitle && idMap.has(item.parentTitle)) {
-          parentId = idMap.get(item.parentTitle)!;
+          parentId = idMap.get(item.parentTitle) ?? null;
         }
 
         const evidence = tech
@@ -93,6 +94,12 @@ export class GitHubSyncService {
       }
     });
 
+    // Register webhooks for discovered repos (fire-and-forget, non-blocking)
+    const repoNames = this.extractRepoFullNames(detectedTechs);
+    this.registerWebhooks(userId, user.githubAccessToken, repoNames).catch((err: unknown) =>
+      this.logger.warn(`Webhook registration failed: ${err instanceof Error ? err.message : String(err)}`),
+    );
+
     // Record scan
     await this.prisma.gitHubScan.create({
       data: {
@@ -107,6 +114,83 @@ export class GitHubSyncService {
     this.logger.log(`Sync complete for user ${userId}: ${layoutInput.length} nodes, ${verifiedCount} verified`);
 
     return { nodeCount: layoutInput.length, verifiedCount };
+  }
+
+  async syncByRepo(repoFullName: string): Promise<void> {
+    const webhook = await this.prisma.gitHubWebhook.findFirst({
+      where: { repoFullName },
+    });
+
+    if (!webhook) {
+      this.logger.warn(`No webhook registered for repo: ${repoFullName}`);
+      return;
+    }
+
+    this.logger.log(`Webhook-triggered sync for repo: ${repoFullName}, userId: ${webhook.userId}`);
+    await this.syncUserDevMap(webhook.userId);
+  }
+
+  private extractRepoFullNames(techs: DetectedTech[]): Set<string> {
+    const result = new Set<string>();
+    for (const tech of techs) {
+      for (const repo of tech.repos) {
+        const match = repo.url.match(/github\.com\/([^/]+\/[^/?#]+)/);
+        if (match) result.add(match[1]);
+      }
+    }
+    return result;
+  }
+
+  private async registerWebhooks(userId: string, accessToken: string, repoFullNames: Set<string>): Promise<void> {
+    const webhookSecret = process.env['GITHUB_WEBHOOK_SECRET'];
+    if (!webhookSecret) {
+      this.logger.debug('GITHUB_WEBHOOK_SECRET not set — skipping webhook registration');
+      return;
+    }
+
+    const backendUrl = (process.env['BACKEND_URL'] ?? '').replace(/\/$/, '');
+    if (!backendUrl || backendUrl.includes('localhost')) {
+      this.logger.debug('Skipping webhook registration: BACKEND_URL is not a public URL');
+      return;
+    }
+
+    const webhookUrl = `${backendUrl}/api/github/webhook`;
+
+    for (const repoFullName of repoFullNames) {
+      try {
+        const resp = await axios.post<{ id: number }>(
+          `https://api.github.com/repos/${repoFullName}/hooks`,
+          {
+            name: 'web',
+            active: true,
+            events: ['push'],
+            config: { url: webhookUrl, content_type: 'json', secret: webhookSecret },
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              Accept: 'application/vnd.github+json',
+              'X-GitHub-Api-Version': '2022-11-28',
+            },
+            timeout: 6000,
+          },
+        );
+
+        await this.prisma.gitHubWebhook.upsert({
+          where: { userId_repoFullName: { userId, repoFullName } },
+          create: { userId, repoFullName, webhookId: resp.data.id },
+          update: { webhookId: resp.data.id },
+        });
+
+        this.logger.log(`Registered webhook for ${repoFullName} (id=${resp.data.id})`);
+      } catch (err: unknown) {
+        // 422 = hook already exists; 404 = not a repo owner — both are fine to skip
+        const status = (err as { response?: { status?: number } })?.response?.status;
+        if (status !== 422) {
+          this.logger.warn(`Webhook skip for ${repoFullName}: ${err instanceof Error ? err.message : String(err)}`);
+        }
+      }
+    }
   }
 
   private buildLayoutNodes(techs: DetectedTech[]): Array<{

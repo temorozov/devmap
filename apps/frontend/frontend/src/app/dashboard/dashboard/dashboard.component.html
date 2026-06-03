@@ -18,6 +18,16 @@
     </a>
 
     <div class="topbar-actions">
+      <!-- Profile view counter -->
+      <span
+        class="view-stat-chip"
+        *ngIf="(isGuest$ | async) === false && viewStats && viewStats.thisWeek > 0"
+        title="{{ viewStats.total }} total profile views"
+      >
+        <span class="material-icons" style="font-size:0.8rem;opacity:0.7">visibility</span>
+        {{ viewStats.thisWeek }} view{{ viewStats.thisWeek === 1 ? '' : 's' }} this week
+      </span>
+
       <!-- GitHub sync button (registered users) -->
       <button
         *ngIf="(isGuest$ | async) === false"

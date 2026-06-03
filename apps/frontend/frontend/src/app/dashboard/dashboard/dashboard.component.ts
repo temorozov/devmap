@@ -2,8 +2,7 @@ import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit, inject }
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { take } from 'rxjs/operators';
-import { TreesService, Tree } from '../../trees.service';
+import { TreesService, Tree, ProfileViewStats } from '../../trees.service';
 import { AuthService } from '../../auth.service';
 import { ActivityCalendarComponent } from '../../canvas/activity-calendar/activity-calendar.component';
 import { DialogService } from '../../shared/services/dialog.service';
@@ -32,6 +31,7 @@ export class DashboardComponent implements OnInit {
   newTreeTitle = '';
   syncSuccess = false;
   syncedProfileUrl = '';
+  viewStats: ProfileViewStats | null = null;
 
   isGuest$ = this.authService.isGuest$;
   handle$ = this.authService.handle$;
@@ -43,6 +43,7 @@ export class DashboardComponent implements OnInit {
     this.authService.loadMe().subscribe(() => this.cdr.markForCheck());
 
     this.loadTrees();
+    this.loadViewStats();
 
     // Auto-trigger GitHub scan after GitHub OAuth redirect
     this.route.queryParams.subscribe(params => {
@@ -53,6 +54,16 @@ export class DashboardComponent implements OnInit {
         }).unsubscribe();
       }
     });
+  }
+
+  loadViewStats() {
+    this.isGuest$.subscribe(isGuest => {
+      if (!isGuest) {
+        this.treesService.getViewStats().subscribe({
+          next: (stats) => { this.viewStats = stats; this.cdr.markForCheck(); },
+        });
+      }
+    }).unsubscribe();
   }
 
   loadTrees() {
@@ -125,7 +136,7 @@ export class DashboardComponent implements OnInit {
     this.syncSuccess = false;
     this.cdr.markForCheck();
     this.treesService.syncGitHub().subscribe({
-      next: (result) => {
+      next: () => {
         this.syncing = false;
         this.loadTrees();
         // Show inline success state with profile URL

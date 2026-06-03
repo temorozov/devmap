@@ -1,5 +1,7 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, ForbiddenException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, ForbiddenException, Req } from '@nestjs/common';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
+import { createHash } from 'crypto';
+import { Request as ExpressRequest } from 'express';
 import { TreesService } from './trees.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { BatchGenerationService } from './batch-generation.service';
@@ -26,9 +28,7 @@ export class TreesController {
     @Throttle({ default: { limit: 5, ttl: 60000 } })
     @Post(':id/generate')
     generate(@Request() req: AuthenticatedRequest, @Param('id') id: string, @Body() body: GenerateTreeDto) {
-        if (req.user?.isGuest) {
-            throw new ForbiddenException('Guest users cannot use AI features.');
-        }
+        if (req.user?.isGuest) throw new ForbiddenException('Guest users cannot use AI features.');
         return this.treesService.generateSkillTree(req.user.id, id, body.prompt);
     }
 
@@ -36,9 +36,7 @@ export class TreesController {
     @Throttle({ default: { limit: 5, ttl: 60000 } })
     @Post(':id/batch/descriptions')
     queueDescriptionBatch(@Request() req: AuthenticatedRequest, @Param('id') id: string, @Body() body: BatchDescriptionsDto) {
-        if (req.user?.isGuest) {
-            throw new ForbiddenException('Guest users cannot use AI features.');
-        }
+        if (req.user?.isGuest) throw new ForbiddenException('Guest users cannot use AI features.');
         return this.batchGenerationService.queueNodeDescriptionGeneration(req.user.id, id, body?.nodeIds);
     }
 
@@ -61,6 +59,12 @@ export class TreesController {
     }
 
     @UseGuards(JwtAuthGuard)
+    @Get('my/view-stats')
+    getMyViewStats(@Request() req: AuthenticatedRequest) {
+        return this.treesService.getProfileViewStats(req.user.id);
+    }
+
+    @UseGuards(JwtAuthGuard)
     @Get(':id')
     findOne(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
         return this.treesService.findOne(req.user.id, id);
@@ -72,8 +76,12 @@ export class TreesController {
     }
 
     @Get('profile/:handle')
-    getPublicProfile(@Param('handle') handle: string) {
-        return this.treesService.getPublicProfile(handle);
+    getPublicProfile(@Param('handle') handle: string, @Req() req: ExpressRequest) {
+        const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim()
+            ?? req.socket?.remoteAddress
+            ?? '';
+        const ipHash = ip ? createHash('sha256').update(ip).digest('hex').slice(0, 16) : undefined;
+        return this.treesService.getPublicProfile(handle, ipHash);
     }
 
     @UseGuards(JwtAuthGuard)

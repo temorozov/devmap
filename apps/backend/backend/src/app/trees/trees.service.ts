@@ -45,8 +45,8 @@ export class TreesService {
         return tree;
     }
 
-    async getPublicProfile(handle: string) {
-        // Accept handle OR githubUsername so /u/githubUsername always works
+    async getPublicProfile(handle: string, viewerIpHash?: string) {
+        // Accept handle OR githubUsername so /u/githubUsername always resolves
         const user = await this.prisma.user.findFirst({
             where: { OR: [{ handle }, { githubUsername: handle }] },
             select: {
@@ -64,19 +64,56 @@ export class TreesService {
         });
         if (!user) throw new NotFoundException('Profile not found');
 
+        // Record profile view — deduplicate same IP within 24h
+        const oneDayAgo = new Date(Date.now() - 86400_000);
+        const alreadyViewed = viewerIpHash
+            ? await this.prisma.profileView.findFirst({
+                where: { userId: user.id, viewerIpHash, createdAt: { gte: oneDayAgo } },
+              })
+            : null;
+
+        if (!alreadyViewed) {
+            await this.prisma.profileView.create({
+                data: { userId: user.id, viewerIpHash: viewerIpHash ?? null },
+            });
+        }
+
+        // View stats
+        const now = new Date();
+        const weekAgo = new Date(now.getTime() - 7 * 86400_000);
+        const twoWeeksAgo = new Date(now.getTime() - 14 * 86400_000);
+
+        const [viewsThisWeek, viewsLastWeek, viewsTotal] = await Promise.all([
+            this.prisma.profileView.count({ where: { userId: user.id, createdAt: { gte: weekAgo } } }),
+            this.prisma.profileView.count({ where: { userId: user.id, createdAt: { gte: twoWeeksAgo, lt: weekAgo } } }),
+            this.prisma.profileView.count({ where: { userId: user.id } }),
+        ]);
+
         const devMap = user.trees[0] ?? null;
         const verifiedCount = devMap?.nodes.filter((n: { verified: boolean }) => n.verified).length ?? 0;
         const totalNodes = devMap?.nodes.length ?? 0;
 
         return {
-            handle: user.handle,
+            handle: user.handle ?? user.githubUsername,
             name: user.name,
             githubUsername: user.githubUsername,
             memberSince: user.createdAt,
             verifiedSkills: verifiedCount,
             totalSkills: totalNodes,
             devMap,
+            views: { thisWeek: viewsThisWeek, lastWeek: viewsLastWeek, total: viewsTotal },
         };
+    }
+
+    async getProfileViewStats(userId: string) {
+        const weekAgo = new Date(Date.now() - 7 * 86400_000);
+        const twoWeeksAgo = new Date(Date.now() - 14 * 86400_000);
+        const [thisWeek, lastWeek, total] = await Promise.all([
+            this.prisma.profileView.count({ where: { userId, createdAt: { gte: weekAgo } } }),
+            this.prisma.profileView.count({ where: { userId, createdAt: { gte: twoWeeksAgo, lt: weekAgo } } }),
+            this.prisma.profileView.count({ where: { userId } }),
+        ]);
+        return { thisWeek, lastWeek, total };
     }
 
     async update(userId: string, id: string, title: string) {

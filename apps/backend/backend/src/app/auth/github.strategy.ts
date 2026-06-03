@@ -12,7 +12,7 @@ export class GitHubStrategy extends PassportStrategy(Strategy, 'github') {
             clientID: getEnv('GITHUB_CLIENT_ID'),
             clientSecret: getEnv('GITHUB_CLIENT_SECRET'),
             callbackURL: getEnv('GITHUB_CALLBACK_URL'),
-            scope: ['read:user', 'user:email', 'public_repo'],
+            scope: ['read:user', 'user:email', 'public_repo', 'admin:repo_hook'],
         });
     }
 

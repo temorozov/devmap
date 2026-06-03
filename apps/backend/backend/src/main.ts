@@ -28,7 +28,7 @@ function expandCorsOrigins(origins: string[]): string[] {
 }
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { rawBody: true });
   const globalPrefix = 'api';
   const port = Number(getEnv('PORT'));
   const backendUrl = getEnv('BACKEND_URL');

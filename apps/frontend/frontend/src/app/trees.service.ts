@@ -3,6 +3,12 @@ import { HttpClient } from '@angular/common/http';
 import { appRuntimeConfig } from './app-config';
 import { SkillNode } from './nodes.service';
 
+export interface ProfileViewStats {
+  thisWeek: number;
+  lastWeek: number;
+  total: number;
+}
+
 export interface PublicProfile {
   handle: string;
   name: string | null;
@@ -11,6 +17,7 @@ export interface PublicProfile {
   verifiedSkills: number;
   totalSkills: number;
   devMap: Tree | null;
+  views?: ProfileViewStats;
 }
 
 export interface Tree {
@@ -68,5 +75,9 @@ export class TreesService {
       `${appRuntimeConfig.apiUrl}/github/sync`,
       {},
     );
+  }
+
+  getViewStats() {
+    return this.http.get<ProfileViewStats>(`${this.apiUrl}/my/view-stats`);
   }
 }
