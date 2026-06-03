@@ -2,107 +2,117 @@
 
 ## Product
 
-Skill Tree is a web app for creating visual learning trees. Users can create trees, add and edit skill nodes, track node progress, open a demo tree, share trees by token, and generate tree branches with AI. Guest users can enter the app, but AI generation endpoints reject guest users.
+**DevMap** is a GitHub-verified developer skill map. Users connect GitHub, DevMap scans their repos and builds a public profile at `/u/handle` showing which technologies they've actually shipped — verified from `package.json`, Dockerfiles, CI workflows, and more.
 
-## Целевая аудитория
-Люди которые хотят изучить новую сферу , которым нужен интерактивный и простой roadmap , и важен процесс геймификации развития . Проблемы которые решает сайт: .Они не знают с чего начать, в обычных роадмапах все сложно и непонятно, хочется простой и игровой вариант
+The core loop:
+1. User connects GitHub → repos scanned → "My Dev Map" tree built with verified nodes
+2. Profile is public at `/u/handle` — shareable link, OG preview for Slack/Twitter
+3. Webhooks auto-sync the map on every push, without user action
+4. Weekly email digest and skills-updated email bring users back
+5. README badge and explore page drive organic acquisition
 
 ## Stack
 
 - Monorepo: Nx
 - Package manager: npm (`package-lock.json`)
-- Frontend: Angular 18, standalone components, SCSS, Jest, Playwright e2e
-- Backend: NestJS 10, Jest
+- Frontend: Angular 18, standalone components, SCSS, OnPush change detection
+- Backend: NestJS 10
 - Database: PostgreSQL + Prisma 7 with `@prisma/adapter-pg`
+- Email: Resend (`RESEND_API_KEY`)
 - Runtime/deploy: Docker Compose, nginx for frontend
+
+## Frontend Routes
+
+| Path | Component | Notes |
+|------|-----------|-------|
+| `/` | `LandingComponent` | Marketing page, shows Dashboard CTA when logged in |
+| `/login` | `LoginComponent` | GitHub OAuth primary, Google/Discord optional |
+| `/dashboard` | `DashboardComponent` | Trees list, GitHub sync, skill gap tracker, badge modal |
+| `/tree/:id` | `CanvasComponent` | Interactive skill map editor |
+| `/u/:handle` | `ProfileComponent` | Public profile with verified skills, target role, view stats |
+| `/explore` | `ExploreComponent` | Discovery feed of recently active devs |
 
 ## Frontend Structure
 
-- App root: `apps/frontend/frontend`
-- Routes: `login`, `dashboard`, `tree/:id`
-- Main areas:
-  - `login/login`: guest, Google, and Discord login UI
-  - `dashboard/dashboard`: tree list, create/delete, share link, demo tree entry
-  - `canvas/canvas`: visual skill tree editor, AI prompt modal, node interactions
-  - `canvas/activity-calendar`: activity display
-  - `shared/services/i18n.service.ts`: English/Russian/Ukrainian UI strings
-  - `shared/components/dialog`: app dialog UI
-- API URLs come from runtime `app-config.js`, generated in the frontend container from env vars. Local fallback uses the browser origin when runtime config is absent.
+- App root: `apps/frontend/frontend/src/app`
+- `auth.service.ts` — JWT storage, `isGuest$`, `handle$`, `githubUsername$`, `loadMe()`
+- `trees.service.ts` — tree/profile/badge/explore/stats API client
+- `nodes.service.ts` — node CRUD
+- `app-config.ts` — reads runtime `app-config.js` for API URL
+- `shared/data/role-profiles.ts` — target role definitions (required/nice-to-have skills)
+- `shared/data/demo-sample.ts` — demo tree ID
 
-## Backend Structure
+## Backend Modules
 
-- App root: `apps/backend/backend`
-- Main modules:
-  - `auth`: guest auth, Google OAuth, Discord OAuth, JWT auth
-  - `trees`: tree CRUD, shared tree lookup, AI generation, OpenAI batch jobs
-  - `nodes`: node CRUD and activity recording
-  - `prisma`: Prisma client service
-  - `email`: Resend-backed email service
-- Backend uses global API prefix: `/api`.
-- CORS origins and public URLs are read from env.
+| Module | Path | Responsibility |
+|--------|------|----------------|
+| `auth` | `src/app/auth` | GitHub/Google/Discord OAuth, guest auth, JWT |
+| `trees` | `src/app/trees` | Tree CRUD, public profile, view counter, badge SVG, OG page, explore, skill gap |
+| `nodes` | `src/app/nodes` | Node CRUD |
+| `github` | `src/app/github` | GitHub API sync, webhook receiver |
+| `email` | `src/app/email` | Weekly digest cron, skills-updated email (Resend) |
+| `prisma` | `src/app/prisma` | Prisma client service |
 
-## Database Overview
+Backend global prefix: `/api`
 
-Prisma schema lives in `prisma/schema.prisma`; migrations live in `prisma/migrations`.
+## Database Schema (key models)
 
-Main entities:
+- `User` — handle, githubUsername, githubAccessToken, targetRole, email, isGuest
+- `Tree` — user-owned skill map with sharedToken
+- `Node` — skill node: title, verified, source, evidence (JSON), icon, position
+- `GitHubScan` — scan history with `summary` JSON (used for skills-updated diff)
+- `GitHubWebhook` — registered webhook per repo (userId, repoFullName, webhookId)
+- `ProfileView` — view log with viewerIpHash for 24h dedup
+- `AiBatchJob` — OpenAI batch jobs for node description generation
 
-- `User`: guest/OAuth users, optional email, Google ID, Discord ID
-- `Tree`: user-owned skill tree with optional `sharedToken`
-- `Node`: tree node with parent/child links, title, description, icon, position, progress, level, max level
-- `TreeActivity`: per-tree daily activity counts
-- `AiBatchJob`: tracks OpenAI batch jobs for background node description generation
+## GitHub Sync Flow
 
-The short-lived `Node.requirements` field was removed: migration `20260602000000_drop_node_requirements` drops the column so the schema and database stay in sync.
+1. User hits "Sync GitHub" → `POST /api/github/sync`
+2. `GitHubSyncService.syncUserDevMap(userId)` fetches repos via GitHub API
+3. `detectTechnologies()` reads package.json, Dockerfiles, CI files
+4. Upserts nodes in "My Dev Map" tree as verified
+5. Saves `GitHubScan` record with summary
+6. Diffs against previous scan — if new skills found and user has email, sends skills-updated email
+7. Registers webhooks on detected repos (requires `admin:repo_hook` scope + `GITHUB_WEBHOOK_SECRET` + non-localhost `BACKEND_URL`)
 
-## AI Generation Flow
+Webhook flow: GitHub `push` event → `POST /api/github/webhook` → HMAC-SHA256 verification → `syncByRepo(repoFullName)` → full sync for that user
 
-Frontend flow:
+## Key Env Vars
 
-- `CanvasComponent` opens the AI prompt modal.
-- `TreesService.generateTree()` posts to `/api/trees/:id/generate`.
+```
+# Required
+JWT_SECRET
+DATABASE_URL
+FRONTEND_URL
+BACKEND_URL
+GITHUB_CLIENT_ID
+GITHUB_CLIENT_SECRET
+GITHUB_CALLBACK_URL
 
-Backend flow:
+# Webhook (optional but needed for auto-sync)
+GITHUB_WEBHOOK_SECRET
 
-- `TreesController.generate()` requires JWT auth and rejects guest users.
-- `TreesService.generateSkillTree()` verifies tree ownership.
-- `AiService.generateSkillTree()` calls OpenAI Responses API.
-- The expected AI response is a JSON array of skills:
-  - `title`
-  - `description`
-  - `icon`
-  - `parentIndex`
-  - optional `youtubeSearchQuery`
-- Optional YouTube enrichment appends a recommended video link to the description when `YOUTUBE_API_KEY` is set.
-- Generated skills are saved as `Node` rows in a Prisma transaction.
-- Node positions are calculated by depth and sibling count.
+# Email (optional — features degrade gracefully without it)
+RESEND_API_KEY
 
-There is also a separate background flow in `BatchGenerationService`:
+# AI generation (optional)
+OPENAI_API_KEY
+AI_OPENAI_MODEL
+AI_BATCH_OPENAI_MODEL
 
-- `POST /api/trees/:id/batch/descriptions`
-- creates JSONL requests for existing nodes
-- uploads them to OpenAI Files
-- creates an OpenAI Batch for `/v1/responses`
-- syncs/applies results through `/api/trees/batch-jobs/:jobId/sync`
+# Optional OAuth providers
+GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET / GOOGLE_CALLBACK_URL
+DISCORD_CLIENT_ID / DISCORD_CLIENT_SECRET / DISCORD_CALLBACK_URL
+```
 
-## Docker And Deploy Notes
+## Important Behavioral Details
 
-- Dev entry: `npm run dev` or `npm run dev:up`
-- Dev stop: `npm run dev:down`
-- Prod entry: `npm run prod` or `./deploy.sh`
-- Prod stop: `npm run prod:down`
-- Dev uses `docker-compose.yml` plus `docker-compose.dev.yml`.
-- Prod uses only `docker-compose.yml`.
-- `docker-compose.dev.yml` exposes Postgres through `POSTGRES_PORT`.
-- Backend container runs `prisma migrate deploy` before starting `node main.js`.
-- Frontend container serves Angular build through nginx.
-- `app-config.js` is generated at container startup and is configured with no aggressive cache.
-- Real `.env` and `.env.production` files are gitignored; templates are `.env.example` and `.env.production.example`.
-
-## Confusing Or Important Parts
-
-- AI generation uses OpenAI only. Gemini code and config were removed; env examples list `OPENAI_API_KEY`, `AI_OPENAI_MODEL`, and `AI_BATCH_OPENAI_MODEL`.
-- Production example defaults `AI_OPENAI_MODEL` to `gpt-5.4-nano`; batch description generation uses `AI_BATCH_OPENAI_MODEL`.
-- OAuth env values are optional; missing Google/Discord values should not prevent backend startup, but those login routes will not work.
-- Shared tree route is `tree/:id` in the frontend; the component tries authenticated tree fetch first, then falls back to shared-token lookup.
-- `dev-up.sh` and `dev-down.sh` contain extra logic for hosts where Docker denies normal stop/kill operations.
+- Frontend reads `API_URL` from runtime `app-config.js` — never hardcode hosts.
+- Backend reads all config from env via helpers in `src/app/config`.
+- GitHub OAuth scope includes `admin:repo_hook` for webhook registration. Users who authed before this scope was added need to re-auth.
+- `rawBody: true` in `NestFactory.create()` — required for HMAC webhook verification.
+- Profile view counter deduplicates by hashed IP within a 24h window.
+- Weekly email digest runs via `@Cron('0 9 * * 1')` (Monday 9am UTC). Skipped if no `RESEND_API_KEY`.
+- Skills-updated email fires only on re-syncs (not first sync) and only when new skills are detected.
+- OG endpoint (`GET /api/trees/og/:handle`) is for social crawlers — configure Nginx to route Twitterbot/Slackbot there.
+- `targetRole` is stored in DB and shown on public profile as a role badge + progress bar.

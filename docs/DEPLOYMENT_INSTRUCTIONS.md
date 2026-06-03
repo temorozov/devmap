@@ -1,71 +1,118 @@
-# Прод-запуск на VPS
+# Deployment Instructions
 
-## 1. Подготовка env
+## 1. Prepare env file
 
-На сервере создай локальный env-файл на основе шаблона:
+On the server, create a production env file from the template:
 
 ```bash
 cp .env.production.example .env.production
 ```
 
-Заполни в `.env.production` как минимум:
+Fill in all required variables:
 
-- `FRONTEND_URL`
-- `FRONTEND_PORT`
-- `BACKEND_URL`
-- `BACKEND_PORT`
-- `PORT`
-- `API_URL`
-- `CORS_ORIGINS`
-- `POSTGRES_DB`
-- `POSTGRES_USER`
-- `POSTGRES_PASSWORD`
-- `DATABASE_URL`
-- `JWT_SECRET`
+```
+# App URLs
+FRONTEND_URL=https://yourdomain.com
+BACKEND_URL=https://yourdomain.com/api
+FRONTEND_PORT=80
+BACKEND_PORT=3000
+PORT=3000
+API_URL=https://yourdomain.com/api
+CORS_ORIGINS=https://yourdomain.com
 
-OAuth и email-интеграции теперь опциональны: если не заполнить Google / Discord переменные,
-backend все равно поднимется, но эти способы входа будут недоступны.
+# Database
+POSTGRES_DB=skill_tree
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=<strong-password>
+DATABASE_URL=postgresql://postgres:<password>@postgres:5432/skill_tree?schema=public
 
-## 2. Запуск
+# Auth
+JWT_SECRET=<random-256-bit-hex>
 
-Рекомендуемый способ:
+# GitHub OAuth (required for login)
+GITHUB_CLIENT_ID=
+GITHUB_CLIENT_SECRET=
+GITHUB_CALLBACK_URL=https://yourdomain.com/api/auth/github/callback
+
+# GitHub Webhooks (required for auto-sync on push)
+GITHUB_WEBHOOK_SECRET=<random-hex>
+
+# Email (optional — digest and skills-updated emails)
+RESEND_API_KEY=
+
+# AI generation (optional)
+OPENAI_API_KEY=
+AI_OPENAI_MODEL=gpt-4o-mini
+AI_BATCH_OPENAI_MODEL=gpt-4o-mini
+
+# Optional OAuth providers
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GOOGLE_CALLBACK_URL=https://yourdomain.com/api/auth/google/callback
+DISCORD_CLIENT_ID=
+DISCORD_CLIENT_SECRET=
+DISCORD_CALLBACK_URL=https://yourdomain.com/api/auth/discord/callback
+```
+
+Optional integrations degrade gracefully — missing `RESEND_API_KEY` skips emails, missing `OPENAI_API_KEY` disables AI generation, missing Google/Discord vars disable those login methods.
+
+## 2. Deploy
 
 ```bash
 ./deploy.sh
 ```
 
-Что делает скрипт:
+The script:
+- validates required variables in `.env.production`
+- checks `docker compose` config
+- builds and starts containers
+- runs `prisma migrate deploy` automatically
 
-- валидирует `.env.production`
-- проверяет итоговый `docker compose` конфиг
-- собирает и поднимает контейнеры
-- автоматически накатывает Prisma migrations через `prisma migrate deploy`
+You can also pass a custom env file:
+```bash
+./deploy.sh /path/to/custom.env
+```
 
-## 3. Полезные команды
+## 3. Useful commands
 
 ```bash
-./deploy.sh
+# Start / stop
 npm run prod
 npm run prod:down
+
+# Logs
 docker compose --env-file .env.production -f docker-compose.yml logs -f
+
+# Status
 docker compose --env-file .env.production -f docker-compose.yml ps
 ```
 
-## 4. Если backend не подключается к PostgreSQL
+## 4. If backend can't connect to PostgreSQL
 
-Если в логах есть Prisma `P1000: Authentication failed`, а пароль уже исправлен в `.env.production`,
-скорее всего раньше был создан старый Docker volume с другим паролем.
-
-В таком случае можно пересоздать базу:
+Prisma `P1000: Authentication failed` after a password change usually means an old Docker volume has the old password.
 
 ```bash
 npm run prod:recreate-db
 ```
 
-Важно: команда удалит текущий volume PostgreSQL и поднимет пустую базу заново.
+**Warning:** this drops the PostgreSQL volume and starts with an empty database.
 
-## 5. Важные замечания
+## 5. Nginx config for OG/social previews
 
-- Реальные `.env` и `.env.production` больше не должны храниться в git.
-- `app-config.js` отдается без агрессивного кэша, поэтому frontend подхватывает новые URL сразу после деплоя.
-- В `prod` PostgreSQL наружу не публикуется и остается только внутри Docker-сети.
+To make Slack/Twitter link previews work, route social crawlers to the backend OG endpoint:
+
+```nginx
+location ~* ^/u/(.+)$ {
+    if ($http_user_agent ~* "Twitterbot|Slackbot|facebookexternalhit|LinkedInBot|TelegramBot") {
+        proxy_pass http://backend:3000/api/trees/og/$1;
+    }
+    try_files $uri /index.html;
+}
+```
+
+## 6. Notes
+
+- `.env` and `.env.production` are gitignored — never commit them.
+- `app-config.js` is generated at container startup with no aggressive cache, so frontend picks up new URLs after redeploy immediately.
+- PostgreSQL is not exposed externally in production — it stays inside the Docker network.
+- The `@Cron('0 9 * * 1')` weekly digest runs inside the backend container — no external cron needed.
