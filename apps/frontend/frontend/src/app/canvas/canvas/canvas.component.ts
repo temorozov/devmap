@@ -86,9 +86,8 @@ export class CanvasComponent implements OnInit, AfterViewInit {
   readonly defaultMaxLevel = DEFAULT_MAX_LEVEL;
   readonly mapFilterOptions: Array<{ value: NodeStatusFilter; labelKey: string; className: string }> = [
     { value: 'all', labelKey: 'canvas.filterAll', className: 'filter-all' },
-    { value: 'status-not-started', labelKey: 'canvas.filterNotStarted', className: 'status-not-started' },
-    { value: 'status-in-progress', labelKey: 'canvas.filterInProgress', className: 'status-in-progress' },
-    { value: 'status-completed', labelKey: 'canvas.filterCompleted', className: 'status-completed' },
+    { value: 'status-completed', labelKey: 'canvas.filterVerified', className: 'status-completed' },
+    { value: 'status-not-started', labelKey: 'canvas.filterUnverified', className: 'status-not-started' },
   ];
   statusFilter: NodeStatusFilter = 'all';
   private hoverTooltipTimer: ReturnType<typeof setTimeout> | null = null;
@@ -140,39 +139,19 @@ export class CanvasComponent implements OnInit, AfterViewInit {
   }
 
   get panelStatusKey(): string {
-    if (this.panelLevel <= 0) {
-      return 'canvas.statusNotStarted';
-    }
-
-    if (this.panelLevel >= this.panelMaxLevel) {
-      return 'canvas.statusCompleted';
-    }
-
-    return 'canvas.statusInProgress';
+    return this.editNodeData.verified ? 'canvas.statusVerified' : 'canvas.statusUnverified';
   }
 
   get panelStatusClass(): string {
-    if (this.panelLevel <= 0) {
-      return 'status-not-started';
-    }
-
-    if (this.panelLevel >= this.panelMaxLevel) {
-      return 'status-completed';
-    }
-
-    return 'status-in-progress';
+    return this.editNodeData.verified ? 'status-completed' : 'status-not-started';
   }
 
-  getNodeStatusClass(node: Pick<SkillNode, 'level' | 'maxLevel'>): NodeStatusClass {
+  getNodeStatusClass(node: Pick<SkillNode, 'level' | 'maxLevel' | 'verified'>): NodeStatusClass {
     return this.focusService.getNodeStatusClass(node);
   }
 
-  getNodeStatusKey(node: Pick<SkillNode, 'level' | 'maxLevel'>): string {
-    const level = Math.max(0, Number(node.level) || 0);
-    const maxLevel = Number(node.maxLevel) > 0 ? Number(node.maxLevel) : DEFAULT_MAX_LEVEL;
-    if (level <= 0) return 'canvas.statusNotStarted';
-    if (level >= maxLevel) return 'canvas.statusCompleted';
-    return 'canvas.statusInProgress';
+  getNodeStatusKey(node: Pick<SkillNode, 'verified'>): string {
+    return node.verified ? 'canvas.statusVerified' : 'canvas.statusUnverified';
   }
 
   // AI Generation State
@@ -866,15 +845,8 @@ export class CanvasComponent implements OnInit, AfterViewInit {
     return this.nodes.filter(node => this.getNodeStatusClass(node) === this.statusFilter);
   }
 
-  get totalProgress(): number {
-    if (!this.nodes || this.nodes.length === 0) return 0;
-    let totalLevel = 0;
-    let totalMaxLevel = 0;
-    for (const node of this.nodes) {
-      totalLevel += node.level || 0;
-      totalMaxLevel += node.maxLevel || DEFAULT_MAX_LEVEL;
-    }
-    return totalMaxLevel === 0 ? 0 : Math.round((totalLevel / totalMaxLevel) * 100);
+  get verifiedCount(): number {
+    return this.nodes.filter(n => n.verified).length;
   }
 
   get isEmptyTree(): boolean {

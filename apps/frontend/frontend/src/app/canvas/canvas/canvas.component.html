@@ -26,46 +26,18 @@
             <div *ngIf="loading" class="loading-indicator">
                 <span class="material-icons spinning">refresh</span>
             </div>
-            <div class="tree-progress" *ngIf="!loading">
-                <div class="progress-bar-container" [title]="i18n.t('canvas.branchMastery')">
-                    <div class="progress-fill" [style.width.%]="totalProgress"></div>
-                </div>
-                <span>{{ totalProgress }}%</span>
+            <div class="tree-stats" *ngIf="!loading && nodes.length > 0">
+                <span class="tree-stat-verified">{{ verifiedCount }}</span>
+                <span class="tree-stat-label">verified</span>
+                <span class="tree-stat-sep">·</span>
+                <span class="tree-stat-total">{{ nodes.length }}</span>
+                <span class="tree-stat-label">total</span>
             </div>
         </div>
 
     </header>
 
     <div class="canvas-side-panel" *ngIf="!loading && !isEmptyTree">
-        <section class="insight-card glass-panel">
-            <div class="insight-card-header">
-                <span class="detail-label">{{ i18n.t('canvas.closestGoal') }}</span>
-            </div>
-
-            <div class="insight-primary-line">
-                <div class="insight-title">{{ nextFocus.title }}</div>
-                <p class="insight-description">
-                    {{ primaryFocusItem ? primaryFocusItem.title + ' · ' + primaryFocusItem.meta : nextFocus.description }}
-                </p>
-                <div class="insight-mini-progress">
-                    <div class="insight-mini-progress-fill" [style.width.%]="primaryFocusProgressPercent"></div>
-                </div>
-            </div>
-
-            <div class="insight-footer">
-                <div class="insight-footer-copy">
-                    <ng-container *ngIf="currentStreak > 1">
-                        <span class="insight-metric streak">
-                            <span class="material-icons insight-metric-icon">local_fire_department</span>
-                            <span>{{ i18n.t('canvas.calendarStreak', { count: currentStreak }) }}</span>
-                        </span>
-                        <span class="insight-footer-separator">·</span>
-                    </ng-container>
-                    <span class="insight-metric">{{ i18n.t('canvas.calendarActiveDaysCompact', { count: activeDaysThisMonth }) }}</span>
-                </div>
-            </div>
-        </section>
-
         <div class="map-filters glass-panel">
             <div class="map-filter-controls">
                 <button
@@ -193,7 +165,7 @@
 
                     <circle class="progress-ring-bg" cx="0" cy="0" r="40" />
                     <circle class="progress-ring-fill" cx="0" cy="0" r="40" stroke-dasharray="251.32"
-                        [attr.stroke-dashoffset]="251.32 - (251.32 * (node.level || 0) / (node.maxLevel || defaultMaxLevel))" />
+                        [attr.stroke-dashoffset]="node.verified ? 0 : 251.32" />
 
                     <text class="material-icons node-icon" x="0" y="0" text-anchor="middle" dominant-baseline="central">
                         {{ node.icon || 'code' }}
@@ -240,8 +212,12 @@
                                     <span class="status-pill tooltip-status-pill" [ngClass]="getNodeStatusClass(hoveredNode)">
                                         {{ i18n.t(getNodeStatusKey(hoveredNode)) }}
                                     </span>
-                                    <span class="tooltip-level-badge">
-                                        {{ i18n.t('canvas.level') }} {{ hoveredNode.level || 0 }} / {{ hoveredNode.maxLevel || defaultMaxLevel }}
+                                    <span class="tooltip-source-badge" *ngIf="hoveredNode.source === 'github'">
+                                        <span class="material-icons" style="font-size:0.72rem">hub</span>
+                                        GitHub
+                                    </span>
+                                    <span class="tooltip-source-badge tooltip-source-manual" *ngIf="hoveredNode.source !== 'github'">
+                                        Manual
                                     </span>
                                 </div>
                             </div>
@@ -255,7 +231,7 @@
 
     <aside class="properties-panel glass-panel" [class.open]="showProperties" (pointerdown)="$event.stopPropagation()">
         <div class="panel-header">
-            <h3>{{ i18n.t('canvas.nodeProperties') }}</h3>
+            <h3>{{ i18n.t('canvas.nodeDetails') }}</h3>
             <button class="icon-btn" (click)="showProperties = false; editingDescription = false">
                 <span class="material-icons">close</span>
             </button>
@@ -278,6 +254,10 @@
 
                         <div class="overview-meta">
                             <span class="status-pill" [ngClass]="panelStatusClass">{{ i18n.t(panelStatusKey) }}</span>
+                            <span class="panel-source-badge" *ngIf="editNodeData.source === 'github'">
+                                <span class="material-icons" style="font-size:0.7rem">hub</span>
+                                GitHub
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -302,7 +282,6 @@
                 <div class="detail-block-header">
                     <span class="detail-label">{{ i18n.t('canvas.icon') }}</span>
                 </div>
-
                 <div class="icon-grid">
                     <button *ngFor="let icon of availableIcons" class="icon-select-btn"
                         [class.active]="editNodeData.icon === icon.name"
@@ -310,35 +289,20 @@
                         <span class="material-icons">{{ icon.name }}</span>
                     </button>
                 </div>
-
-                <div class="settings-divider"></div>
-
-                <div class="form-group row-group">
-                    <div class="half-width">
-                        <label class="detail-label" for="nodeLevelInput">{{ i18n.t('canvas.level') }}</label>
-                        <div class="level-stepper">
-                            <button type="button" class="stepper-btn" (click)="adjustSelectedNodeLevel(-1)" [attr.aria-label]="i18n.t('canvas.levelDown')">
-                                <span class="material-icons">remove</span>
-                            </button>
-                            <input id="nodeLevelInput" class="detail-input" type="number" min="0" [max]="editNodeData.maxLevel || defaultMaxLevel"
-                                [(ngModel)]="editNodeData.level" (ngModelChange)="saveNodeProperties()">
-                            <button type="button" class="stepper-btn" (click)="adjustSelectedNodeLevel(1)" [attr.aria-label]="i18n.t('canvas.levelUp')">
-                                <span class="material-icons">add</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="half-width">
-                        <label class="detail-label" for="nodeMaxLevelInput">{{ i18n.t('canvas.maxLevel') }}</label>
-                        <input id="nodeMaxLevelInput" class="detail-input" type="number" min="1" [(ngModel)]="editNodeData.maxLevel"
-                            (ngModelChange)="saveNodeProperties()">
-                    </div>
-                </div>
             </section>
 
-            <p class="panel-note">
-                {{ i18n.t('canvas.nodeHint') }}
-            </p>
+            <section class="detail-block evidence-block" *ngIf="editNodeData.evidence && editNodeData.evidence.length > 0">
+                <div class="detail-block-header">
+                    <span class="detail-label">{{ i18n.t('canvas.evidence') }}</span>
+                </div>
+                <div class="evidence-list">
+                    <a *ngFor="let ev of editNodeData.evidence" [href]="ev.url" target="_blank" rel="noopener" class="evidence-item">
+                        <span class="material-icons" style="font-size:0.85rem;flex-shrink:0">open_in_new</span>
+                        <span class="evidence-repo">{{ ev.repo }}</span>
+                        <span class="evidence-type">{{ ev.evidence }}</span>
+                    </a>
+                </div>
+            </section>
 
             <div class="actions">
                 <button class="btn-secondary block w-full text-danger border-danger danger-action" (click)="deleteNode()">

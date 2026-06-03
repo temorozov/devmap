@@ -21,12 +21,8 @@ const DEFAULT_MAX_LEVEL = 3;
 @Injectable({ providedIn: 'root' })
 export class CanvasFocusService {
 
-  getNodeStatusClass(node: Pick<SkillNode, 'level' | 'maxLevel'>): NodeStatusClass {
-    const level = Math.max(0, Number(node.level) || 0);
-    const maxLevel = Number(node.maxLevel) > 0 ? Number(node.maxLevel) : DEFAULT_MAX_LEVEL;
-    if (level <= 0) return 'status-not-started';
-    if (level >= maxLevel) return 'status-completed';
-    return 'status-in-progress';
+  getNodeStatusClass(node: Pick<SkillNode, 'level' | 'maxLevel' | 'verified'>): NodeStatusClass {
+    return node.verified ? 'status-completed' : 'status-not-started';
   }
 
   getNodeLevel(node: Pick<SkillNode, 'level'>): number {
