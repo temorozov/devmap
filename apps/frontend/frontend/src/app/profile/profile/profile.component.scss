@@ -77,6 +77,68 @@
   &:hover { background: var(--bg-elevated); color: var(--text); }
 }
 
+.share-btn-primary {
+  background: var(--accent);
+  border-color: var(--accent-fg);
+  color: #fff;
+
+  &:hover { background: var(--cta-hover); color: #fff; }
+}
+
+/* ── Prominent action bar ── */
+.profile-actionbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.pa-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.1rem;
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+  white-space: nowrap;
+}
+
+.pa-share {
+  background: var(--accent);
+  border: 1px solid var(--accent-fg);
+  color: #fff;
+  flex: 1;
+  min-width: 180px;
+
+  &:hover {
+    background: var(--cta-hover);
+    box-shadow: 0 0 0 3px rgba(63,185,80,0.15);
+  }
+}
+
+.pa-compare {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text);
+
+  &:hover { background: var(--bg-elevated); border-color: var(--text-muted); }
+}
+
+.pa-github {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+
+  &:hover { background: var(--bg-card); color: var(--text); }
+}
+
+@media (max-width: 640px) {
+  .pa-share { flex-basis: 100%; }
+}
+
 /* ── PAGE STATE ── */
 .page-state {
   display: flex;

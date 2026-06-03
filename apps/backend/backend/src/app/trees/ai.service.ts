@@ -18,6 +18,11 @@ const DEFAULT_YOUTUBE_REQUEST_TIMEOUT_MS = 2500;
 const DEFAULT_PROVIDER_RETRY_COUNT = 1;
 const DEFAULT_PROVIDER_RETRY_DELAY_MS = 1200;
 const OPENAI_SKILL_TREE_PROMPT_CACHE_KEY = 'skill-tree:generate:v1';
+const JD_SKILL_PROMPT_CACHE_KEY = 'jd-skill-extract:v1';
+
+const JD_SKILL_SYSTEM_INSTRUCTIONS = `You extract the concrete technical skills and technologies a software job requires.
+Translate role descriptions into specific technologies. For example: "AI/ML engineer" implies Python, TensorFlow, PyTorch; "full-stack developer" implies React, Node.js, TypeScript; "DevOps" implies Docker, Kubernetes, AWS, CI/CD.
+Return ONLY a JSON array of strings, each chosen EXACTLY (same spelling and casing) from the provided allowed list. Include a skill only when the job description reasonably implies it. No prose, no markdown, no code fences.`;
 
 const SKILL_TREE_SYSTEM_INSTRUCTIONS = `You are an AI assistant that generates a skill tree based on user input.
 Return only valid JSON with no markdown, prose, or code fences.`;
@@ -166,6 +171,78 @@ export class AiService {
     return `User-specific context (changes on every request):
 User prompt:
 ${prompt}`;
+  }
+
+  /**
+   * Extracts the concrete required skills implied by a free-text job description,
+   * constrained to a known list of canonical skill titles. Returns [] when AI is
+   * not configured or the request fails, so callers can fall back to literal matching.
+   */
+  async extractJobSkills(jdText: string, allowedTitles: string[]): Promise<string[]> {
+    if (!this.openAiApiKey || !jdText.trim() || allowedTitles.length === 0) {
+      return [];
+    }
+
+    try {
+      const response = await axios.post<OpenAiResponsesApiResponse>(
+        'https://api.openai.com/v1/responses',
+        {
+          model: this.openAiModel,
+          temperature: 0.1,
+          instructions: JD_SKILL_SYSTEM_INSTRUCTIONS,
+          prompt_cache_key: JD_SKILL_PROMPT_CACHE_KEY,
+          input: [
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'input_text',
+                  text: `Allowed skill titles (return only exact strings from this list):\n${allowedTitles.join(', ')}`,
+                },
+                {
+                  type: 'input_text',
+                  text: `Job description:\n${jdText.slice(0, 6000)}`,
+                },
+              ],
+            },
+          ],
+        },
+        {
+          timeout: this.requestTimeoutMs,
+          headers: {
+            Authorization: `Bearer ${this.openAiApiKey}`,
+            'Content-Type': 'application/json',
+          },
+        },
+      );
+
+      this.logOpenAiUsage(this.openAiModel, response.data);
+
+      const content = extractOpenAiResponseText(response.data);
+      if (typeof content !== 'string' || !content.trim()) {
+        return [];
+      }
+
+      const allowed = new Set(allowedTitles);
+      return this.parseStringArray(content).filter((title) => allowed.has(title));
+    } catch (error) {
+      this.logger.warn(`JD skill extraction failed: ${this.getErrorSummary(error)}`);
+      return [];
+    }
+  }
+
+  private parseStringArray(rawText: string): string[] {
+    let text = rawText.trim();
+    if (text.startsWith('```json')) text = text.replace(/^```json/, '');
+    if (text.startsWith('```')) text = text.replace(/^```/, '');
+    if (text.endsWith('```')) text = text.replace(/```$/, '');
+
+    try {
+      const parsed = JSON.parse(text.trim());
+      return Array.isArray(parsed) ? parsed.filter((s): s is string => typeof s === 'string') : [];
+    } catch {
+      return [];
+    }
   }
 
   private logOpenAiUsage(modelName: string, response: OpenAiResponsesApiResponse | undefined): void {

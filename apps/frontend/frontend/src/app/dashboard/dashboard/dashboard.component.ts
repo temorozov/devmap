@@ -6,11 +6,14 @@ import { TreesService, Tree, ProfileViewStats, ExploreProfile } from '../../tree
 import { AuthService } from '../../auth.service';
 import { DialogService } from '../../shared/services/dialog.service';
 import { ROLE_PROFILES, ROLE_PROFILE_KEYS, RoleProfile } from '../../shared/data/role-profiles';
+import { AppSidebarComponent } from '../../shared/components/app-sidebar/app-sidebar.component';
+
+type DashboardView = 'profile' | 'skillmap' | 'career';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, AppSidebarComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -24,6 +27,7 @@ export class DashboardComponent implements OnInit {
   private readonly cdr = inject(ChangeDetectorRef);
 
   trees: TreeViewModel[] = [];
+  view: DashboardView = 'profile';
   loading = true;
   syncing = false;
   syncSuccess = false;
@@ -93,8 +97,13 @@ export class DashboardComponent implements OnInit {
     this.loadMySkills();
     this.loadExploreProfiles();
 
-    // Auto-trigger GitHub scan after GitHub OAuth redirect
+    // Sidebar sections + auto-scan after GitHub OAuth redirect
     this.route.queryParams.subscribe(params => {
+      const v = params['view'];
+      if (v === 'profile' || v === 'skillmap' || v === 'career') {
+        this.view = v;
+        this.cdr.markForCheck();
+      }
       if (params['scan'] === '1') {
         this.router.navigate([], { replaceUrl: true, queryParams: {} });
         this.isGuest$.subscribe(isGuest => {

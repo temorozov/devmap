@@ -433,7 +433,8 @@ export class TreesService {
     }
 
     async matchJobDescription(userId: string, jdText: string) {
-        // Extract skills from JD text by matching taxonomy aliases (case-insensitive, word-boundary aware)
+        // Extract skills from JD text two ways and merge:
+        // 1. Literal taxonomy alias matches (fast, exact — catches "Python", "Node.js")
         const lower = jdText.toLowerCase();
         const requiredTitles = new Set<string>();
         for (const entry of SKILL_TAXONOMY) {
@@ -445,6 +446,14 @@ export class TreesService {
                     break;
                 }
             }
+        }
+
+        // 2. AI inference from prose (understands "AI/ML specialist", "full-stack", etc.).
+        //    Falls back to [] when AI is unavailable, so literal matches still work.
+        const canonicalTitles = SKILL_TAXONOMY.map(e => e.canonicalTitle);
+        const aiTitles = await this.aiService.extractJobSkills(jdText, canonicalTitles);
+        for (const title of aiTitles) {
+            requiredTitles.add(title);
         }
 
         // Get user's verified skills with evidence

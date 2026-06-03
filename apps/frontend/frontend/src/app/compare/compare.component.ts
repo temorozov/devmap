@@ -4,6 +4,8 @@ import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { appRuntimeConfig } from '../app-config';
+import { AuthService } from '../auth.service';
+import { AppSidebarComponent } from '../shared/components/app-sidebar/app-sidebar.component';
 
 interface CompareProfile {
   handle: string;
@@ -23,7 +25,7 @@ interface CompareResult {
 @Component({
   selector: 'app-compare',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, AppSidebarComponent],
   templateUrl: './compare.component.html',
   styleUrls: ['./compare.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -32,6 +34,7 @@ export class CompareComponent implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly authService = inject(AuthService);
   private readonly cdr = inject(ChangeDetectorRef);
 
   handleA = '';
@@ -40,7 +43,20 @@ export class CompareComponent implements OnInit {
   loading = false;
   error = '';
 
+  readonly isGuest$ = this.authService.isGuest$;
+  readonly handle$ = this.authService.handle$;
+  readonly githubUsername$ = this.authService.githubUsername$;
+
+  onSync() {
+    this.router.navigate(['/dashboard'], { queryParams: { scan: 1 } });
+  }
+
+  onLogout() {
+    this.authService.logout();
+  }
+
   ngOnInit() {
+    this.authService.loadMe().subscribe(() => this.cdr.markForCheck());
     this.route.paramMap.subscribe(params => {
       const a = params.get('handleA') ?? '';
       const b = params.get('handleB') ?? '';

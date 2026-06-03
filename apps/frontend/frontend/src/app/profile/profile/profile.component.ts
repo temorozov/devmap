@@ -76,6 +76,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
   loading = true;
   error = '';
   skillGroups: SkillGroup[] = [];
+  linkCopied = false;
 
   ngOnInit() {
     const handle = this.route.snapshot.paramMap.get('handle') ?? '';
@@ -281,6 +282,9 @@ export class ProfileComponent implements OnInit, OnDestroy {
 
   copyProfileLink() {
     navigator.clipboard.writeText(window.location.href);
+    this.linkCopied = true;
+    this.cdr.markForCheck();
+    setTimeout(() => { this.linkCopied = false; this.cdr.markForCheck(); }, 2000);
   }
 
   getEvidenceLabel(evidence: NodeEvidence[] | null | undefined): string {
