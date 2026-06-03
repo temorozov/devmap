@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit, inject }
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { TreesService, Tree, ProfileViewStats } from '../../trees.service';
+import { TreesService, Tree, ProfileViewStats, ExploreProfile } from '../../trees.service';
 import { AuthService } from '../../auth.service';
 import { DialogService } from '../../shared/services/dialog.service';
 import { ROLE_PROFILES, ROLE_PROFILE_KEYS, RoleProfile } from '../../shared/data/role-profiles';
@@ -30,6 +30,15 @@ export class DashboardComponent implements OnInit {
   syncedProfileUrl = '';
   viewStats: ProfileViewStats | null = null;
   showBadgeModal = false;
+  badgeTheme: 'dark' | 'light' = 'dark';
+  badgeCopied = false;
+  syncNewSkills: string[] = [];
+  exploreProfiles: ExploreProfile[] = [];
+  profileLinkCopied = false;
+
+  jdText = '';
+  jdMatching = false;
+  jdResult: { required: number; matched: { title: string; level: number }[]; missing: string[]; score: number } | null = null;
 
   // Skill gap
   readonly roleProfileKeys = ROLE_PROFILE_KEYS;
@@ -41,6 +50,11 @@ export class DashboardComponent implements OnInit {
   get devMap(): TreeViewModel | null { return this.trees.find(t => t.title === 'My Dev Map') ?? null; }
   get otherMaps(): TreeViewModel[] { return this.trees.filter(t => t.title !== 'My Dev Map'); }
   get topSkillsPreview(): string[] { return this.myVerifiedSkills.slice(0, 6); }
+  get profileHandle(): string { return this.getHandle(); }
+  get profileUrl(): string {
+    const h = this.getHandle();
+    return h ? `${window.location.origin}/u/${h}` : '';
+  }
 
   private resolveSlot(slot: import('../../shared/data/role-profiles').SkillRequirement): { label: string; matched: string | null } {
     if (typeof slot === 'string') {
@@ -77,6 +91,7 @@ export class DashboardComponent implements OnInit {
     this.loadTrees();
     this.loadViewStats();
     this.loadMySkills();
+    this.loadExploreProfiles();
 
     // Auto-trigger GitHub scan after GitHub OAuth redirect
     this.route.queryParams.subscribe(params => {
@@ -87,6 +102,24 @@ export class DashboardComponent implements OnInit {
         }).unsubscribe();
       }
     });
+  }
+
+  loadExploreProfiles() {
+    this.treesService.getExploreProfiles().subscribe({
+      next: (profiles) => {
+        this.exploreProfiles = profiles.slice(0, 3);
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  copyProfileLink() {
+    const url = this.profileUrl;
+    if (!url) return;
+    navigator.clipboard.writeText(url);
+    this.profileLinkCopied = true;
+    this.cdr.markForCheck();
+    setTimeout(() => { this.profileLinkCopied = false; this.cdr.markForCheck(); }, 2000);
   }
 
   loadMySkills() {
@@ -161,15 +194,16 @@ export class DashboardComponent implements OnInit {
   syncGitHub() {
     this.syncing = true;
     this.syncSuccess = false;
+    this.syncNewSkills = [];
     this.cdr.markForCheck();
     this.treesService.syncGitHub().subscribe({
-      next: () => {
+      next: (result) => {
         this.syncing = false;
         this.loadTrees();
-        // Show inline success state with profile URL
         const handle = this.authService['user'].getValue()?.handle
           ?? this.authService['user'].getValue()?.githubUsername;
         this.syncSuccess = true;
+        this.syncNewSkills = result.newSkills ?? [];
         this.syncedProfileUrl = handle ? `${window.location.origin}/u/${handle}` : '';
         this.cdr.markForCheck();
       },
@@ -186,17 +220,53 @@ export class DashboardComponent implements OnInit {
     this.dialogService.alert('Profile link copied to clipboard!');
   }
 
-  badgeMarkdown(): string {
-    const handle = this.authService['user'].getValue()?.handle
+  private getHandle(): string {
+    return this.authService['user'].getValue()?.handle
       ?? this.authService['user'].getValue()?.githubUsername
       ?? '';
+  }
+
+  badgeCardUrl(theme: 'dark' | 'light' = 'dark'): string {
+    return `${window.location.origin}/api/badge/${this.getHandle()}?theme=${theme}`;
+  }
+
+  badgeMarkdownSimple(): string {
+    const handle = this.getHandle();
     const origin = window.location.origin;
-    return `[![DevMap](${origin}/api/badge/${handle})](${origin}/u/${handle})`;
+    return `[![DevMap](${origin}/api/badge/${handle}?theme=${this.badgeTheme})](${origin}/u/${handle})`;
+  }
+
+  badgeMarkdownFull(): string {
+    const handle = this.getHandle();
+    const origin = window.location.origin;
+    const dark = `${origin}/api/badge/${handle}?theme=dark`;
+    const light = `${origin}/api/badge/${handle}?theme=light`;
+    const url = `${origin}/u/${handle}`;
+    return `<a href="${url}">\n  <picture>\n    <source media="(prefers-color-scheme: dark)" srcset="${dark}">\n    <img alt="DevMap" src="${light}">\n  </picture>\n</a>`;
   }
 
   copyBadgeMarkdown() {
-    navigator.clipboard.writeText(this.badgeMarkdown());
-    this.dialogService.alert('Badge markdown copied!');
+    navigator.clipboard.writeText(this.badgeMarkdownFull());
+    this.badgeCopied = true;
+    setTimeout(() => this.badgeCopied = false, 2000);
+  }
+
+  runJdMatch() {
+    if (!this.jdText.trim()) return;
+    this.jdMatching = true;
+    this.jdResult = null;
+    this.cdr.markForCheck();
+    this.treesService.matchJd(this.jdText).subscribe({
+      next: (result) => {
+        this.jdResult = result;
+        this.jdMatching = false;
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.jdMatching = false;
+        this.cdr.markForCheck();
+      },
+    });
   }
 
   trackByTreeId(_index: number, tree: TreeViewModel) {

@@ -22,10 +22,21 @@
         Explore
       </a>
     </div>
-    <button class="share-btn" (click)="copyProfileLink()" title="Copy profile link">
-      <span class="material-icons" style="font-size:0.9rem">link</span>
-      Share
-    </button>
+    <div style="display:flex;gap:0.5rem;align-items:center">
+      <a
+        *ngIf="profile"
+        class="share-btn"
+        [routerLink]="'/compare/' + profile.handle"
+        title="Compare skills with another dev"
+      >
+        <span class="material-icons" style="font-size:0.9rem">compare_arrows</span>
+        Compare
+      </a>
+      <button class="share-btn" (click)="copyProfileLink()" title="Copy profile link">
+        <span class="material-icons" style="font-size:0.9rem">link</span>
+        Share
+      </button>
+    </div>
   </header>
 
   <!-- LOADING -->
@@ -228,8 +239,14 @@
                   <span class="material-icons" style="font-size:0.7rem">verified</span>
                 </div>
               </div>
-              <div class="skill-chip-evidence" *ngIf="skill.evidence">
-                {{ getEvidenceLabel(skill.evidence) }}
+              <div class="skill-chip-proficiency" *ngIf="skill.proficiency">
+                <span
+                  class="proficiency-label"
+                  [class.prof-core]="skill.proficiency === 'core'"
+                  [class.prof-familiar]="skill.proficiency === 'familiar'"
+                  [class.prof-exposure]="skill.proficiency === 'exposure'"
+                >{{ skill.proficiency }}</span>
+                <span class="proficiency-repos" *ngIf="skill.repoCount > 0">· {{ skill.repoCount }} repo{{ skill.repoCount === 1 ? '' : 's' }}</span>
               </div>
             </div>
           </div>

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, ForbiddenException, Req, Res, Header, NotFoundException, Put } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, ForbiddenException, Req, Res, Header, NotFoundException, Put, Query } from '@nestjs/common';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { createHash } from 'crypto';
 import { Request as ExpressRequest, Response } from 'express';
@@ -76,17 +76,34 @@ export class TreesController {
         return this.treesService.setTargetRole(req.user.id, body.roleKey ?? '');
     }
 
+    @UseGuards(JwtAuthGuard)
+    @Post('my/jd-match')
+    matchJobDescription(@Request() req: AuthenticatedRequest, @Body() body: { text: string }) {
+        if (!body?.text?.trim()) return { required: 0, matched: [], missing: [], score: 0 };
+        return this.treesService.matchJobDescription(req.user.id, body.text);
+    }
+
     @Get('explore')
     getExploreProfiles() {
         return this.treesService.getExploreProfiles();
     }
 
+    @Get('compare/:handleA/:handleB')
+    compareProfiles(@Param('handleA') handleA: string, @Param('handleB') handleB: string) {
+        return this.treesService.compareProfiles(handleA, handleB);
+    }
+
     @Get('badge/:handle')
     @Header('Cache-Control', 'public, max-age=3600, s-maxage=3600')
-    async getBadge(@Param('handle') handle: string, @Res() res: Response) {
+    async getBadge(
+        @Param('handle') handle: string,
+        @Query('theme') theme: string,
+        @Res() res: Response,
+    ) {
         const data = await this.treesService.getBadgeData(handle);
         if (!data) throw new NotFoundException('Profile not found');
-        const svg = this.treesService.buildBadgeSvg(data.skills, data.count);
+        const t = theme === 'light' ? 'light' : 'dark';
+        const svg = this.treesService.buildSkillCardSvg(data.displayHandle, data.skills, data.totalCount, data.repoCount, t);
         res.setHeader('Content-Type', 'image/svg+xml; charset=utf-8');
         res.send(svg);
     }
@@ -96,15 +113,15 @@ export class TreesController {
     async getOgPage(@Param('handle') handle: string, @Res() res: Response) {
         const data = await this.treesService.getBadgeData(handle);
         if (!data) throw new NotFoundException('Profile not found');
+        const backendUrl = (process.env['BACKEND_URL'] ?? process.env['FRONTEND_URL'] ?? 'https://devmap.app').replace(/\/$/, '');
         const frontendUrl = (process.env['FRONTEND_URL'] ?? 'https://devmap.app').replace(/\/$/, '');
         const profileUrl = `${frontendUrl}/u/${handle}`;
-        const avatar = data.githubUsername
-            ? `https://avatars.githubusercontent.com/${data.githubUsername}`
-            : '';
-        const title = `@${handle} | DevMap — ${data.count} verified skills`;
-        const description = data.skills.length > 0
-            ? `${data.skills.slice(0, 5).join(', ')} and ${data.count} more skills verified from GitHub.`
-            : `${data.count} GitHub-verified developer skills on DevMap.`;
+        const cardUrl = `${backendUrl}/api/badge/${data.displayHandle}?theme=dark`;
+        const title = `@${data.displayHandle} — ${data.totalCount} GitHub-verified skills | DevMap`;
+        const skillNames = data.skills.slice(0, 5).map(s => s.title);
+        const description = skillNames.length > 0
+            ? `${skillNames.join(', ')}${data.totalCount > 5 ? ` +${data.totalCount - 5} more` : ''} · verified from ${data.repoCount} GitHub repos`
+            : `${data.totalCount} GitHub-verified developer skills on DevMap.`;
         res.setHeader('Content-Type', 'text/html; charset=utf-8');
         res.send(`<!DOCTYPE html><html><head>
 <meta charset="utf-8">
@@ -112,13 +129,14 @@ export class TreesController {
 <meta name="description" content="${description}">
 <meta property="og:title" content="${title}">
 <meta property="og:description" content="${description}">
-<meta property="og:image" content="${avatar}">
+<meta property="og:image" content="${cardUrl}">
+<meta property="og:image:width" content="495">
 <meta property="og:url" content="${profileUrl}">
 <meta property="og:type" content="profile">
-<meta name="twitter:card" content="summary">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="${title}">
 <meta name="twitter:description" content="${description}">
-<meta name="twitter:image" content="${avatar}">
+<meta name="twitter:image" content="${cardUrl}">
 <meta http-equiv="refresh" content="0;url=${profileUrl}">
 </head><body></body></html>`);
     }

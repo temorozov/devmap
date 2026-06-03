@@ -1,0 +1,143 @@
+<div class="compare-page">
+
+  <!-- Navbar -->
+  <header class="topbar">
+    <a class="topbar-brand" routerLink="/">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:20px;height:20px">
+        <circle cx="12" cy="12" r="3" fill="currentColor"/>
+        <circle cx="4" cy="6" r="2" fill="currentColor" opacity=".6"/>
+        <circle cx="20" cy="6" r="2" fill="currentColor" opacity=".6"/>
+        <circle cx="4" cy="18" r="2" fill="currentColor" opacity=".6"/>
+        <circle cx="20" cy="18" r="2" fill="currentColor" opacity=".6"/>
+        <line x1="12" y1="12" x2="4" y2="6" stroke="currentColor" stroke-width="1.5" opacity=".4"/>
+        <line x1="12" y1="12" x2="20" y2="6" stroke="currentColor" stroke-width="1.5" opacity=".4"/>
+        <line x1="12" y1="12" x2="4" y2="18" stroke="currentColor" stroke-width="1.5" opacity=".4"/>
+        <line x1="12" y1="12" x2="20" y2="18" stroke="currentColor" stroke-width="1.5" opacity=".4"/>
+      </svg>
+      <span>DevMap</span>
+    </a>
+    <nav class="topbar-nav">
+      <a routerLink="/explore" class="topbar-link">Explore</a>
+      <a routerLink="/compare" class="topbar-link topbar-link-active">Compare</a>
+    </nav>
+  </header>
+
+  <main class="main">
+
+    <!-- Input form -->
+    <section class="compare-form-section">
+      <h1 class="compare-heading">Compare skills</h1>
+      <p class="compare-sub">See what two developers have in common — and where they differ.</p>
+      <form class="compare-form" (ngSubmit)="compare()">
+        <input
+          class="compare-input"
+          type="text"
+          [(ngModel)]="handleA"
+          name="handleA"
+          placeholder="@handle or GitHub username"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <span class="compare-vs">vs</span>
+        <input
+          class="compare-input"
+          type="text"
+          [(ngModel)]="handleB"
+          name="handleB"
+          placeholder="@handle or GitHub username"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <button class="compare-btn" type="submit" [disabled]="!handleA.trim() || !handleB.trim()">
+          Compare
+        </button>
+      </form>
+    </section>
+
+    <!-- Loading -->
+    <div class="state-center" *ngIf="loading">
+      <span class="material-icons spinning" style="font-size:1.5rem;color:var(--text-subtle)">refresh</span>
+    </div>
+
+    <!-- Error -->
+    <div class="state-center" *ngIf="error && !loading">
+      <span style="color:var(--text-muted);font-size:0.9rem">{{ error }}</span>
+    </div>
+
+    <!-- Results -->
+    <section class="compare-result" *ngIf="result && !loading">
+
+      <!-- Profile headers -->
+      <div class="profiles-row">
+        <a class="profile-chip" [routerLink]="'/u/' + result.a.handle">
+          <img *ngIf="avatarUrl(result.a.githubUsername)" [src]="avatarUrl(result.a.githubUsername)" class="profile-avatar" alt="">
+          <div class="profile-chip-info">
+            <span class="profile-chip-handle">&#64;{{ result.a.handle }}</span>
+            <span class="profile-chip-count">{{ result.a.skillCount }} skills</span>
+          </div>
+        </a>
+        <div class="in-common-badge" *ngIf="result.inCommon.length > 0">
+          <span class="material-icons" style="font-size:0.9rem">link</span>
+          {{ result.inCommon.length }} in common
+        </div>
+        <a class="profile-chip profile-chip-right" [routerLink]="'/u/' + result.b.handle">
+          <div class="profile-chip-info profile-chip-info-right">
+            <span class="profile-chip-handle">&#64;{{ result.b.handle }}</span>
+            <span class="profile-chip-count">{{ result.b.skillCount }} skills</span>
+          </div>
+          <img *ngIf="avatarUrl(result.b.githubUsername)" [src]="avatarUrl(result.b.githubUsername)" class="profile-avatar" alt="">
+        </a>
+      </div>
+
+      <!-- Three columns -->
+      <div class="columns">
+
+        <!-- Only A -->
+        <div class="col col-a">
+          <div class="col-header">
+            <span class="col-label">Only &#64;{{ result.a.handle }}</span>
+            <span class="col-count">{{ result.onlyA.length }}</span>
+          </div>
+          <div class="skill-list">
+            <span class="skill-pill skill-pill-a" *ngFor="let s of result.onlyA">{{ s }}</span>
+            <span class="col-empty" *ngIf="result.onlyA.length === 0">All skills overlap</span>
+          </div>
+        </div>
+
+        <!-- In common -->
+        <div class="col col-common">
+          <div class="col-header">
+            <span class="col-label">In common</span>
+            <span class="col-count col-count-common">{{ result.inCommon.length }}</span>
+          </div>
+          <div class="skill-list">
+            <span class="skill-pill skill-pill-common" *ngFor="let s of result.inCommon">{{ s }}</span>
+            <span class="col-empty" *ngIf="result.inCommon.length === 0">No shared skills</span>
+          </div>
+        </div>
+
+        <!-- Only B -->
+        <div class="col col-b">
+          <div class="col-header">
+            <span class="col-label">Only &#64;{{ result.b.handle }}</span>
+            <span class="col-count">{{ result.onlyB.length }}</span>
+          </div>
+          <div class="skill-list">
+            <span class="skill-pill skill-pill-b" *ngFor="let s of result.onlyB">{{ s }}</span>
+            <span class="col-empty" *ngIf="result.onlyB.length === 0">All skills overlap</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Share -->
+      <div class="share-row">
+        <button class="share-btn" (click)="copyShareUrl()">
+          <span class="material-icons" style="font-size:0.9rem">link</span>
+          Copy comparison link
+        </button>
+      </div>
+
+    </section>
+  </main>
+</div>

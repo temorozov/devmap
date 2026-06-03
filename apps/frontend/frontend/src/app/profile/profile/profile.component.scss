@@ -410,6 +410,31 @@
   font-family: var(--font-mono);
 }
 
+.skill-chip-proficiency {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 2px;
+}
+
+.proficiency-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+.prof-core    { background: rgba(63,185,80,0.15); color: #3fb950; }
+.prof-familiar { background: rgba(88,166,255,0.12); color: #58a6ff; }
+.prof-exposure { background: rgba(139,148,158,0.12); color: #8b949e; }
+
+.proficiency-repos {
+  font-size: 0.65rem;
+  color: var(--text-subtle);
+}
+
 /* ── FOOTER ── */
 .profile-footer {
   border-top: 1px solid var(--border);

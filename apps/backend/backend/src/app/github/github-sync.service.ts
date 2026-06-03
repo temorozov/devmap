@@ -19,7 +19,7 @@ export class GitHubSyncService {
     private readonly emailService: EmailService,
   ) {}
 
-  async syncUserDevMap(userId: string): Promise<{ nodeCount: number; verifiedCount: number }> {
+  async syncUserDevMap(userId: string): Promise<{ nodeCount: number; verifiedCount: number; newSkills: string[] }> {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user?.githubAccessToken || !user.githubUsername) {
       throw new NotFoundException('GitHub account not connected or token missing.');
@@ -81,7 +81,10 @@ export class GitHubSyncService {
         }
 
         const evidence = tech
-          ? tech.repos.map((r) => ({ repo: r.name, url: r.url, evidence: r.evidence }))
+          ? [
+              ...tech.repos.map((r) => ({ repo: r.name, url: r.url, evidence: r.evidence })),
+              { _meta: true, repoCount: tech.repos.length, lastSeen: tech.lastSeen },
+            ]
           : [];
 
         const node = await tx.node.create({
@@ -125,13 +128,13 @@ export class GitHubSyncService {
     const verifiedCount = detectedTechs.length;
     this.logger.log(`Sync complete for user ${userId}: ${layoutInput.length} nodes, ${verifiedCount} verified`);
 
-    // Detect new skills and notify user (only if this is a re-sync, not a first sync)
-    if (previousTitles.size > 0 && user.email) {
-      const newSkills = detectedTechs
-        .map(t => t.canonicalTitle)
-        .filter(t => !previousTitles.has(t));
-
-      if (newSkills.length > 0) {
+    // Detect new skills — only on re-sync (not first-time)
+    const newSkills: string[] = [];
+    if (previousTitles.size > 0) {
+      for (const t of detectedTechs) {
+        if (!previousTitles.has(t.canonicalTitle)) newSkills.push(t.canonicalTitle);
+      }
+      if (newSkills.length > 0 && user.email) {
         this.logger.log(`New skills detected for ${userId}: ${newSkills.join(', ')}`);
         this.emailService
           .sendSkillsUpdatedEmail(user.email, newSkills, verifiedCount, user.handle ?? user.githubUsername ?? '')
@@ -139,7 +142,7 @@ export class GitHubSyncService {
       }
     }
 
-    return { nodeCount: layoutInput.length, verifiedCount };
+    return { nodeCount: layoutInput.length, verifiedCount, newSkills };
   }
 
   async syncByRepo(repoFullName: string): Promise<void> {

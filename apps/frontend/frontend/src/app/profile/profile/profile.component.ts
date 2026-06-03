@@ -22,7 +22,14 @@ interface SkillGroup {
   category: string;
   label: string;
   icon: string;
-  skills: Array<{ title: string; verified: boolean; evidence: NodeEvidence[] | null | undefined }>;
+  skills: Array<{
+    title: string;
+    verified: boolean;
+    evidence: NodeEvidence[] | null | undefined;
+    repoCount: number;
+    proficiency: 'core' | 'familiar' | 'exposure' | null;
+    lastSeen: string | null;
+  }>;
 }
 
 interface SlotResult {
@@ -250,26 +257,26 @@ export class ProfileComponent implements OnInit, OnDestroy {
       .flatMap(g => g.skills.filter(s => s.verified).map(s => s.title))
       .slice(0, 5)
       .join(', ');
-    const title = `@${profile.handle} | DevMap — ${profile.verifiedSkills} verified skills`;
+    const title = `@${profile.handle} — ${profile.verifiedSkills} GitHub-verified skills | DevMap`;
     const description = topSkills
-      ? `${topSkills} and more — ${profile.verifiedSkills} skills verified from GitHub repos.`
+      ? `${topSkills}${profile.verifiedSkills > 5 ? ` +${profile.verifiedSkills - 5} more` : ''} · verified from GitHub repos`
       : `${profile.verifiedSkills} GitHub-verified developer skills on DevMap.`;
-    const image = profile.githubUsername
-      ? `https://avatars.githubusercontent.com/${profile.githubUsername}`
-      : '';
+    const origin = window.location.origin;
+    const cardUrl = `${origin}/api/badge/${profile.handle}?theme=dark`;
     const url = window.location.href;
 
     this.titleService.setTitle(title);
     this.meta.updateTag({ name: 'description', content: description });
     this.meta.updateTag({ property: 'og:title', content: title });
     this.meta.updateTag({ property: 'og:description', content: description });
-    this.meta.updateTag({ property: 'og:image', content: image });
+    this.meta.updateTag({ property: 'og:image', content: cardUrl });
+    this.meta.updateTag({ property: 'og:image:width', content: '495' });
     this.meta.updateTag({ property: 'og:url', content: url });
     this.meta.updateTag({ property: 'og:type', content: 'profile' });
-    this.meta.updateTag({ name: 'twitter:card', content: 'summary' });
+    this.meta.updateTag({ name: 'twitter:card', content: 'summary_large_image' });
     this.meta.updateTag({ name: 'twitter:title', content: title });
     this.meta.updateTag({ name: 'twitter:description', content: description });
-    this.meta.updateTag({ name: 'twitter:image', content: image });
+    this.meta.updateTag({ name: 'twitter:image', content: cardUrl });
   }
 
   copyProfileLink() {
@@ -296,10 +303,24 @@ export class ProfileComponent implements OnInit, OnDestroy {
         categoryMap.set(category, { category, label: meta.label, icon: meta.icon, skills: [] });
       }
 
+      const isVerified = node.verified === true || node.source === 'github';
+      const evidenceArr = (node.evidence as Array<Record<string, unknown>> | null) ?? [];
+      const metaEntry = evidenceArr.find(e => e['_meta']);
+      const repoCount = metaEntry
+        ? (metaEntry['repoCount'] as number ?? 0)
+        : evidenceArr.filter(e => !e['_meta']).length;
+      const lastSeen = metaEntry ? (metaEntry['lastSeen'] as string | null) : null;
+      const proficiency: 'core' | 'familiar' | 'exposure' | null = isVerified
+        ? (repoCount >= 5 ? 'core' : repoCount >= 2 ? 'familiar' : 'exposure')
+        : null;
+
       categoryMap.get(category)!.skills.push({
         title: node.title,
-        verified: node.verified === true || node.source === 'github',
+        verified: isVerified,
         evidence: node.evidence,
+        repoCount,
+        proficiency,
+        lastSeen,
       });
     }
 

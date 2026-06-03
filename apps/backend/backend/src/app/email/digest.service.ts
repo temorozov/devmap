@@ -76,6 +76,26 @@ export class DigestService {
         ? `${trend} ${Math.abs(viewsThisWeek - viewsLastWeek)} vs last week`
         : 'First week tracked';
 
+      // Find new skills added this week by comparing last two scans
+      const recentScans = await this.prisma.gitHubScan.findMany({
+        where: { userId: user.id },
+        orderBy: { scannedAt: 'desc' },
+        take: 2,
+        select: { summary: true, scannedAt: true },
+      });
+      const newSkillsThisWeek: string[] = [];
+      if (recentScans.length === 2) {
+        const latestTitles = new Set(
+          (recentScans[0].summary as Array<{ title: string }> ?? []).map(s => s.title),
+        );
+        const previousTitles = new Set(
+          (recentScans[1].summary as Array<{ title: string }> ?? []).map(s => s.title),
+        );
+        for (const title of latestTitles) {
+          if (!previousTitles.has(title)) newSkillsThisWeek.push(title);
+        }
+      }
+
       try {
         await this.resend.emails.send({
           from: this.fromEmail,
@@ -88,6 +108,7 @@ export class DigestService {
             viewsThisWeek,
             trendText,
             verifiedSkills,
+            newSkills: newSkillsThisWeek,
           }),
         });
         sent++;
@@ -106,7 +127,26 @@ export class DigestService {
     viewsThisWeek: number;
     trendText: string;
     verifiedSkills: number;
+    newSkills: string[];
   }): string {
+    const newSkillsBlock = data.newSkills.length > 0 ? `
+        <!-- New skills -->
+        <tr><td style="padding-bottom:16px">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:20px 24px">
+            <tr><td>
+              <div style="font-size:0.78rem;font-weight:600;color:#3fb950;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px">
+                ✦ ${data.newSkills.length} new skill${data.newSkills.length === 1 ? '' : 's'} detected
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:6px">
+                ${data.newSkills.slice(0, 8).map(s =>
+                  `<span style="display:inline-block;padding:3px 10px;background:rgba(63,185,80,0.12);border:1px solid rgba(63,185,80,0.3);border-radius:20px;font-size:0.8rem;color:#3fb950">${s}</span>`
+                ).join('\n                ')}
+                ${data.newSkills.length > 8 ? `<span style="font-size:0.8rem;color:#6e7681;padding:3px 0">+${data.newSkills.length - 8} more</span>` : ''}
+              </div>
+            </td></tr>
+          </table>
+        </td></tr>` : '';
+
     return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -145,6 +185,8 @@ export class DigestService {
             </tr>
           </table>
         </td></tr>
+
+        ${newSkillsBlock}
 
         <!-- CTA -->
         <tr><td style="padding-bottom:32px">

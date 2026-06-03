@@ -72,7 +72,7 @@ export class TreesService {
   }
 
   syncGitHub() {
-    return this.http.post<{ nodeCount: number; verifiedCount: number }>(
+    return this.http.post<{ nodeCount: number; verifiedCount: number; newSkills: string[] }>(
       `${appRuntimeConfig.apiUrl}/github/sync`,
       {},
     );
@@ -80,6 +80,15 @@ export class TreesService {
 
   getViewStats() {
     return this.http.get<ProfileViewStats>(`${this.apiUrl}/my/view-stats`);
+  }
+
+  matchJd(text: string) {
+    return this.http.post<{
+      required: number;
+      matched: { title: string; level: number }[];
+      missing: string[];
+      score: number;
+    }>(`${this.apiUrl}/my/jd-match`, { text });
   }
 
   getMySkills() {

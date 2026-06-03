@@ -50,17 +50,6 @@
         {{ syncing ? 'Syncing…' : 'Re-sync GitHub' }}
       </button>
 
-      <!-- Public profile link - show when user has a handle or githubUsername -->
-      <a
-        *ngIf="(isGuest$ | async) === false && ((handle$ | async) || (githubUsername$ | async))"
-        class="btn-profile-link"
-        [routerLink]="'/u/' + ((handle$ | async) || (githubUsername$ | async))"
-        target="_blank"
-      >
-        <span class="material-icons" style="font-size:0.9rem">open_in_new</span>
-        /u/{{ (handle$ | async) || (githubUsername$ | async) }}
-      </a>
-
       <!-- Guest CTA -->
       <a *ngIf="isGuest$ | async" class="btn-signup" routerLink="/login">
         <svg class="btn-icon btn-icon-sm" viewBox="0 0 24 24" fill="currentColor">
@@ -80,14 +69,15 @@
   <div class="sync-banner" *ngIf="syncSuccess && syncedProfileUrl">
     <div class="sync-banner-inner">
       <span class="material-icons" style="font-size:1rem;color:var(--green)">verified</span>
-      <span class="sync-banner-text">Your skill map is live!</span>
-      <code class="sync-banner-url">{{ syncedProfileUrl }}</code>
-      <button class="sync-banner-copy" (click)="copyProfileUrl()">
-        <span class="material-icons" style="font-size:0.85rem">content_copy</span>
-        Copy link
-      </button>
+      <span class="sync-banner-text">
+        <ng-container *ngIf="syncNewSkills.length > 0; else noNewSkills">
+          {{ syncNewSkills.length }} new skill{{ syncNewSkills.length === 1 ? '' : 's' }} detected:
+          <strong>{{ syncNewSkills.slice(0, 3).join(', ') }}<ng-container *ngIf="syncNewSkills.length > 3"> +{{ syncNewSkills.length - 3 }} more</ng-container></strong>
+        </ng-container>
+        <ng-template #noNewSkills>Skill map synced</ng-template>
+      </span>
       <a class="sync-banner-view" [href]="syncedProfileUrl" target="_blank">
-        View profile →
+        View your profile →
       </a>
       <button class="sync-banner-close" (click)="syncSuccess = false">
         <span class="material-icons" style="font-size:0.9rem">close</span>
@@ -104,28 +94,52 @@
       <span style="color:var(--text-muted);font-size:0.9rem">Loading your skill map…</span>
     </div>
 
-    <!-- Empty state — no trees yet, show GitHub connect prompt -->
+    <!-- Empty state — no trees yet -->
     <div class="state-empty" *ngIf="!loading && trees.length === 0 && (isGuest$ | async) === false">
-      <div class="empty-card">
-        <div class="empty-icon">
-          <svg viewBox="0 0 24 24" fill="currentColor" class="empty-gh-icon">
-            <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
-          </svg>
+      <div class="empty-wrap">
+        <div class="empty-card">
+          <div class="empty-icon">
+            <svg viewBox="0 0 24 24" fill="currentColor" class="empty-gh-icon">
+              <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
+            </svg>
+          </div>
+          <h2>Build your verified profile</h2>
+          <p>
+            Connect GitHub and we'll scan your repos — detecting languages, frameworks, and tools
+            you've actually shipped. You'll get a public profile at <strong>/u/yourhandle</strong>.
+          </p>
+          <button class="btn-connect-gh" (click)="syncGitHub()" [disabled]="syncing">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
+            </svg>
+            {{ syncing ? 'Scanning your repos…' : 'Scan GitHub repos now' }}
+          </button>
+          <div class="empty-note">
+            <span class="material-icons" style="font-size:0.85rem">lock</span>
+            Read-only access · never writes to your repos
+          </div>
         </div>
-        <h2>Build your skill map</h2>
-        <p>
-          Connect GitHub and we'll scan your repos — detecting languages, frameworks, and tools
-          you've actually used.
-        </p>
-        <button class="btn-connect-gh" (click)="syncGitHub()" [disabled]="syncing">
-          <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
-          </svg>
-          {{ syncing ? 'Scanning your repos…' : 'Scan GitHub repos now' }}
-        </button>
-        <div class="empty-note">
-          <span class="material-icons" style="font-size:0.85rem">lock</span>
-          Read-only access · never writes to your repos
+
+        <!-- Show example profiles to explain what they'll get -->
+        <div class="empty-explore" *ngIf="exploreProfiles.length > 0">
+          <div class="empty-explore-label">
+            <span class="material-icons" style="font-size:0.8rem">auto_awesome</span>
+            What your profile will look like
+          </div>
+          <div class="empty-explore-cards">
+            <a class="epc" *ngFor="let p of exploreProfiles" [routerLink]="'/u/' + p.handle">
+              <div class="epc-top">
+                <img *ngIf="p.githubUsername" [src]="'https://avatars.githubusercontent.com/' + p.githubUsername" class="epc-avatar" [alt]="p.handle">
+                <div class="epc-meta">
+                  <div class="epc-name">{{ p.name || p.handle }}</div>
+                  <div class="epc-skills-count">{{ p.verifiedSkills }} verified skills</div>
+                </div>
+              </div>
+              <div class="epc-chips">
+                <span class="epc-chip" *ngFor="let s of p.topSkills.slice(0,4)">{{ s }}</span>
+              </div>
+            </a>
+          </div>
         </div>
       </div>
     </div>
@@ -150,46 +164,64 @@
     <!-- Main content: has trees -->
     <div class="maps-section" *ngIf="!loading && trees.length > 0">
 
-      <!-- ── VERIFIED SKILL MAP HERO ── -->
-      <div class="devmap-hero" *ngIf="devMap">
-        <div class="devmap-hero-top">
-          <div class="devmap-hero-title-row">
-            <span class="material-icons devmap-hero-icon">hub</span>
-            <h1 class="devmap-hero-title">Your skill map</h1>
-            <span class="devmap-verified-badge">
-              <span class="material-icons" style="font-size:0.75rem">verified</span>
-              GitHub-verified
-            </span>
+      <!-- ── 1. PUBLIC PROFILE HERO ── -->
+      <div class="profile-hero" *ngIf="devMap && profileHandle">
+        <div class="profile-hero-info">
+          <div class="profile-hero-eyebrow">
+            <span class="material-icons" style="font-size:0.8rem;color:var(--green)">verified</span>
+            Your public profile
           </div>
-          <div class="devmap-hero-meta">
-            <span *ngIf="myVerifiedSkills.length > 0">
-              <strong style="color:var(--text)">{{ myVerifiedSkills.length }}</strong> verified skills
+          <div class="profile-hero-url">
+            <span class="profile-url-dim">devmap.sh/u/</span><span class="profile-url-handle">{{ profileHandle }}</span>
+          </div>
+          <p class="profile-hero-desc">
+            This page is visible to everyone — share it on your resume, GitHub, or LinkedIn.
+          </p>
+          <div class="profile-hero-stats" *ngIf="myVerifiedSkills.length > 0">
+            <span class="phs-item">
+              <span class="material-icons" style="font-size:0.8rem;color:var(--green)">verified</span>
+              {{ myVerifiedSkills.length }} verified skills
             </span>
-            <span class="devmap-meta-sep" *ngIf="myVerifiedSkills.length > 0">·</span>
-            <span>Last synced {{ devMap.updatedLabel }}</span>
+            <span class="phs-sep">·</span>
+            <span class="phs-item">Last synced {{ devMap.updatedLabel }}</span>
+          </div>
+          <div class="profile-hero-actions">
+            <a class="btn-view-profile" [href]="profileUrl" target="_blank">
+              <span class="material-icons" style="font-size:0.9rem">open_in_new</span>
+              View profile
+            </a>
+            <button class="btn-hero-secondary" (click)="copyProfileLink()">
+              <span class="material-icons" style="font-size:0.85rem">{{ profileLinkCopied ? 'check' : 'link' }}</span>
+              {{ profileLinkCopied ? 'Copied!' : 'Copy link' }}
+            </button>
+            <button class="btn-hero-secondary" (click)="showBadgeModal = true">
+              <span class="material-icons" style="font-size:0.85rem">code</span>
+              README badge
+            </button>
           </div>
         </div>
+        <div class="profile-hero-card">
+          <img [src]="badgeCardUrl('dark')" alt="Your DevMap skill card" class="profile-card-img" loading="lazy">
+        </div>
+      </div>
 
+      <!-- ── 2. SKILL MAP (secondary) ── -->
+      <div class="devmap-section" *ngIf="devMap">
+        <div class="devmap-section-header">
+          <span class="material-icons" style="font-size:1.1rem;color:var(--green)">hub</span>
+          <span class="devmap-section-title">Interactive skill map</span>
+          <span class="devmap-verified-badge">
+            <span class="material-icons" style="font-size:0.75rem">verified</span>
+            GitHub-verified
+          </span>
+          <button class="btn-view-map" (click)="openTree(devMap.id)" style="margin-left:auto">
+            <span class="material-icons" style="font-size:0.9rem">open_in_new</span>
+            Open map
+          </button>
+        </div>
         <div class="devmap-skills-preview" *ngIf="topSkillsPreview.length > 0">
           <span class="devmap-skill-chip" *ngFor="let s of topSkillsPreview">{{ s }}</span>
-          <span class="devmap-skill-more" *ngIf="myVerifiedSkills.length > 6">
-            +{{ myVerifiedSkills.length - 6 }} more
-          </span>
-        </div>
-
-        <div class="devmap-hero-actions">
-          <button class="btn-view-map" (click)="openTree(devMap.id)">
-            <span class="material-icons" style="font-size:1rem">hub</span>
-            View skill map
-          </button>
-          <button class="btn-hero-secondary" (click)="copyShareLink($event, devMap.sharedToken)" title="Copy share link">
-            <span class="material-icons" style="font-size:0.9rem">link</span>
-            Share
-          </button>
-          <button class="btn-hero-secondary" (click)="showBadgeModal = true" title="Add to GitHub README">
-            <span class="material-icons" style="font-size:0.9rem">code</span>
-            README badge
-          </button>
+          <span class="devmap-skill-more" *ngIf="myVerifiedSkills.length > 6">+{{ myVerifiedSkills.length - 6 }} more</span>
         </div>
       </div>
 
@@ -224,7 +256,6 @@
           </div>
         </div>
 
-        <!-- Role selector -->
         <div class="role-selector">
           <button
             class="role-btn"
@@ -239,9 +270,7 @@
           >Clear</button>
         </div>
 
-        <!-- Gap analysis -->
         <div class="gap-analysis" *ngIf="targetRole">
-          <!-- Progress bar -->
           <div class="gap-progress-wrap">
             <div class="gap-progress-bar">
               <div class="gap-progress-fill" [style.width.%]="gapPercent"></div>
@@ -252,7 +281,6 @@
             </span>
           </div>
 
-          <!-- Skills you have -->
           <div class="gap-row" *ngIf="requiredHave.length > 0">
             <span class="gap-row-label gap-have">
               <span class="material-icons" style="font-size:0.8rem">check_circle</span>
@@ -263,7 +291,6 @@
             </div>
           </div>
 
-          <!-- Skills you need -->
           <div class="gap-row" *ngIf="requiredMissing.length > 0">
             <span class="gap-row-label gap-missing">
               <span class="material-icons" style="font-size:0.8rem">radio_button_unchecked</span>
@@ -274,7 +301,6 @@
             </div>
           </div>
 
-          <!-- Recommended skills -->
           <div class="gap-row" *ngIf="recommendedSlots.length > 0">
             <span class="gap-row-label gap-nice">
               <span class="material-icons" style="font-size:0.8rem">star_outline</span>
@@ -292,6 +318,107 @@
         </div>
       </div>
 
+      <!-- ── JD MATCH SECTION ── -->
+      <div class="jd-section" *ngIf="myVerifiedSkills.length > 0">
+        <div class="jd-header">
+          <div>
+            <h2 class="jd-title">Prove you fit this job</h2>
+            <p class="jd-sub">Paste a job description — we'll show which required skills you already have verified from GitHub.</p>
+          </div>
+        </div>
+
+        <textarea
+          class="jd-textarea"
+          [(ngModel)]="jdText"
+          placeholder="Paste the job description here…"
+          rows="5"
+        ></textarea>
+
+        <button
+          class="jd-btn"
+          (click)="runJdMatch()"
+          [disabled]="jdMatching || !jdText.trim()"
+        >
+          <span class="material-icons spinning" *ngIf="jdMatching" style="font-size:1rem">refresh</span>
+          <span class="material-icons" *ngIf="!jdMatching" style="font-size:1rem">search</span>
+          {{ jdMatching ? 'Analysing…' : 'Match my skills' }}
+        </button>
+
+        <div class="jd-result" *ngIf="jdResult">
+          <div class="jd-score-row">
+            <div class="jd-score-bar-wrap">
+              <div class="jd-score-bar-fill" [style.width.%]="jdResult.score"></div>
+            </div>
+            <span class="jd-score-label">
+              <strong style="color:var(--green)">{{ jdResult.matched.length }}</strong>
+              of {{ jdResult.required }} required skills verified
+              <span class="jd-score-pct">&nbsp;({{ jdResult.score }}%)</span>
+            </span>
+          </div>
+
+          <div class="jd-group" *ngIf="jdResult.matched.length > 0">
+            <div class="jd-group-label">
+              <span class="material-icons" style="font-size:0.85rem;color:var(--green)">verified</span>
+              You have these
+            </div>
+            <div class="jd-chips">
+              <span class="jd-chip jd-chip-have" *ngFor="let s of jdResult.matched">{{ s.title }}</span>
+            </div>
+          </div>
+
+          <div class="jd-group" *ngIf="jdResult.missing.length > 0">
+            <div class="jd-group-label">
+              <span class="material-icons" style="font-size:0.85rem;color:var(--text-subtle)">radio_button_unchecked</span>
+              Not yet verified
+            </div>
+            <div class="jd-chips">
+              <span class="jd-chip jd-chip-missing" *ngFor="let s of jdResult.missing">{{ s }}</span>
+            </div>
+          </div>
+
+          <div class="jd-no-skills" *ngIf="jdResult.required === 0">
+            No recognisable skills found in this job description.
+          </div>
+        </div>
+      </div>
+
+      <!-- ── EXPLORE PREVIEW ── -->
+      <div class="explore-preview" *ngIf="exploreProfiles.length > 0">
+        <div class="explore-preview-header">
+          <div>
+            <h2 class="explore-preview-title">
+              <span class="material-icons" style="font-size:1rem;color:var(--blue)">explore</span>
+              Explore other developers
+            </h2>
+            <p class="explore-preview-sub">Browse verified skill maps from the DevMap community</p>
+          </div>
+          <a class="explore-preview-all" routerLink="/explore">
+            See all <span class="material-icons" style="font-size:0.85rem;vertical-align:middle">arrow_forward</span>
+          </a>
+        </div>
+        <div class="explore-preview-grid">
+          <a class="epc" *ngFor="let p of exploreProfiles" [routerLink]="'/u/' + p.handle">
+            <div class="epc-top">
+              <img *ngIf="p.githubUsername" [src]="'https://avatars.githubusercontent.com/' + p.githubUsername" class="epc-avatar" [alt]="p.handle">
+              <div class="epc-avatar-placeholder" *ngIf="!p.githubUsername">
+                <span class="material-icons" style="font-size:1rem">person</span>
+              </div>
+              <div class="epc-meta">
+                <div class="epc-name">{{ p.name || p.handle }}</div>
+                <div class="epc-handle">&#64;{{ p.handle }}</div>
+              </div>
+              <div class="epc-count">
+                <span class="material-icons" style="font-size:0.75rem;color:var(--green)">verified</span>
+                {{ p.verifiedSkills }}
+              </div>
+            </div>
+            <div class="epc-chips">
+              <span class="epc-chip" *ngFor="let s of p.topSkills.slice(0,4)">{{ s }}</span>
+            </div>
+          </a>
+        </div>
+      </div>
+
     </div>
 
   </main>
@@ -299,26 +426,51 @@
 
 <!-- Badge modal -->
 <div class="modal-backdrop" *ngIf="showBadgeModal" (click)="showBadgeModal = false">
-  <div class="modal" (click)="$event.stopPropagation()" style="max-width:480px">
+  <div class="modal" (click)="$event.stopPropagation()" style="max-width:540px">
     <div class="modal-header">
       <h2 class="modal-title">Add to GitHub README</h2>
       <button class="modal-close" (click)="showBadgeModal = false">
         <span class="material-icons">close</span>
       </button>
     </div>
-    <div class="modal-body" style="display:flex;flex-direction:column;gap:1rem">
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:1.1rem">
       <p style="margin:0;font-size:0.85rem;color:var(--text-muted)">
-        Paste this into your GitHub README to show your verified skill map:
+        Pin this card on your GitHub profile README — it auto-updates every time you sync.
       </p>
-      <div class="badge-preview">
-        <img [src]="'/api/badge/' + ((handle$ | async) || (githubUsername$ | async))" alt="DevMap badge" style="height:20px" />
+
+      <div class="badge-theme-toggle">
+        <button
+          class="badge-theme-btn"
+          [class.badge-theme-btn-active]="badgeTheme === 'dark'"
+          (click)="badgeTheme = 'dark'"
+        >Dark</button>
+        <button
+          class="badge-theme-btn"
+          [class.badge-theme-btn-active]="badgeTheme === 'light'"
+          (click)="badgeTheme = 'light'"
+        >Light</button>
       </div>
-      <div class="badge-code">
-        <code class="badge-snippet">{{ badgeMarkdown() }}</code>
-        <button class="badge-copy-btn" (click)="copyBadgeMarkdown()">
-          <span class="material-icons" style="font-size:0.85rem">content_copy</span>
-          Copy
-        </button>
+
+      <div class="badge-preview" [class.badge-preview-light]="badgeTheme === 'light'">
+        <img
+          [src]="badgeCardUrl(badgeTheme)"
+          alt="DevMap skill card"
+          style="width:100%;max-width:495px;border-radius:6px;display:block"
+        />
+      </div>
+
+      <div>
+        <p style="margin:0 0 0.4rem;font-size:0.78rem;color:var(--text-subtle);font-weight:600;text-transform:uppercase;letter-spacing:0.05em">README snippet</p>
+        <div class="badge-code">
+          <code class="badge-snippet">{{ badgeMarkdownFull() }}</code>
+          <button class="badge-copy-btn" (click)="copyBadgeMarkdown()">
+            <span class="material-icons" style="font-size:0.85rem">{{ badgeCopied ? 'check' : 'content_copy' }}</span>
+            {{ badgeCopied ? 'Copied!' : 'Copy' }}
+          </button>
+        </div>
+        <p style="margin:0.4rem 0 0;font-size:0.75rem;color:var(--text-subtle)">
+          Uses <code style="font-size:0.75rem;color:var(--text-muted)">&lt;picture&gt;</code> so it adapts to GitHub dark/light mode automatically.
+        </p>
       </div>
     </div>
   </div>
