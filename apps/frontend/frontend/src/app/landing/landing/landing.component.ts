@@ -16,7 +16,11 @@ export class LandingComponent {
   private readonly authService = inject(AuthService);
   readonly demoTreeUrl = `/tree/${DEMO_TREE_ID}`;
 
+  get isLoggedIn(): boolean {
+    return this.authService.hasValidToken();
+  }
+
   get authEntryRoute(): string {
-    return this.authService.hasValidToken() ? '/dashboard' : '/login';
+    return this.isLoggedIn ? '/dashboard' : '/login';
   }
 }
