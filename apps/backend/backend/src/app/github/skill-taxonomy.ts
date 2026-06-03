@@ -34,6 +34,8 @@ export const SKILL_TAXONOMY: TaxonomyEntry[] = [
   { canonicalTitle: 'Elixir',     category: 'language', icon: 'code', aliases: ['elixir'] },
   { canonicalTitle: 'Scala',      category: 'language', icon: 'code', aliases: ['scala'] },
   { canonicalTitle: 'C++',        category: 'language', icon: 'code', aliases: ['c++', 'cpp'] },
+  { canonicalTitle: 'C',          category: 'language', icon: 'code', aliases: ['c'] },
+  { canonicalTitle: 'Shell',      category: 'language', icon: 'terminal', aliases: ['shell', 'bash', 'shellscript'] },
 
   // ── Frontend frameworks ────────────────────────────────────────────────────
   { canonicalTitle: 'React',    category: 'frontend', icon: 'web', aliases: ['react', 'react-dom', 'react-scripts'], prerequisites: ['JavaScript'] },
@@ -158,7 +160,12 @@ export interface MappedSkill {
 export function mapToSkill(detectedName: string): MappedSkill | null {
   const lower = detectedName.toLowerCase().trim();
   for (const entry of SKILL_TAXONOMY) {
-    if (entry.aliases.some((alias) => lower === alias.toLowerCase() || lower.includes(alias.toLowerCase()))) {
+    // Exact match always; substring match only for aliases >= 3 chars, so short
+    // aliases like "c", "go", "js" don't false-match (e.g. "javascript" includes "c").
+    if (entry.aliases.some((alias) => {
+      const a = alias.toLowerCase();
+      return lower === a || (a.length >= 3 && lower.includes(a));
+    })) {
       return {
         canonicalTitle: entry.canonicalTitle,
         category: entry.category,

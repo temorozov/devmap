@@ -12,6 +12,7 @@ interface CompareProfile {
   name: string | null;
   githubUsername: string | null;
   skillCount: number;
+  source: 'member' | 'github';
 }
 
 interface CompareResult {
@@ -71,6 +72,12 @@ export class CompareComponent implements OnInit {
     const a = this.handleA.trim().replace(/^@/, '');
     const b = this.handleB.trim().replace(/^@/, '');
     if (!a || !b) return;
+    this.router.navigate(['/compare', a, b]);
+  }
+
+  tryExample(a: string, b: string) {
+    this.handleA = a;
+    this.handleB = b;
     this.router.navigate(['/compare', a, b]);
   }
 

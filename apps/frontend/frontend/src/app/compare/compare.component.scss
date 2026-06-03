@@ -104,6 +104,57 @@
   &:disabled { opacity: 0.4; cursor: not-allowed; }
 }
 
+/* Example shortcuts */
+.compare-examples {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1.1rem;
+}
+
+.compare-examples-label {
+  font-size: 0.8rem;
+  color: var(--text-subtle);
+}
+
+.compare-example-chip {
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-family: var(--font-mono);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+
+  &:hover { background: var(--bg-elevated); color: var(--text); border-color: var(--text-muted); }
+}
+
+/* Member vs GitHub-scanned tag */
+.source-tag {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  vertical-align: middle;
+  color: var(--green);
+  background: var(--green-dim);
+  border: 1px solid var(--green-border);
+}
+
+.source-tag-github {
+  color: var(--text-muted);
+  background: rgba(139, 148, 158, 0.1);
+  border-color: var(--border);
+}
+
 /* Loading / error */
 .state-center {
   display: flex;

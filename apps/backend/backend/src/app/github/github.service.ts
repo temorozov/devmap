@@ -20,8 +20,12 @@ const MANIFEST_FILES = [
 ];
 
 const MAX_REPOS = 100;
+const MAX_EXTERNAL_REPOS = 20;
 const MANIFEST_TIMEOUT_MS = 4000;
 const REPO_LIST_TIMEOUT_MS = 10000;
+
+/** Thrown by username scanning when GitHub has no such user. */
+export const GITHUB_USER_NOT_FOUND = 'GITHUB_USER_NOT_FOUND';
 
 @Injectable()
 export class GitHubService {
@@ -36,6 +40,54 @@ export class GitHubService {
     );
 
     return Array.from(techMap.values()).sort((a, b) => b.repos.length - a.repos.length);
+  }
+
+  /**
+   * Detect technologies for an arbitrary public GitHub user (not necessarily a
+   * site member), e.g. "torvalds". `accessToken` is used only to lift GitHub
+   * rate limits for public reads; it may be empty for best-effort unauthenticated access.
+   */
+  async detectTechnologiesForUsername(username: string, accessToken: string): Promise<DetectedTech[]> {
+    const repos = await this.fetchReposForUsername(username, accessToken);
+    const techMap = new Map<string, DetectedTech>();
+
+    await Promise.all(
+      repos.map((repo) => this.analyzeRepo(repo, accessToken, username, techMap)),
+    );
+
+    return Array.from(techMap.values()).sort((a, b) => b.repos.length - a.repos.length);
+  }
+
+  private async fetchReposForUsername(username: string, accessToken: string): Promise<GitHubRepo[]> {
+    const all: GitHubRepo[] = [];
+    let page = 1;
+
+    while (all.length < MAX_EXTERNAL_REPOS) {
+      let response;
+      try {
+        response = await axios.get<GitHubRepo[]>(
+          `https://api.github.com/users/${encodeURIComponent(username)}/repos`,
+          {
+            params: { per_page: 50, page, sort: 'pushed', type: 'owner' },
+            headers: this.publicHeaders(accessToken),
+            timeout: REPO_LIST_TIMEOUT_MS,
+          },
+        );
+      } catch (err) {
+        if (axios.isAxiosError(err) && err.response?.status === 404) {
+          throw new Error(GITHUB_USER_NOT_FOUND);
+        }
+        this.logger.warn(`Failed to fetch repos for @${username} page ${page}: ${this.errMsg(err)}`);
+        break;
+      }
+
+      if (!response.data.length) break;
+      all.push(...response.data.filter((r) => !r.fork));
+      if (response.data.length < 50) break;
+      page++;
+    }
+
+    return all.slice(0, MAX_EXTERNAL_REPOS);
   }
 
   private async fetchRepos(accessToken: string): Promise<GitHubRepo[]> {
@@ -333,6 +385,18 @@ export class GitHubService {
       Accept: 'application/vnd.github+json',
       'X-GitHub-Api-Version': '2022-11-28',
     };
+  }
+
+  /** Headers for public reads — Authorization is included only when a token is available. */
+  private publicHeaders(accessToken: string): Record<string, string> {
+    const headers: Record<string, string> = {
+      Accept: 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28',
+    };
+    if (accessToken) {
+      headers.Authorization = `Bearer ${accessToken}`;
+    }
+    return headers;
   }
 
   private errMsg(err: unknown): string {

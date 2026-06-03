@@ -14,7 +14,10 @@
     <!-- Input form -->
     <section class="compare-form-section">
       <h1 class="compare-heading">Compare skills</h1>
-      <p class="compare-sub">See what two developers have in common — and where they differ.</p>
+      <p class="compare-sub">
+        Compare any two developers — DevMap members <strong>or any public GitHub user</strong>.
+        We scan their repos live.
+      </p>
       <form class="compare-form" (ngSubmit)="compare()">
         <input
           class="compare-input"
@@ -31,7 +34,7 @@
           type="text"
           [(ngModel)]="handleB"
           name="handleB"
-          placeholder="@handle or GitHub username"
+          placeholder="GitHub username, e.g. torvalds"
           autocomplete="off"
           spellcheck="false"
         />
@@ -39,11 +42,19 @@
           Compare
         </button>
       </form>
+
+      <div class="compare-examples">
+        <span class="compare-examples-label">Try:</span>
+        <button type="button" class="compare-example-chip" (click)="tryExample('torvalds', 'gaearon')">torvalds vs gaearon</button>
+        <button type="button" class="compare-example-chip" (click)="tryExample('antirez', 'tj')">antirez vs tj</button>
+        <button type="button" class="compare-example-chip" (click)="tryExample('sindresorhus', 'kentcdodds')">sindresorhus vs kentcdodds</button>
+      </div>
     </section>
 
     <!-- Loading -->
-    <div class="state-center" *ngIf="loading">
+    <div class="state-center" *ngIf="loading" style="flex-direction:column;gap:0.6rem;align-items:center">
       <span class="material-icons spinning" style="font-size:1.5rem;color:var(--text-subtle)">refresh</span>
+      <span style="color:var(--text-muted);font-size:0.85rem">Scanning GitHub repos…</span>
     </div>
 
     <!-- Error -->
@@ -56,21 +67,33 @@
 
       <!-- Profile headers -->
       <div class="profiles-row">
-        <a class="profile-chip" [routerLink]="'/u/' + result.a.handle">
+        <a class="profile-chip"
+           [routerLink]="result.a.source === 'member' ? ['/u', result.a.handle] : null"
+           [attr.href]="result.a.source === 'github' ? 'https://github.com/' + result.a.handle : null"
+           [attr.target]="result.a.source === 'github' ? '_blank' : null">
           <img *ngIf="avatarUrl(result.a.githubUsername)" [src]="avatarUrl(result.a.githubUsername)" class="profile-avatar" alt="">
           <div class="profile-chip-info">
             <span class="profile-chip-handle">&#64;{{ result.a.handle }}</span>
-            <span class="profile-chip-count">{{ result.a.skillCount }} skills</span>
+            <span class="profile-chip-count">
+              {{ result.a.skillCount }} skills
+              <span class="source-tag" [class.source-tag-github]="result.a.source === 'github'">{{ result.a.source === 'member' ? 'member' : 'GitHub' }}</span>
+            </span>
           </div>
         </a>
         <div class="in-common-badge" *ngIf="result.inCommon.length > 0">
           <span class="material-icons" style="font-size:0.9rem">link</span>
           {{ result.inCommon.length }} in common
         </div>
-        <a class="profile-chip profile-chip-right" [routerLink]="'/u/' + result.b.handle">
+        <a class="profile-chip profile-chip-right"
+           [routerLink]="result.b.source === 'member' ? ['/u', result.b.handle] : null"
+           [attr.href]="result.b.source === 'github' ? 'https://github.com/' + result.b.handle : null"
+           [attr.target]="result.b.source === 'github' ? '_blank' : null">
           <div class="profile-chip-info profile-chip-info-right">
             <span class="profile-chip-handle">&#64;{{ result.b.handle }}</span>
-            <span class="profile-chip-count">{{ result.b.skillCount }} skills</span>
+            <span class="profile-chip-count">
+              {{ result.b.skillCount }} skills
+              <span class="source-tag" [class.source-tag-github]="result.b.source === 'github'">{{ result.b.source === 'member' ? 'member' : 'GitHub' }}</span>
+            </span>
           </div>
           <img *ngIf="avatarUrl(result.b.githubUsername)" [src]="avatarUrl(result.b.githubUsername)" class="profile-avatar" alt="">
         </a>

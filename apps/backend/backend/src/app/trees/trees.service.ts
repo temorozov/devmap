@@ -1,14 +1,32 @@
-import { Injectable, NotFoundException, InternalServerErrorException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, InternalServerErrorException, ServiceUnavailableException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from './ai.service';
 import { mapToSkill, SKILL_TAXONOMY } from '../github/skill-taxonomy';
+import { GitHubService, GITHUB_USER_NOT_FOUND } from '../github/github.service';
 import { randomBytes } from 'crypto';
+
+interface ComparedProfile {
+    handle: string;
+    name: string | null;
+    githubUsername: string | null;
+    skills: string[];
+    /** 'member' = registered DevMap user; 'github' = scanned public GitHub user. */
+    source: 'member' | 'github';
+}
+
+const EXTERNAL_SCAN_TTL_MS = 60 * 60 * 1000;
 
 @Injectable()
 export class TreesService {
     private readonly logger = new Logger(TreesService.name);
+    /** Short-lived cache of on-the-fly scans of non-member GitHub users. */
+    private readonly externalScanCache = new Map<string, { skills: string[]; at: number }>();
 
-    constructor(private prisma: PrismaService, private aiService: AiService) { }
+    constructor(
+        private prisma: PrismaService,
+        private aiService: AiService,
+        private github: GitHubService,
+    ) { }
 
     async create(userId: string, title: string) {
         return this.prisma.tree.create({
@@ -390,46 +408,93 @@ export class TreesService {
     }
 
     async compareProfiles(handleA: string, handleB: string) {
-        const fetchSkills = async (handle: string) => {
-            const user = await this.prisma.user.findFirst({
-                where: { OR: [{ handle }, { githubUsername: handle }] },
-                select: {
-                    handle: true,
-                    name: true,
-                    githubUsername: true,
-                    trees: {
-                        where: { title: 'My Dev Map' },
-                        take: 1,
-                        select: {
-                            nodes: {
-                                where: { verified: true, source: 'github' },
-                                select: { title: true, icon: true },
-                            },
-                        },
-                    },
-                },
-            });
-            if (!user) throw new NotFoundException(`Profile not found: ${handle}`);
-            return {
-                handle: user.handle ?? user.githubUsername ?? handle,
-                name: user.name,
-                githubUsername: user.githubUsername,
-                skills: user.trees[0]?.nodes.map(n => n.title) ?? [],
-            };
-        };
-
-        const [a, b] = await Promise.all([fetchSkills(handleA), fetchSkills(handleB)]);
+        const [a, b] = await Promise.all([
+            this.resolveComparedProfile(handleA),
+            this.resolveComparedProfile(handleB),
+        ]);
 
         const setA = new Set(a.skills);
         const setB = new Set(b.skills);
 
         return {
-            a: { handle: a.handle, name: a.name, githubUsername: a.githubUsername, skillCount: a.skills.length },
-            b: { handle: b.handle, name: b.name, githubUsername: b.githubUsername, skillCount: b.skills.length },
+            a: { handle: a.handle, name: a.name, githubUsername: a.githubUsername, skillCount: a.skills.length, source: a.source },
+            b: { handle: b.handle, name: b.name, githubUsername: b.githubUsername, skillCount: b.skills.length, source: b.source },
             inCommon: a.skills.filter(s => setB.has(s)),
             onlyA: a.skills.filter(s => !setB.has(s)),
             onlyB: b.skills.filter(s => !setA.has(s)),
         };
+    }
+
+    /** Resolve a handle to skills — a registered member if one exists, otherwise a live scan of the public GitHub user. */
+    private async resolveComparedProfile(rawHandle: string): Promise<ComparedProfile> {
+        const handle = rawHandle.trim().replace(/^@/, '');
+        if (!handle) throw new NotFoundException('Empty handle');
+
+        const user = await this.prisma.user.findFirst({
+            where: { OR: [{ handle }, { githubUsername: handle }] },
+            select: {
+                handle: true,
+                name: true,
+                githubUsername: true,
+                trees: {
+                    where: { title: 'My Dev Map' },
+                    take: 1,
+                    select: {
+                        nodes: {
+                            where: { verified: true, source: 'github' },
+                            select: { title: true },
+                        },
+                    },
+                },
+            },
+        });
+
+        if (user) {
+            return {
+                handle: user.handle ?? user.githubUsername ?? handle,
+                name: user.name,
+                githubUsername: user.githubUsername,
+                skills: user.trees[0]?.nodes.map(n => n.title) ?? [],
+                source: 'member',
+            };
+        }
+
+        // Not a member — scan their public GitHub repos on the fly.
+        const skills = await this.scanExternalGithubUser(handle);
+        return { handle, name: null, githubUsername: handle, skills, source: 'github' };
+    }
+
+    private async scanExternalGithubUser(username: string): Promise<string[]> {
+        const key = username.toLowerCase();
+        const cached = this.externalScanCache.get(key);
+        if (cached && Date.now() - cached.at < EXTERNAL_SCAN_TTL_MS) {
+            return cached.skills;
+        }
+
+        const token = await this.getScanToken();
+        let detected;
+        try {
+            detected = await this.github.detectTechnologiesForUsername(username, token);
+        } catch (err) {
+            if (err instanceof Error && err.message === GITHUB_USER_NOT_FOUND) {
+                throw new NotFoundException(`No DevMap member or GitHub user found: @${username}`);
+            }
+            this.logger.warn(`External GitHub scan failed for @${username}: ${err instanceof Error ? err.message : String(err)}`);
+            throw new ServiceUnavailableException('Could not scan GitHub right now. Please try again in a moment.');
+        }
+
+        const skills = detected.map(d => d.canonicalTitle);
+        this.externalScanCache.set(key, { skills, at: Date.now() });
+        return skills;
+    }
+
+    /** Any connected user's token, used purely to lift GitHub rate limits for public reads. */
+    private async getScanToken(): Promise<string> {
+        const u = await this.prisma.user.findFirst({
+            where: { githubAccessToken: { not: null } },
+            select: { githubAccessToken: true },
+        });
+        return u?.githubAccessToken ?? '';
     }
 
     async matchJobDescription(userId: string, jdText: string) {
