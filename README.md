@@ -1,94 +1,83 @@
-# Skill Tree
+# DevMap
 
-## Запуск
+**GitHub-verified developer skill maps.** Connect GitHub, get a public profile at `/u/yourhandle` showing what you've actually shipped — verified from real repos, not self-reported.
 
-Для разработки:
+---
 
-```sh
-npm run dev
-# или явно
-npm run dev:up
-```
+## What it does
 
-Быстрый локальный запуск для просмотра изменений без пересборки Docker-образов:
+- Scans your GitHub repos and detects 50+ technologies from `package.json`, Dockerfiles, CI workflows, and more
+- Builds a verified skill map — each skill links to the repos that prove it
+- Auto-syncs via GitHub webhooks on every push
+- Public profile at `/u/handle` with OG previews for Slack/Twitter
+- Weekly email digest + skills-updated notifications
+- README badge: `[![DevMap](https://yourhost/api/trees/badge/handle)](https://yourhost/u/handle)`
+- Skill gap tracker — declare a target role, see which required skills you have vs. missing
+- Explore page to discover other devs
+
+## Stack
+
+- **Frontend** — Angular 18, SCSS, OnPush
+- **Backend** — NestJS 10
+- **Database** — PostgreSQL + Prisma 7
+- **Email** — Resend
+- **Monorepo** — Nx
+- **Runtime** — Docker Compose
+
+---
+
+## Local development
+
+Fastest (local Node processes, Docker only for Postgres):
 
 ```sh
 npm run dev:fast
 ```
 
-Он поднимает только PostgreSQL в Docker, а Angular и NestJS запускает через Nx на хосте.
-Frontend: `http://localhost:4200`, backend API проксируется через `/api` на `http://localhost:3000`.
-Если `3000` уже занят старым Docker backend, скрипт автоматически выберет свободный порт начиная с `3001`
-и настроит frontend proxy на него.
+Frontend: `http://localhost:4200` — Backend: `http://localhost:3000/api`
 
-Для продакшена:
+Full Docker:
 
 ```sh
-cp .env.production.example .env.production
-# заполнить .env.production своими значениями
-./deploy.sh
-```
-
-Обе команды запускают проект через Docker Compose и берут все URL, домены и порты только из env-файлов.
-`dev` использует общий `docker-compose.yml` и локальный override `docker-compose.dev.yml`.
-`prod` использует только общий `docker-compose.yml`.
-
-Остановка:
-
-```sh
+npm run dev
 npm run dev:down
-npm run prod:down
 ```
 
-`dev:up` и `dev:down` используют скрипты из `scripts/`, которые корректно работают даже при запуске не из корня проекта.
+---
 
-## VPS деплой
+## Production deploy
 
 ```sh
 cp .env.production.example .env.production
+# fill in .env.production
 ./deploy.sh
 ```
 
-Что делает `./deploy.sh`:
+`deploy.sh` validates env, checks compose config, builds containers, and runs `prisma migrate deploy` automatically.
 
-- проверяет обязательные переменные в `.env.production`
-- валидирует итоговый `docker compose` конфиг до запуска
-- собирает и поднимает контейнеры с `--remove-orphans`
-- автоматически применяет Prisma migrations через `prisma migrate deploy`
+---
 
-Если нужно использовать другой env-файл:
+## Key env vars
 
-```sh
-./deploy.sh /path/to/your.env.production
-```
+| Variable | Required | Purpose |
+|----------|----------|---------|
+| `JWT_SECRET` | yes | JWT signing |
+| `DATABASE_URL` | yes | Postgres connection |
+| `FRONTEND_URL` / `BACKEND_URL` | yes | Public URLs |
+| `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` | yes | GitHub OAuth login |
+| `GITHUB_CALLBACK_URL` | yes | OAuth redirect |
+| `GITHUB_WEBHOOK_SECRET` | recommended | Webhook HMAC verification |
+| `RESEND_API_KEY` | optional | Email digest + skills-updated emails |
+| `OPENAI_API_KEY` | optional | AI skill map generation |
+| `GOOGLE_*` / `DISCORD_*` | optional | Additional OAuth providers |
 
-## Env-структура
+See `.env.example` and `docs/DEPLOYMENT_INSTRUCTIONS.md` for the full list.
 
-Разработка: локальный `.env` на основе `.env.example`
-
-Продакшен: локальный `.env.production` на основе `.env.production.example`
-
-Ключевые переменные:
-
-- `FRONTEND_URL`
-- `FRONTEND_PORT`
-- `BACKEND_URL`
-- `BACKEND_PORT`
-- `PORT`
-- `API_URL`
-- `CORS_ORIGINS`
-- `GOOGLE_CALLBACK_URL`
-- `DISCORD_CALLBACK_URL`
-- `EMAIL_CONFIRM_URL`
-- `DATABASE_URL`
-- `POSTGRES_PORT` (для dev-публикации PostgreSQL из `docker-compose.dev.yml`)
-- `OPENAI_API_KEY`
-- `AI_OPENAI_MODEL`
+---
 
 ## Docs
 
 - [Project Context](docs/PROJECT_CONTEXT.md)
 - [Deployment](docs/DEPLOYMENT_INSTRUCTIONS.md)
 - [Roadmap](docs/ROADMAP.md)
-- [AI Agents](docs/AGENTS.md)
-- [AI Instructions](docs/AI_INSTRUCTIONS.md)
+- [Agent Guidelines](docs/AGENTS.md)
