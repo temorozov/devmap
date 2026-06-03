@@ -25,6 +25,30 @@
     backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--border);
 
+    .canvas-nav-links {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .canvas-nav-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.28rem 0.6rem;
+        border-radius: 6px;
+        font-size: 0.82rem;
+        font-weight: 500;
+        color: var(--text-muted);
+        text-decoration: none;
+        transition: color 0.15s, background 0.15s;
+
+        &:hover {
+            color: var(--text);
+            background: rgba(255,255,255,0.06);
+        }
+    }
+
     .left-section {
         display: flex;
         align-items: center;

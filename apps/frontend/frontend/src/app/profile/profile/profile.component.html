@@ -2,20 +2,26 @@
 
   <!-- NAV -->
   <header class="profile-nav">
-    <a class="nav-brand" routerLink="/">
-      <svg class="nav-logo" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="12" cy="12" r="3" fill="currentColor"/>
-        <circle cx="4" cy="6" r="2" fill="currentColor" opacity=".6"/>
-        <circle cx="20" cy="6" r="2" fill="currentColor" opacity=".6"/>
-        <circle cx="4" cy="18" r="2" fill="currentColor" opacity=".6"/>
-        <circle cx="20" cy="18" r="2" fill="currentColor" opacity=".6"/>
-        <line x1="12" y1="12" x2="4" y2="6" stroke="currentColor" stroke-width="1.5" opacity=".4"/>
-        <line x1="12" y1="12" x2="20" y2="6" stroke="currentColor" stroke-width="1.5" opacity=".4"/>
-        <line x1="12" y1="12" x2="4" y2="18" stroke="currentColor" stroke-width="1.5" opacity=".4"/>
-        <line x1="12" y1="12" x2="20" y2="18" stroke="currentColor" stroke-width="1.5" opacity=".4"/>
-      </svg>
-      DevMap
-    </a>
+    <div class="nav-left">
+      <a class="nav-brand" routerLink="/">
+        <svg class="nav-logo" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="3" fill="currentColor"/>
+          <circle cx="4" cy="6" r="2" fill="currentColor" opacity=".6"/>
+          <circle cx="20" cy="6" r="2" fill="currentColor" opacity=".6"/>
+          <circle cx="4" cy="18" r="2" fill="currentColor" opacity=".6"/>
+          <circle cx="20" cy="18" r="2" fill="currentColor" opacity=".6"/>
+          <line x1="12" y1="12" x2="4" y2="6" stroke="currentColor" stroke-width="1.5" opacity=".4"/>
+          <line x1="12" y1="12" x2="20" y2="6" stroke="currentColor" stroke-width="1.5" opacity=".4"/>
+          <line x1="12" y1="12" x2="4" y2="18" stroke="currentColor" stroke-width="1.5" opacity=".4"/>
+          <line x1="12" y1="12" x2="20" y2="18" stroke="currentColor" stroke-width="1.5" opacity=".4"/>
+        </svg>
+        DevMap
+      </a>
+      <a class="nav-explore-link" routerLink="/explore">
+        <span class="material-icons" style="font-size:0.9rem">explore</span>
+        Explore
+      </a>
+    </div>
     <button class="share-btn" (click)="copyProfileLink()" title="Copy profile link">
       <span class="material-icons" style="font-size:0.9rem">link</span>
       Share

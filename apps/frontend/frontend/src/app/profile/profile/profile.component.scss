@@ -23,6 +23,12 @@
   flex-shrink: 0;
 }
 
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
 .nav-brand {
   display: flex;
   align-items: center;
@@ -35,6 +41,24 @@
 }
 
 .nav-logo { width: 18px; height: 18px; color: var(--green); }
+
+.nav-explore-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color 0.15s, background 0.15s;
+
+  &:hover {
+    color: var(--text);
+    background: rgba(255,255,255,0.06);
+  }
+}
 
 .share-btn {
   display: inline-flex;

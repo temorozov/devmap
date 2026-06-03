@@ -2,20 +2,28 @@
 
   <!-- TOPBAR -->
   <header class="topbar">
-    <a class="topbar-brand" routerLink="/">
-      <svg class="topbar-logo" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="12" cy="12" r="3" fill="currentColor"/>
-        <circle cx="4" cy="6" r="2" fill="currentColor" opacity=".6"/>
-        <circle cx="20" cy="6" r="2" fill="currentColor" opacity=".6"/>
-        <circle cx="4" cy="18" r="2" fill="currentColor" opacity=".6"/>
-        <circle cx="20" cy="18" r="2" fill="currentColor" opacity=".6"/>
-        <line x1="12" y1="12" x2="4" y2="6" stroke="currentColor" stroke-width="1.5" opacity=".4"/>
-        <line x1="12" y1="12" x2="20" y2="6" stroke="currentColor" stroke-width="1.5" opacity=".4"/>
-        <line x1="12" y1="12" x2="4" y2="18" stroke="currentColor" stroke-width="1.5" opacity=".4"/>
-        <line x1="12" y1="12" x2="20" y2="18" stroke="currentColor" stroke-width="1.5" opacity=".4"/>
-      </svg>
-      <span class="topbar-brand-name">DevMap</span>
-    </a>
+    <div class="topbar-left">
+      <a class="topbar-brand" routerLink="/">
+        <svg class="topbar-logo" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="3" fill="currentColor"/>
+          <circle cx="4" cy="6" r="2" fill="currentColor" opacity=".6"/>
+          <circle cx="20" cy="6" r="2" fill="currentColor" opacity=".6"/>
+          <circle cx="4" cy="18" r="2" fill="currentColor" opacity=".6"/>
+          <circle cx="20" cy="18" r="2" fill="currentColor" opacity=".6"/>
+          <line x1="12" y1="12" x2="4" y2="6" stroke="currentColor" stroke-width="1.5" opacity=".4"/>
+          <line x1="12" y1="12" x2="20" y2="6" stroke="currentColor" stroke-width="1.5" opacity=".4"/>
+          <line x1="12" y1="12" x2="4" y2="18" stroke="currentColor" stroke-width="1.5" opacity=".4"/>
+          <line x1="12" y1="12" x2="20" y2="18" stroke="currentColor" stroke-width="1.5" opacity=".4"/>
+        </svg>
+        <span class="topbar-brand-name">DevMap</span>
+      </a>
+      <nav class="topbar-nav">
+        <a class="topbar-nav-link" routerLink="/explore" routerLinkActive="topbar-nav-link-active">
+          <span class="material-icons" style="font-size:0.9rem">explore</span>
+          Explore
+        </a>
+      </nav>
+    </div>
 
     <div class="topbar-actions">
       <!-- Profile view counter -->
@@ -224,10 +232,6 @@
             <h2 class="gap-title">Skill gap tracker</h2>
             <p class="gap-sub">Pick a target role and see what's missing from your verified map</p>
           </div>
-          <a routerLink="/explore" class="explore-link">
-            <span class="material-icons" style="font-size:0.85rem">explore</span>
-            Explore devs
-          </a>
         </div>
 
         <!-- Role selector -->

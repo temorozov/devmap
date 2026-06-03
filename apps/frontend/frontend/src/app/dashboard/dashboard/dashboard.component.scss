@@ -25,6 +25,41 @@
   flex-shrink: 0;
 }
 
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.topbar-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.topbar-nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color 0.15s, background 0.15s;
+
+  &:hover {
+    color: var(--text);
+    background: rgba(255,255,255,0.06);
+  }
+
+  &.topbar-nav-link-active {
+    color: var(--text);
+    background: rgba(255,255,255,0.06);
+  }
+}
+
 .topbar-brand {
   display: flex;
   align-items: center;
