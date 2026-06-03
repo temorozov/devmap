@@ -126,6 +126,24 @@ export class GitHubService {
       this.addTech(repo.language, repo, githubUsername, techMap, `primary language`);
     }
 
+    // Full language breakdown — the single "primary language" field misses
+    // secondary languages a developer clearly works in (e.g. Assembly + Shell
+    // alongside C). Count the top languages by bytes, plus any that are a
+    // meaningful share of the repo, so trace amounts don't add noise.
+    try {
+      const langResp = await axios.get<Record<string, number>>(
+        `https://api.github.com/repos/${repo.full_name}/languages`,
+        { headers: this.publicHeaders(accessToken), timeout: MANIFEST_TIMEOUT_MS },
+      );
+      const langs = Object.entries(langResp.data ?? {}).sort((a, b) => b[1] - a[1]);
+      const total = langs.reduce((sum, [, bytes]) => sum + bytes, 0) || 1;
+      langs
+        .filter(([, bytes], i) => i < 3 || bytes / total >= 0.1)
+        .forEach(([lang]) => this.addTech(lang, repo, githubUsername, techMap, 'repo language'));
+    } catch {
+      // languages endpoint unavailable — primary language above still counted
+    }
+
     // Manifest files detection
     for (const manifest of MANIFEST_FILES) {
       try {

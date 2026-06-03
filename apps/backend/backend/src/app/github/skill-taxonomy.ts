@@ -36,6 +36,16 @@ export const SKILL_TAXONOMY: TaxonomyEntry[] = [
   { canonicalTitle: 'C++',        category: 'language', icon: 'code', aliases: ['c++', 'cpp'] },
   { canonicalTitle: 'C',          category: 'language', icon: 'code', aliases: ['c'] },
   { canonicalTitle: 'Shell',      category: 'language', icon: 'terminal', aliases: ['shell', 'bash', 'shellscript'] },
+  { canonicalTitle: 'Assembly',   category: 'language', icon: 'memory', aliases: ['assembly'] },
+  { canonicalTitle: 'Perl',       category: 'language', icon: 'code', aliases: ['perl'] },
+  { canonicalTitle: 'Lua',        category: 'language', icon: 'code', aliases: ['lua'] },
+  { canonicalTitle: 'Haskell',    category: 'language', icon: 'code', aliases: ['haskell'] },
+  { canonicalTitle: 'Clojure',    category: 'language', icon: 'code', aliases: ['clojure'] },
+  { canonicalTitle: 'OCaml',      category: 'language', icon: 'code', aliases: ['ocaml'] },
+  { canonicalTitle: 'Zig',        category: 'language', icon: 'code', aliases: ['zig'] },
+  { canonicalTitle: 'Objective-C', category: 'language', icon: 'code', aliases: ['objective-c', 'objectivec'] },
+  { canonicalTitle: 'Groovy',     category: 'language', icon: 'code', aliases: ['groovy'] },
+  { canonicalTitle: 'Julia',      category: 'language', icon: 'code', aliases: ['julia'] },
 
   // ── Frontend frameworks ────────────────────────────────────────────────────
   { canonicalTitle: 'React',    category: 'frontend', icon: 'web', aliases: ['react', 'react-dom', 'react-scripts'], prerequisites: ['JavaScript'] },
