@@ -14,7 +14,8 @@ const CATEGORY_META: Record<string, { label: string; icon: string; order: number
   devops:   { label: 'DevOps',     icon: 'cloud',          order: 5 },
   mobile:   { label: 'Mobile',     icon: 'smartphone',     order: 6 },
   testing:  { label: 'Testing',    icon: 'science',        order: 7 },
-  tooling:  { label: 'Tooling',    icon: 'settings',       order: 8 },
+  ml:       { label: 'ML / AI',    icon: 'psychology',     order: 8 },
+  tooling:  { label: 'Tooling',    icon: 'settings',       order: 9 },
 };
 
 interface SkillGroup {
@@ -313,11 +314,12 @@ export class ProfileComponent implements OnInit, OnDestroy {
     const icon = node.icon ?? '';
     if (icon === 'code') return 'language';
     if (icon === 'web' || icon === 'style') return 'frontend';
-    if (icon === 'dns') return 'backend';
+    if (icon === 'dns' || icon === 'api') return 'backend';
     if (icon === 'storage') return 'database';
     if (icon === 'cloud' || icon === 'settings_suggest') return 'devops';
     if (icon === 'smartphone') return 'mobile';
     if (icon === 'science') return 'testing';
+    if (icon === 'psychology') return 'ml';
     return 'tooling';
   }
 }

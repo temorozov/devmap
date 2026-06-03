@@ -242,6 +242,7 @@ export class GitHubSyncService {
       devops: 'cloud',
       mobile: 'smartphone',
       testing: 'science',
+      ml: 'psychology',
       tooling: 'settings',
     };
 
@@ -253,6 +254,7 @@ export class GitHubSyncService {
       devops: 'DevOps',
       mobile: 'Mobile',
       testing: 'Testing',
+      ml: 'ML / AI',
       tooling: 'Tooling',
     };
 
