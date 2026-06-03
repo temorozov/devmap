@@ -4,12 +4,14 @@ import { DashboardComponent } from './dashboard/dashboard/dashboard.component';
 import { CanvasComponent } from './canvas/canvas/canvas.component';
 import { LandingComponent } from './landing/landing/landing.component';
 import { ProfileComponent } from './profile/profile/profile.component';
+import { ExploreComponent } from './explore/explore.component';
 import { authGuard } from './auth.guard';
 
 export const appRoutes: Route[] = [
     { path: '', component: LandingComponent },
     { path: 'login', component: LoginComponent },
     { path: 'dashboard', component: DashboardComponent, canActivate: [authGuard] },
+    { path: 'explore', component: ExploreComponent },
     { path: 'tree/:id', component: CanvasComponent },
     { path: 'u/:handle', component: ProfileComponent },
     { path: '**', redirectTo: '' }

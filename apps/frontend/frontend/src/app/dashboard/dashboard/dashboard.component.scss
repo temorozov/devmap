@@ -594,3 +594,160 @@
 
   button { flex: 1; }
 }
+
+/* ── SKILL GAP ── */
+.gap-section {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.gap-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.gap-title {
+  margin: 0 0 0.2rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+
+.gap-sub {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-subtle);
+}
+
+.explore-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  color: var(--blue);
+  text-decoration: none;
+  white-space: nowrap;
+  &:hover { text-decoration: underline; }
+}
+
+.role-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 1.25rem;
+}
+
+.role-btn {
+  padding: 0.3rem 0.75rem;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+
+  &:hover { border-color: var(--blue); color: var(--blue); }
+
+  &.role-btn-active {
+    border-color: var(--blue);
+    background: rgba(88,166,255,0.1);
+    color: var(--blue);
+  }
+
+  &.role-btn-clear {
+    border-color: transparent;
+    color: var(--text-subtle);
+    &:hover { color: var(--text-muted); }
+  }
+}
+
+.gap-analysis { display: flex; flex-direction: column; gap: 0.9rem; }
+
+.gap-progress-wrap { display: flex; flex-direction: column; gap: 0.4rem; }
+
+.gap-progress-bar {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.gap-progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--green);
+  transition: width 0.5s ease;
+}
+
+.gap-progress-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.gap-percent {
+  font-weight: 700;
+  color: var(--green);
+  font-family: var(--font-mono);
+}
+
+.gap-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.gap-row-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  padding-top: 2px;
+  min-width: 80px;
+
+  &.gap-have { color: var(--green); }
+  &.gap-missing { color: var(--text-subtle); }
+  &.gap-nice { color: var(--blue); }
+}
+
+.gap-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+
+.gap-chip {
+  padding: 0.2rem 0.6rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border: 1px solid transparent;
+
+  &.gap-chip-have {
+    background: rgba(63,185,80,0.1);
+    border-color: rgba(63,185,80,0.25);
+    color: var(--green);
+  }
+
+  &.gap-chip-missing {
+    background: rgba(110,118,129,0.08);
+    border-color: var(--border);
+    color: var(--text-subtle);
+  }
+
+  &.gap-chip-dim {
+    background: transparent;
+    border-color: var(--border);
+    color: var(--text-subtle);
+    opacity: 0.6;
+  }
+}

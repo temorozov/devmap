@@ -65,6 +65,17 @@ export class TreesController {
     }
 
     @UseGuards(JwtAuthGuard)
+    @Get('my/skills')
+    getMySkills(@Request() req: AuthenticatedRequest) {
+        return this.treesService.getMyVerifiedSkills(req.user.id);
+    }
+
+    @Get('explore')
+    getExploreProfiles() {
+        return this.treesService.getExploreProfiles();
+    }
+
+    @UseGuards(JwtAuthGuard)
     @Get(':id')
     findOne(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
         return this.treesService.findOne(req.user.id, id);

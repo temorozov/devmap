@@ -4,14 +4,14 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { TreesService, Tree, ProfileViewStats } from '../../trees.service';
 import { AuthService } from '../../auth.service';
-import { ActivityCalendarComponent } from '../../canvas/activity-calendar/activity-calendar.component';
 import { DialogService } from '../../shared/services/dialog.service';
 import { DEMO_TREE_ID } from '../../shared/data/demo-sample';
+import { ROLE_PROFILES, ROLE_PROFILE_KEYS, RoleProfile } from '../../shared/data/role-profiles';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, ActivityCalendarComponent],
+  imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -33,6 +33,19 @@ export class DashboardComponent implements OnInit {
   syncedProfileUrl = '';
   viewStats: ProfileViewStats | null = null;
 
+  // Skill gap
+  readonly roleProfileKeys = ROLE_PROFILE_KEYS;
+  readonly roleProfiles = ROLE_PROFILES;
+  targetRoleKey = localStorage.getItem('devmap_target_role') ?? '';
+  myVerifiedSkills: string[] = [];
+  get targetRole(): RoleProfile | null { return this.roleProfiles[this.targetRoleKey] ?? null; }
+  get requiredHave(): string[] { return (this.targetRole?.required ?? []).filter(s => this.myVerifiedSkills.includes(s)); }
+  get requiredMissing(): string[] { return (this.targetRole?.required ?? []).filter(s => !this.myVerifiedSkills.includes(s)); }
+  get gapPercent(): number {
+    const total = this.targetRole?.required.length ?? 0;
+    return total ? Math.round((this.requiredHave.length / total) * 100) : 0;
+  }
+
   isGuest$ = this.authService.isGuest$;
   handle$ = this.authService.handle$;
   githubUsername$ = this.authService.githubUsername$;
@@ -44,6 +57,7 @@ export class DashboardComponent implements OnInit {
 
     this.loadTrees();
     this.loadViewStats();
+    this.loadMySkills();
 
     // Auto-trigger GitHub scan after GitHub OAuth redirect
     this.route.queryParams.subscribe(params => {
@@ -54,6 +68,22 @@ export class DashboardComponent implements OnInit {
         }).unsubscribe();
       }
     });
+  }
+
+  loadMySkills() {
+    this.isGuest$.subscribe(isGuest => {
+      if (!isGuest) {
+        this.treesService.getMySkills().subscribe({
+          next: (skills) => { this.myVerifiedSkills = skills; this.cdr.markForCheck(); },
+        });
+      }
+    }).unsubscribe();
+  }
+
+  setTargetRole(key: string) {
+    this.targetRoleKey = key;
+    localStorage.setItem('devmap_target_role', key);
+    this.cdr.markForCheck();
   }
 
   loadViewStats() {

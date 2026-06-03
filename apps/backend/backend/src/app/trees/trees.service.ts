@@ -105,6 +105,52 @@ export class TreesService {
         };
     }
 
+    async getMyVerifiedSkills(userId: string): Promise<string[]> {
+        const devMap = await this.prisma.tree.findFirst({
+            where: { userId, title: 'My Dev Map' },
+            select: { nodes: { where: { verified: true, source: 'github' }, select: { title: true } } },
+        });
+        return devMap?.nodes.map(n => n.title) ?? [];
+    }
+
+    async getExploreProfiles() {
+        const thirtyDaysAgo = new Date(Date.now() - 30 * 86400_000);
+        const users = await this.prisma.user.findMany({
+            where: {
+                isGuest: false,
+                githubUsername: { not: null },
+                githubScans: { some: { scannedAt: { gte: thirtyDaysAgo } } },
+            },
+            select: {
+                handle: true,
+                name: true,
+                githubUsername: true,
+                trees: {
+                    where: { title: 'My Dev Map' },
+                    take: 1,
+                    select: {
+                        nodes: {
+                            where: { verified: true, source: 'github' },
+                            select: { title: true, icon: true },
+                        },
+                    },
+                },
+            },
+            orderBy: { updatedAt: 'desc' },
+            take: 24,
+        });
+
+        return users
+            .filter(u => (u.trees[0]?.nodes.length ?? 0) > 0)
+            .map(u => ({
+                handle: u.handle ?? u.githubUsername,
+                name: u.name,
+                githubUsername: u.githubUsername,
+                verifiedSkills: u.trees[0]?.nodes.length ?? 0,
+                topSkills: u.trees[0]?.nodes.slice(0, 5).map(n => n.title) ?? [],
+            }));
+    }
+
     async getProfileViewStats(userId: string) {
         const weekAgo = new Date(Date.now() - 7 * 86400_000);
         const twoWeeksAgo = new Date(Date.now() - 14 * 86400_000);

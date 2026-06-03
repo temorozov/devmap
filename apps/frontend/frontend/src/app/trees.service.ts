@@ -80,4 +80,20 @@ export class TreesService {
   getViewStats() {
     return this.http.get<ProfileViewStats>(`${this.apiUrl}/my/view-stats`);
   }
+
+  getMySkills() {
+    return this.http.get<string[]>(`${this.apiUrl}/my/skills`);
+  }
+
+  getExploreProfiles() {
+    return this.http.get<ExploreProfile[]>(`${this.apiUrl}/explore`);
+  }
+}
+
+export interface ExploreProfile {
+  handle: string;
+  name: string | null;
+  githubUsername: string | null;
+  verifiedSkills: number;
+  topSkills: string[];
 }

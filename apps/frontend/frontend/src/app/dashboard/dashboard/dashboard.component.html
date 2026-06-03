@@ -185,10 +185,6 @@
               </div>
             </div>
 
-            <!-- Activity calendar if available -->
-            <div class="map-card-calendar" *ngIf="tree.activities && tree.activities.length > 0">
-              <app-activity-calendar [activities]="tree.activities"></app-activity-calendar>
-            </div>
           </div>
 
           <div class="map-card-actions">
@@ -214,6 +210,88 @@
         </div>
 
       </div>
+
+      <!-- SKILL GAP SECTION -->
+      <div class="gap-section" *ngIf="myVerifiedSkills.length > 0">
+        <div class="gap-header">
+          <div>
+            <h2 class="gap-title">Skill gap tracker</h2>
+            <p class="gap-sub">Pick a target role and see what's missing from your verified map</p>
+          </div>
+          <a routerLink="/explore" class="explore-link">
+            <span class="material-icons" style="font-size:0.85rem">explore</span>
+            Explore devs
+          </a>
+        </div>
+
+        <!-- Role selector -->
+        <div class="role-selector">
+          <button
+            class="role-btn"
+            *ngFor="let key of roleProfileKeys"
+            [class.role-btn-active]="targetRoleKey === key"
+            (click)="setTargetRole(key)"
+          >{{ roleProfiles[key].label }}</button>
+          <button
+            class="role-btn role-btn-clear"
+            *ngIf="targetRoleKey"
+            (click)="setTargetRole('')"
+          >Clear</button>
+        </div>
+
+        <!-- Gap analysis -->
+        <div class="gap-analysis" *ngIf="targetRole">
+          <!-- Progress bar -->
+          <div class="gap-progress-wrap">
+            <div class="gap-progress-bar">
+              <div class="gap-progress-fill" [style.width.%]="gapPercent"></div>
+            </div>
+            <span class="gap-progress-label">
+              {{ requiredHave.length }}/{{ targetRole.required.length }} required skills verified
+              <span class="gap-percent">{{ gapPercent }}%</span>
+            </span>
+          </div>
+
+          <!-- Skills you have -->
+          <div class="gap-row" *ngIf="requiredHave.length > 0">
+            <span class="gap-row-label gap-have">
+              <span class="material-icons" style="font-size:0.8rem">check_circle</span>
+              You have
+            </span>
+            <div class="gap-chips">
+              <span class="gap-chip gap-chip-have" *ngFor="let s of requiredHave">{{ s }}</span>
+            </div>
+          </div>
+
+          <!-- Skills you need -->
+          <div class="gap-row" *ngIf="requiredMissing.length > 0">
+            <span class="gap-row-label gap-missing">
+              <span class="material-icons" style="font-size:0.8rem">radio_button_unchecked</span>
+              Missing
+            </span>
+            <div class="gap-chips">
+              <span class="gap-chip gap-chip-missing" *ngFor="let s of requiredMissing">{{ s }}</span>
+            </div>
+          </div>
+
+          <!-- Nice-to-have -->
+          <div class="gap-row" *ngIf="targetRole.nice.length > 0">
+            <span class="gap-row-label gap-nice">
+              <span class="material-icons" style="font-size:0.8rem">star_outline</span>
+              Nice to have
+            </span>
+            <div class="gap-chips">
+              <span
+                class="gap-chip"
+                *ngFor="let s of targetRole.nice"
+                [class.gap-chip-have]="myVerifiedSkills.includes(s)"
+                [class.gap-chip-dim]="!myVerifiedSkills.includes(s)"
+              >{{ s }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
 
   </main>
