@@ -1,7 +1,7 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, ForbiddenException, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, ForbiddenException, Req, Res, Header, NotFoundException } from '@nestjs/common';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { createHash } from 'crypto';
-import { Request as ExpressRequest } from 'express';
+import { Request as ExpressRequest, Response } from 'express';
 import { TreesService } from './trees.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { BatchGenerationService } from './batch-generation.service';
@@ -73,6 +73,48 @@ export class TreesController {
     @Get('explore')
     getExploreProfiles() {
         return this.treesService.getExploreProfiles();
+    }
+
+    @Get('badge/:handle')
+    @Header('Cache-Control', 'public, max-age=3600, s-maxage=3600')
+    async getBadge(@Param('handle') handle: string, @Res() res: Response) {
+        const data = await this.treesService.getBadgeData(handle);
+        if (!data) throw new NotFoundException('Profile not found');
+        const svg = this.treesService.buildBadgeSvg(data.skills, data.count);
+        res.setHeader('Content-Type', 'image/svg+xml; charset=utf-8');
+        res.send(svg);
+    }
+
+    @Get('og/:handle')
+    @Header('Cache-Control', 'public, max-age=300')
+    async getOgPage(@Param('handle') handle: string, @Res() res: Response) {
+        const data = await this.treesService.getBadgeData(handle);
+        if (!data) throw new NotFoundException('Profile not found');
+        const frontendUrl = (process.env['FRONTEND_URL'] ?? 'https://devmap.app').replace(/\/$/, '');
+        const profileUrl = `${frontendUrl}/u/${handle}`;
+        const avatar = data.githubUsername
+            ? `https://avatars.githubusercontent.com/${data.githubUsername}`
+            : '';
+        const title = `@${handle} | DevMap — ${data.count} verified skills`;
+        const description = data.skills.length > 0
+            ? `${data.skills.slice(0, 5).join(', ')} and ${data.count} more skills verified from GitHub.`
+            : `${data.count} GitHub-verified developer skills on DevMap.`;
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        res.send(`<!DOCTYPE html><html><head>
+<meta charset="utf-8">
+<title>${title}</title>
+<meta name="description" content="${description}">
+<meta property="og:title" content="${title}">
+<meta property="og:description" content="${description}">
+<meta property="og:image" content="${avatar}">
+<meta property="og:url" content="${profileUrl}">
+<meta property="og:type" content="profile">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="${title}">
+<meta name="twitter:description" content="${description}">
+<meta name="twitter:image" content="${avatar}">
+<meta http-equiv="refresh" content="0;url=${profileUrl}">
+</head><body></body></html>`);
     }
 
     @UseGuards(JwtAuthGuard)

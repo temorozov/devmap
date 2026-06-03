@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Title, Meta } from '@angular/platform-browser';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { TreesService, PublicProfile } from '../../trees.service';
 import { NodeEvidence, SkillNode } from '../../nodes.service';
@@ -30,10 +31,12 @@ interface SkillGroup {
   styleUrls: ['./profile.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ProfileComponent implements OnInit {
+export class ProfileComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly treesService = inject(TreesService);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly titleService = inject(Title);
+  private readonly meta = inject(Meta);
 
   profile: PublicProfile | null = null;
   loading = true;
@@ -48,6 +51,7 @@ export class ProfileComponent implements OnInit {
         this.skillGroups = this.buildSkillGroups(profile);
         this.loading = false;
         this.cdr.markForCheck();
+        this.updateMeta(profile);
       },
       error: () => {
         this.error = 'Profile not found';
@@ -71,6 +75,47 @@ export class ProfileComponent implements OnInit {
   get memberSinceYear(): string {
     if (!this.profile?.memberSince) return '—';
     return new Date(this.profile.memberSince).getFullYear().toString();
+  }
+
+  ngOnDestroy() {
+    this.titleService.setTitle('DevMap');
+    this.meta.removeTag('name="description"');
+    this.meta.removeTag('property="og:title"');
+    this.meta.removeTag('property="og:description"');
+    this.meta.removeTag('property="og:image"');
+    this.meta.removeTag('property="og:url"');
+    this.meta.removeTag('property="og:type"');
+    this.meta.removeTag('name="twitter:card"');
+    this.meta.removeTag('name="twitter:title"');
+    this.meta.removeTag('name="twitter:description"');
+    this.meta.removeTag('name="twitter:image"');
+  }
+
+  private updateMeta(profile: PublicProfile) {
+    const topSkills = this.skillGroups
+      .flatMap(g => g.skills.filter(s => s.verified).map(s => s.title))
+      .slice(0, 5)
+      .join(', ');
+    const title = `@${profile.handle} | DevMap — ${profile.verifiedSkills} verified skills`;
+    const description = topSkills
+      ? `${topSkills} and more — ${profile.verifiedSkills} skills verified from GitHub repos.`
+      : `${profile.verifiedSkills} GitHub-verified developer skills on DevMap.`;
+    const image = profile.githubUsername
+      ? `https://avatars.githubusercontent.com/${profile.githubUsername}`
+      : '';
+    const url = window.location.href;
+
+    this.titleService.setTitle(title);
+    this.meta.updateTag({ name: 'description', content: description });
+    this.meta.updateTag({ property: 'og:title', content: title });
+    this.meta.updateTag({ property: 'og:description', content: description });
+    this.meta.updateTag({ property: 'og:image', content: image });
+    this.meta.updateTag({ property: 'og:url', content: url });
+    this.meta.updateTag({ property: 'og:type', content: 'profile' });
+    this.meta.updateTag({ name: 'twitter:card', content: 'summary' });
+    this.meta.updateTag({ name: 'twitter:title', content: title });
+    this.meta.updateTag({ name: 'twitter:description', content: description });
+    this.meta.updateTag({ name: 'twitter:image', content: image });
   }
 
   copyProfileLink() {

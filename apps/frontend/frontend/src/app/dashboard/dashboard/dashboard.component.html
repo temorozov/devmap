@@ -155,10 +155,16 @@
           <h1 class="maps-title">Your skill map</h1>
           <p class="maps-sub">Verified from GitHub · tap a map to explore it</p>
         </div>
-        <button class="btn-new-map" (click)="openCreateModal()">
-          <span class="material-icons" style="font-size:0.9rem">add</span>
-          New map
-        </button>
+        <div style="display:flex;gap:0.5rem;align-items:center">
+          <button class="btn-badge-readme" (click)="showBadgeModal = true" title="Add DevMap badge to your GitHub README">
+            <span class="material-icons" style="font-size:0.85rem">code</span>
+            Add to README
+          </button>
+          <button class="btn-new-map" (click)="openCreateModal()">
+            <span class="material-icons" style="font-size:0.9rem">add</span>
+            New map
+          </button>
+        </div>
       </div>
 
       <!-- Grid of maps -->
@@ -319,6 +325,33 @@
     <div class="modal-footer">
       <button class="btn-secondary" (click)="showCreateModal = false">Cancel</button>
       <button class="btn-primary" [disabled]="!newTreeTitle.trim()" (click)="createTree()">Create map</button>
+    </div>
+  </div>
+</div>
+
+<!-- Badge modal -->
+<div class="modal-backdrop" *ngIf="showBadgeModal" (click)="showBadgeModal = false">
+  <div class="modal" (click)="$event.stopPropagation()" style="max-width:480px">
+    <div class="modal-header">
+      <h2 class="modal-title">Add to GitHub README</h2>
+      <button class="modal-close" (click)="showBadgeModal = false">
+        <span class="material-icons">close</span>
+      </button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:1rem">
+      <p style="margin:0;font-size:0.85rem;color:var(--text-muted)">
+        Paste this into your GitHub README to show your verified skill map:
+      </p>
+      <div class="badge-preview">
+        <img [src]="'/api/badge/' + ((handle$ | async) || (githubUsername$ | async))" alt="DevMap badge" style="height:20px" />
+      </div>
+      <div class="badge-code">
+        <code class="badge-snippet">{{ badgeMarkdown() }}</code>
+        <button class="badge-copy-btn" (click)="copyBadgeMarkdown()">
+          <span class="material-icons" style="font-size:0.85rem">content_copy</span>
+          Copy
+        </button>
+      </div>
     </div>
   </div>
 </div>

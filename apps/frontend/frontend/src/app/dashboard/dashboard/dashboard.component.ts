@@ -32,6 +32,7 @@ export class DashboardComponent implements OnInit {
   syncSuccess = false;
   syncedProfileUrl = '';
   viewStats: ProfileViewStats | null = null;
+  showBadgeModal = false;
 
   // Skill gap
   readonly roleProfileKeys = ROLE_PROFILE_KEYS;
@@ -187,6 +188,19 @@ export class DashboardComponent implements OnInit {
   copyProfileUrl() {
     navigator.clipboard.writeText(this.syncedProfileUrl);
     this.dialogService.alert('Profile link copied to clipboard!');
+  }
+
+  badgeMarkdown(): string {
+    const handle = this.authService['user'].getValue()?.handle
+      ?? this.authService['user'].getValue()?.githubUsername
+      ?? '';
+    const origin = window.location.origin;
+    return `[![DevMap](${origin}/api/badge/${handle})](${origin}/u/${handle})`;
+  }
+
+  copyBadgeMarkdown() {
+    navigator.clipboard.writeText(this.badgeMarkdown());
+    this.dialogService.alert('Badge markdown copied!');
   }
 
   trackByTreeId(_index: number, tree: TreeViewModel) {

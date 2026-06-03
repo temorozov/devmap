@@ -105,6 +105,68 @@ export class TreesService {
         };
     }
 
+    async getBadgeData(handle: string): Promise<{ skills: string[]; count: number; name: string | null; githubUsername: string | null } | null> {
+        const user = await this.prisma.user.findFirst({
+            where: { OR: [{ handle }, { githubUsername: handle }] },
+            select: {
+                name: true,
+                githubUsername: true,
+                trees: {
+                    where: { title: 'My Dev Map' },
+                    take: 1,
+                    select: {
+                        nodes: {
+                            where: { verified: true, source: 'github' },
+                            select: { title: true },
+                            orderBy: { level: 'desc' },
+                            take: 5,
+                        },
+                    },
+                },
+            },
+        });
+        if (!user) return null;
+        const nodes = user.trees[0]?.nodes ?? [];
+        return {
+            skills: nodes.map(n => n.title),
+            count: nodes.length,
+            name: user.name,
+            githubUsername: user.githubUsername,
+        };
+    }
+
+    buildBadgeSvg(skills: string[], totalCount: number): string {
+        const top = skills.slice(0, 3);
+        const rightText = top.length > 0
+            ? `${top.join(' · ')}  +${totalCount}`
+            : `${totalCount} skill${totalCount === 1 ? '' : 's'}`;
+
+        // Fixed widths — safe for all skill name combinations
+        const leftW = 88;
+        const rightW = Math.max(180, rightText.length * 6.5 + 20);
+        const totalW = leftW + rightW;
+
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="${totalW}" height="20" role="img" aria-label="DevMap: ${totalCount} verified skills">
+  <title>DevMap: ${totalCount} verified skills</title>
+  <linearGradient id="s" x2="0" y2="100%">
+    <stop offset="0" stop-color="#bbb" stop-opacity=".1"/>
+    <stop offset="1" stop-opacity=".1"/>
+  </linearGradient>
+  <clipPath id="r">
+    <rect width="${totalW}" height="20" rx="3" fill="#fff"/>
+  </clipPath>
+  <g clip-path="url(#r)">
+    <rect width="${leftW}" height="20" fill="#161b22"/>
+    <rect x="${leftW}" width="${rightW}" height="20" fill="#238636"/>
+    <rect width="${totalW}" height="20" fill="url(#s)"/>
+  </g>
+  <g fill="#fff" text-anchor="middle" font-family="DejaVu Sans,Verdana,Geneva,sans-serif" font-size="11">
+    <text x="${leftW / 2}" y="15" fill="#fff" xml:space="preserve">&#9679; DevMap</text>
+    <text x="${leftW + rightW / 2}" y="15" fill="#fff" xml:space="preserve">${rightText}</text>
+  </g>
+</svg>`;
+    }
+
     async getMyVerifiedSkills(userId: string): Promise<string[]> {
         const devMap = await this.prisma.tree.findFirst({
             where: { userId, title: 'My Dev Map' },

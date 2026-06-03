@@ -2,6 +2,7 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import axios from 'axios';
 import { PrismaService } from '../prisma/prisma.service';
 import { GitHubService } from './github.service';
+import { EmailService } from '../email/email.service';
 import { computeTreeLayout } from './tree-layout.util';
 import { DetectedTech } from './github.types';
 import { Prisma } from '@prisma/client';
@@ -15,6 +16,7 @@ export class GitHubSyncService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly github: GitHubService,
+    private readonly emailService: EmailService,
   ) {}
 
   async syncUserDevMap(userId: string): Promise<{ nodeCount: number; verifiedCount: number }> {
@@ -24,6 +26,16 @@ export class GitHubSyncService {
     }
 
     this.logger.log(`Starting GitHub sync for user ${userId} (@${user.githubUsername})`);
+
+    // Snapshot previous skills for change detection
+    const lastScan = await this.prisma.gitHubScan.findFirst({
+      where: { userId },
+      orderBy: { scannedAt: 'desc' },
+      select: { summary: true },
+    });
+    const previousTitles = new Set(
+      (lastScan?.summary as Array<{ title: string }> ?? []).map(s => s.title),
+    );
 
     const detectedTechs = await this.github.detectTechnologies(user.githubAccessToken, user.githubUsername);
 
@@ -112,6 +124,20 @@ export class GitHubSyncService {
 
     const verifiedCount = detectedTechs.length;
     this.logger.log(`Sync complete for user ${userId}: ${layoutInput.length} nodes, ${verifiedCount} verified`);
+
+    // Detect new skills and notify user (only if this is a re-sync, not a first sync)
+    if (previousTitles.size > 0 && user.email) {
+      const newSkills = detectedTechs
+        .map(t => t.canonicalTitle)
+        .filter(t => !previousTitles.has(t));
+
+      if (newSkills.length > 0) {
+        this.logger.log(`New skills detected for ${userId}: ${newSkills.join(', ')}`);
+        this.emailService
+          .sendSkillsUpdatedEmail(user.email, newSkills, verifiedCount, user.handle ?? user.githubUsername ?? '')
+          .catch((err: unknown) => this.logger.warn(`Skills email failed: ${err instanceof Error ? err.message : String(err)}`));
+      }
+    }
 
     return { nodeCount: layoutInput.length, verifiedCount };
   }
