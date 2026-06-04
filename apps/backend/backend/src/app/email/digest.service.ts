@@ -12,7 +12,7 @@ export class DigestService {
 
   constructor(private readonly prisma: PrismaService) {
     const apiKey = process.env['RESEND_API_KEY'];
-    this.fromEmail = process.env['EMAIL_FROM'] ?? 'DevMap <onboarding@resend.dev>';
+    this.fromEmail = process.env['EMAIL_FROM'] || 'DevMap <onboarding@resend.dev>';
     this.frontendUrl = (process.env['FRONTEND_URL'] ?? 'https://devmap.app').replace(/\/$/, '');
 
     if (apiKey) {

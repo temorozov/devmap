@@ -25,7 +25,7 @@ export class EmailService {
 
     const frontendUrl = (process.env['FRONTEND_URL'] ?? 'https://devmap.app').replace(/\/$/, '');
     const profileUrl = `${frontendUrl}/u/${handle}`;
-    const fromEmail = process.env['EMAIL_FROM'] ?? 'DevMap <onboarding@resend.dev>';
+    const fromEmail = process.env['EMAIL_FROM'] || 'DevMap <onboarding@resend.dev>';
     const s = newSkills.length === 1 ? '' : 's';
     const skillChips = newSkills
       .map(skill => `<span style="display:inline-block;padding:3px 10px;margin:2px;border-radius:20px;background:rgba(63,185,80,0.12);border:1px solid rgba(63,185,80,0.25);color:#3fb950;font-size:0.82rem;font-weight:500">${skill}</span>`)

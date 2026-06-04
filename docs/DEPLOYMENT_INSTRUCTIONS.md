@@ -13,7 +13,7 @@ Fill in all required variables:
 ```
 # App URLs
 FRONTEND_URL=https://yourdomain.com
-BACKEND_URL=https://yourdomain.com/api
+BACKEND_URL=https://yourdomain.com
 FRONTEND_PORT=80
 BACKEND_PORT=3000
 PORT=3000
@@ -39,6 +39,8 @@ GITHUB_WEBHOOK_SECRET=<random-hex>
 
 # Email (optional — digest and skills-updated emails)
 RESEND_API_KEY=
+EMAIL_FROM=DevMap <noreply@yourdomain.com>
+EMAIL_CONFIRM_URL=https://yourdomain.com/confirm-email
 
 # AI inference (optional — JD matcher skill extraction; falls back to literal matching when unset)
 OPENAI_API_KEY=
@@ -52,6 +54,7 @@ GOOGLE_CALLBACK_URL=https://yourdomain.com/api/auth/google/callback
 DISCORD_CLIENT_ID=
 DISCORD_CLIENT_SECRET=
 DISCORD_CALLBACK_URL=https://yourdomain.com/api/auth/discord/callback
+OAUTH_FRONTEND_REDIRECT_URL=
 ```
 
 Optional integrations degrade gracefully — missing `RESEND_API_KEY` skips emails, missing `OPENAI_API_KEY` falls back to literal skill matching in the JD matcher, missing Google/Discord vars disable those login methods.
@@ -97,21 +100,36 @@ npm run prod:recreate-db
 
 **Warning:** this drops the PostgreSQL volume and starts with an empty database.
 
-## 5. Nginx config for OG/social previews
+## 5. HTTPS / SSL termination
 
-To make Slack/Twitter link previews work, route social crawlers to the backend OG endpoint:
+The Docker Compose stack serves HTTP on port `FRONTEND_PORT` (default 80). nginx inside the frontend container handles both the Angular app **and** proxies `/api/*` to the backend — no external reverse proxy is required for HTTP.
+
+For HTTPS, add a reverse proxy in front (nginx, Caddy, or cloud LB) that terminates TLS and forwards to port 80:
 
 ```nginx
-location ~* ^/u/(.+)$ {
-    if ($http_user_agent ~* "Twitterbot|Slackbot|facebookexternalhit|LinkedInBot|TelegramBot") {
-        proxy_pass http://backend:3000/api/trees/og/$1;
+# Example: external nginx terminating SSL
+server {
+    listen 443 ssl;
+    server_name yourdomain.com;
+
+    ssl_certificate     /etc/letsencrypt/live/yourdomain.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/yourdomain.com/privkey.pem;
+
+    location / {
+        proxy_pass http://localhost:80;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
     }
-    try_files $uri /index.html;
 }
 ```
+
+The OG social preview route is already handled inside the container's nginx config.
 
 ## 6. Notes
 
 - `.env` and `.env.production` are gitignored — never commit them.
 - `app-config.js` is generated at container startup with no aggressive cache, so frontend picks up new URLs after redeploy immediately.
 - PostgreSQL is not exposed externally in production — it stays inside the Docker network.
+- The backend container port (`BACKEND_PORT`) is still exposed for direct access if needed (e.g. debugging), but all production traffic should go through port 80.

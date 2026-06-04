@@ -68,6 +68,7 @@ services:
       FRONTEND_URL: ${FRONTEND_URL}
       BACKEND_URL: ${BACKEND_URL}
       API_URL: ${API_URL}
+      PORT: ${PORT}
     depends_on:
       backend:
         condition: service_healthy
