@@ -16,7 +16,7 @@ type NodeStatusClass = 'status-not-started' | 'status-in-progress' | 'status-com
 type NodeStatusFilter = 'all' | NodeStatusClass;
 
 
-const HELP_STORAGE_KEY = 'skill-tree-help-seen';
+const HELP_STORAGE_KEY = 'devmap-help-seen';
 const DEFAULT_MAX_LEVEL = 3;
 const HOVER_TOOLTIP_DELAY_MS = 40;
 

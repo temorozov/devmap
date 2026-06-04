@@ -9,7 +9,7 @@ export type TranslationValue = string | ((params?: Record<string, string | numbe
 
 type TranslationDictionary = Record<AppLanguage, Record<string, TranslationValue>>;
 
-const LANGUAGE_STORAGE_KEY = 'skill-tree-language';
+const LANGUAGE_STORAGE_KEY = 'devmap-language';
 
 const translations: TranslationDictionary = { en, ru, uk };
 

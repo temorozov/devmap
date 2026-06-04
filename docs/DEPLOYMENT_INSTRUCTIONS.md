@@ -21,10 +21,10 @@ API_URL=https://yourdomain.com/api
 CORS_ORIGINS=https://yourdomain.com
 
 # Database
-POSTGRES_DB=skill_tree
+POSTGRES_DB=devmap
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=<strong-password>
-DATABASE_URL=postgresql://postgres:<password>@postgres:5432/skill_tree?schema=public
+DATABASE_URL=postgresql://postgres:<password>@postgres:5432/devmap?schema=public
 
 # Auth
 JWT_SECRET=<random-256-bit-hex>
