@@ -63,7 +63,6 @@ Backend global prefix: `/api`
 - `GitHubScan` — scan history with `summary` JSON (used for skills-updated diff)
 - `GitHubWebhook` — registered webhook per repo (userId, repoFullName, webhookId)
 - `ProfileView` — view log with viewerIpHash for 24h dedup
-- `AiBatchJob` — OpenAI batch jobs for node description generation
 
 ## GitHub Sync Flow
 
@@ -95,10 +94,10 @@ GITHUB_WEBHOOK_SECRET
 # Email (optional — features degrade gracefully without it)
 RESEND_API_KEY
 
-# AI generation (optional)
+# AI inference (optional — JD matcher; falls back to literal matching when unset)
 OPENAI_API_KEY
 AI_OPENAI_MODEL
-AI_BATCH_OPENAI_MODEL
+AI_REQUEST_TIMEOUT_MS
 
 # Optional OAuth providers
 GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET / GOOGLE_CALLBACK_URL

@@ -40,10 +40,10 @@ GITHUB_WEBHOOK_SECRET=<random-hex>
 # Email (optional — digest and skills-updated emails)
 RESEND_API_KEY=
 
-# AI generation (optional)
+# AI inference (optional — JD matcher skill extraction; falls back to literal matching when unset)
 OPENAI_API_KEY=
 AI_OPENAI_MODEL=gpt-4o-mini
-AI_BATCH_OPENAI_MODEL=gpt-4o-mini
+AI_REQUEST_TIMEOUT_MS=30000
 
 # Optional OAuth providers
 GOOGLE_CLIENT_ID=
@@ -54,7 +54,7 @@ DISCORD_CLIENT_SECRET=
 DISCORD_CALLBACK_URL=https://yourdomain.com/api/auth/discord/callback
 ```
 
-Optional integrations degrade gracefully — missing `RESEND_API_KEY` skips emails, missing `OPENAI_API_KEY` disables AI generation, missing Google/Discord vars disable those login methods.
+Optional integrations degrade gracefully — missing `RESEND_API_KEY` skips emails, missing `OPENAI_API_KEY` falls back to literal skill matching in the JD matcher, missing Google/Discord vars disable those login methods.
 
 ## 2. Deploy
 
@@ -115,4 +115,3 @@ location ~* ^/u/(.+)$ {
 - `.env` and `.env.production` are gitignored — never commit them.
 - `app-config.js` is generated at container startup with no aggressive cache, so frontend picks up new URLs after redeploy immediately.
 - PostgreSQL is not exposed externally in production — it stays inside the Docker network.
-- The `@Cron('0 9 * * 1')` weekly digest runs inside the backend container — no external cron needed.

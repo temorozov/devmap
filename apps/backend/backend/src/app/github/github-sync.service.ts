@@ -2,6 +2,7 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import axios from 'axios';
 import { PrismaService } from '../prisma/prisma.service';
 import { GitHubService } from './github.service';
+import { EmailService } from '../email/email.service';
 import { computeTreeLayout } from './tree-layout.util';
 import { DetectedTech } from './github.types';
 import { Prisma } from '@prisma/client';
@@ -15,6 +16,7 @@ export class GitHubSyncService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly github: GitHubService,
+    private readonly emailService: EmailService,
   ) {}
 
   async syncUserDevMap(userId: string): Promise<{ nodeCount: number; verifiedCount: number; newSkills: string[] }> {
@@ -132,8 +134,11 @@ export class GitHubSyncService {
       for (const t of detectedTechs) {
         if (!previousTitles.has(t.canonicalTitle)) newSkills.push(t.canonicalTitle);
       }
-      if (newSkills.length > 0) {
+      if (newSkills.length > 0 && user.email) {
         this.logger.log(`New skills detected for ${userId}: ${newSkills.join(', ')}`);
+        this.emailService
+          .sendSkillsUpdatedEmail(user.email, newSkills, verifiedCount, user.handle ?? user.githubUsername ?? '')
+          .catch((err: unknown) => this.logger.warn(`Skills email failed: ${err instanceof Error ? err.message : String(err)}`));
       }
     }
 

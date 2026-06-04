@@ -130,8 +130,8 @@ npm run prod:down
 - **Prisma client must be regenerated** after any `schema.prisma` change — `prisma generate`. Forgetting this causes TS2339 build errors.
 - **`rawBody: true`** is passed to `NestFactory.create()` — required for GitHub webhook HMAC verification. Do not remove it.
 - GitHub OAuth scope includes `admin:repo_hook` for webhook registration. Users who authed before this scope was added need to re-auth.
-- AI generation uses OpenAI only (`OPENAI_API_KEY`, `AI_OPENAI_MODEL`, `AI_BATCH_OPENAI_MODEL`).
-- AI generation and batch endpoints are rate-limited via `@nestjs/throttler` (5 req/min per client).
+- AI generation uses OpenAI only (`OPENAI_API_KEY`, `AI_OPENAI_MODEL`).
+- JD matcher AI endpoint is rate-limited via `@nestjs/throttler` (5 req/min per client).
 - Global `ValidationPipe` (`whitelist: true, transform: true`) is active — request bodies must match DTOs.
 - Guest users can use the app but are blocked from AI generation and GitHub sync.
 - `EmailService` and `DigestService` skip gracefully when `RESEND_API_KEY` is not set.
