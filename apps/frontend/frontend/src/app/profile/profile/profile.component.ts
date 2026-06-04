@@ -126,6 +126,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
       for (const skill of group.skills) {
         if (!skill.verified || !skill.evidence?.length) continue;
         for (const ev of skill.evidence) {
+          if (!ev.repo) continue;
           if (!map.has(ev.repo)) map.set(ev.repo, new Set());
           map.get(ev.repo)!.add(skill.title);
         }
@@ -289,7 +290,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
 
   getEvidenceLabel(evidence: NodeEvidence[] | null | undefined): string {
     if (!evidence || evidence.length === 0) return '';
-    const repos = [...new Set(evidence.map(e => e.repo))];
+    const repos = [...new Set(evidence.map(e => e.repo).filter(Boolean))];
     return repos.length === 1
       ? `in ${repos[0]}`
       : `in ${repos.length} repos`;

@@ -122,7 +122,7 @@ export function buildSkillCardSvg(
     // Handle + subtitle
     const TX_X = ACX + 18 + 10;
     parts.push(tx(TX_X, 27, `@${displayHandle}`, 15, c.accent, { w: '600' }));
-    parts.push(tx(TX_X, 45, 'GitHub-verified dev skills', 10, c.muted));
+    parts.push(tx(TX_X, 45, 'skills used across 2+ repos', 10, c.muted));
 
     // Verified chip (right side)
     const RX = W - MR;

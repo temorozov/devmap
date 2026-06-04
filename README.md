@@ -13,6 +13,7 @@
 - Weekly email digest + skills-updated notifications
 - README badge: `[![DevMap](https://yourhost/api/trees/badge/handle)](https://yourhost/u/handle)`
 - Skill gap tracker — declare a target role, see which required skills you have vs. missing
+- Compare any two devs — side-by-side diff of skills each one has, only counting techs used in 2+ repos (minimum familiar)
 - Explore page to discover other devs
 
 ## Stack

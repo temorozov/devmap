@@ -111,7 +111,7 @@ export class TreesService {
         ]);
 
         const devMap = user.trees[0] ?? null;
-        const verifiedCount = devMap?.nodes.filter((n: { verified: boolean }) => n.verified).length ?? 0;
+        const verifiedCount = devMap?.nodes.filter((n: { verified: boolean; level: number }) => n.verified && n.level >= 2).length ?? 0;
         const totalNodes = devMap?.nodes.length ?? 0;
 
         return {
@@ -146,7 +146,7 @@ export class TreesService {
                     take: 1,
                     select: {
                         nodes: {
-                            where: { verified: true, source: 'github' },
+                            where: { verified: true, source: 'github', level: { gte: 2 } },
                             select: { title: true },
                             orderBy: { level: 'desc' },
                         },
@@ -210,8 +210,9 @@ export class TreesService {
                     take: 1,
                     select: {
                         nodes: {
-                            where: { verified: true, source: 'github' },
+                            where: { verified: true, source: 'github', level: { gte: 2 } },
                             select: { title: true, icon: true },
+                            orderBy: { level: 'desc' },
                         },
                     },
                 },
@@ -265,7 +266,7 @@ export class TreesService {
                     take: 1,
                     select: {
                         nodes: {
-                            where: { verified: true, source: 'github' },
+                            where: { verified: true, source: 'github', level: { gte: 2 } },
                             select: { title: true },
                         },
                     },
@@ -307,7 +308,7 @@ export class TreesService {
             throw new ServiceUnavailableException('Could not scan GitHub right now. Please try again in a moment.');
         }
 
-        const skills = detected.map(d => d.canonicalTitle);
+        const skills = detected.filter(d => d.repos.length >= 2).map(d => d.canonicalTitle);
         this.externalScanCache.set(key, { skills, at: Date.now() });
         return skills;
     }
