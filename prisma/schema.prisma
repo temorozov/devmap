@@ -7,26 +7,21 @@ datasource db {
 }
 
 model User {
-  id                     String         @id @default(uuid())
-  email                  String?        @unique
-  passwordHash           String?
-  name                   String?
-  googleId               String?        @unique
-  discordId              String?        @unique
-  githubId               String?        @unique
-  githubUsername         String?
-  githubAccessToken      String?
-  handle                 String?        @unique
-  targetRole             String?
-  isGuest                Boolean        @default(false)
-  isEmailConfirmed       Boolean        @default(true)
-  emailConfirmationToken String?
-  trees                  Tree[]
-  githubScans            GitHubScan[]
-  profileViews           ProfileView[]
-  githubWebhooks         GitHubWebhook[]
-  createdAt              DateTime       @default(now())
-  updatedAt              DateTime       @updatedAt
+  id                String          @id @default(uuid())
+  email             String?         @unique
+  name              String?
+  githubId          String?         @unique
+  githubUsername    String?
+  githubAccessToken String?
+  handle            String?         @unique
+  targetRole        String?
+  isGuest           Boolean         @default(false)
+  trees             Tree[]
+  githubScans       GitHubScan[]
+  profileViews      ProfileView[]
+  githubWebhooks    GitHubWebhook[]
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
 }
 
 model Tree {

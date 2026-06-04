@@ -9,6 +9,7 @@
       "executor": "@nx/webpack:webpack",
       "outputs": ["{options.outputPath}"],
       "defaultConfiguration": "production",
+      "inputs": ["default", "{workspaceRoot}/prisma/schema.prisma", "{workspaceRoot}/node_modules/.prisma/client/index.js"],
       "options": {
         "target": "node",
         "compiler": "tsc",

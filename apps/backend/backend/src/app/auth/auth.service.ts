@@ -34,22 +34,6 @@ export class AuthService {
         return user;
     }
 
-    async validateGoogleUser(profile: { googleId: string; email: string; name: string }): Promise<User> {
-        return this.upsertOAuthUser(
-            () => profile.googleId ? this.prisma.user.findFirst({ where: { googleId: profile.googleId } }) : Promise.resolve(null),
-            (existingUser) => ({ googleId: profile.googleId, name: existingUser.name || profile.name }),
-            { googleId: profile.googleId, email: profile.email, name: profile.name },
-        );
-    }
-
-    async validateDiscordUser(profile: { discordId: string; email: string; name: string }): Promise<User> {
-        return this.upsertOAuthUser(
-            () => profile.discordId ? this.prisma.user.findFirst({ where: { discordId: profile.discordId } }) : Promise.resolve(null),
-            (existingUser) => ({ discordId: profile.discordId, name: existingUser.name || profile.name }),
-            { discordId: profile.discordId, email: profile.email, name: profile.name },
-        );
-    }
-
     async validateGitHubUser(profile: {
         githubId: string;
         githubUsername: string;
