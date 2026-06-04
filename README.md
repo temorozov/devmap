@@ -26,34 +26,26 @@
 
 ---
 
-## Local development
-
-Fastest (local Node processes, Docker only for Postgres):
+## Commands
 
 ```sh
-npm run dev:fast
+# Dev (local Node + Docker Postgres)
+npm run dev        # start — frontend :4200, backend :3000/api
+npm run dev:down   # stop Docker services
+
+# Prod
+npm run prod       # build + deploy
+npm run prod:down  # stop
+
+# Code
+npm run format     # format all files
+npm run lint       # lint
+npm run test       # tests
 ```
 
-Frontend: `http://localhost:4200` — Backend: `http://localhost:3000/api`
+`npm run prod` validates env, builds containers, runs `prisma migrate deploy` automatically.
 
-Full Docker:
-
-```sh
-npm run dev
-npm run dev:down
-```
-
----
-
-## Production deploy
-
-```sh
-cp .env.production.example .env.production
-# fill in .env.production
-./deploy.sh
-```
-
-`deploy.sh` validates env, checks compose config, builds containers, and runs `prisma migrate deploy` automatically.
+> **First deploy:** `cp .env.production.example .env.production` and fill in the values.
 
 ---
 
