@@ -15,8 +15,8 @@ describe('DashboardComponent', () => {
     await TestBed.configureTestingModule({
       imports: [DashboardComponent],
       providers: [
-        { provide: TreesService, useValue: { getTrees: () => of([]), createTree: () => of({ id: '1', title: 'My Tree' }), deleteTree: () => of({}) } },
-        { provide: AuthService, useValue: { isGuest$: of(false), logout: jest.fn() } },
+        { provide: TreesService, useValue: { getTrees: () => of([]), createTree: () => of({ id: '1', title: 'My Tree' }), deleteTree: () => of({}), getExploreProfiles: () => of([]) } },
+        { provide: AuthService, useValue: { isGuest$: of(false), logout: jest.fn(), loadMe: () => of({}) } },
         { provide: DialogService, useValue: { confirm: jest.fn().mockResolvedValue(true), alert: jest.fn() } },
         provideRouter([]),
       ],
@@ -32,18 +32,5 @@ describe('DashboardComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
-  });
-
-  it('redirects to created tree with prefilled AI prompt query', () => {
-    component.newTreeTitle = '  My Tree  ';
-
-    component.createTree();
-
-    expect(router.navigate).toHaveBeenCalledWith(['/tree', '1'], {
-      queryParams: {
-        aiPrompt: 'My Tree',
-        openAi: '1',
-      },
-    });
   });
 });

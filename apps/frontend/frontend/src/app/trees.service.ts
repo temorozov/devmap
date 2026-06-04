@@ -63,10 +63,6 @@ export class TreesService {
     return this.http.delete(`${this.apiUrl}/${id}`);
   }
 
-  generateTree(id: string, prompt: string) {
-    return this.http.post<SkillNode[]>(`${this.apiUrl}/${id}/generate`, { prompt });
-  }
-
   getPublicProfile(handle: string) {
     return this.http.get<PublicProfile>(`${this.apiUrl}/profile/${handle}`);
   }

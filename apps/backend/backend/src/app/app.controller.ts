@@ -1,4 +1,4 @@
-import { Controller, Get, Header, NotFoundException, Param, Query, Res } from '@nestjs/common';
+import { Controller, Get, Header, NotFoundException, Param, Query, Res, HttpCode } from '@nestjs/common';
 import { Response } from 'express';
 
 import { AppService } from './app.service';
@@ -10,6 +10,12 @@ export class AppController {
     private readonly appService: AppService,
     private readonly treesService: TreesService,
   ) {}
+
+  @Get('health')
+  @HttpCode(200)
+  health() {
+    return { status: 'ok' };
+  }
 
   @Get()
   getData() {

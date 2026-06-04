@@ -4,20 +4,13 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { TreesService, Tree } from '../../trees.service';
 import { NodesService, SkillNode } from '../../nodes.service';
-import { combineLatest, finalize, take } from 'rxjs';
 import { LinkifyPipe } from '../../shared/pipes/linkify.pipe';
-import { AuthService } from '../../auth.service';
 import { DialogService } from '../../shared/services/dialog.service';
 import { I18nService } from '../../shared/services/i18n.service';
 import { DEMO_TREE_ID, getDemoSampleNodes, getDemoSampleTitle } from '../../shared/data/demo-sample';
 import { CanvasFocusService, FocusAction, FocusActionItem } from './canvas-focus.service';
-
-interface ViewBox {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-}
+import { ViewBox, findRootNode, getSvgPoint, computeCenterOnNode, computeCenterOnNodes } from './canvas-viewport';
+import { computePinchStep, computeInitialPinchDistance, computePanDelta, computeSelectionBox, findDropTarget } from './canvas-interaction';
 
 type NodeStatusClass = 'status-not-started' | 'status-in-progress' | 'status-completed';
 type NodeStatusFilter = 'all' | NodeStatusClass;
@@ -39,13 +32,10 @@ export class CanvasComponent implements OnInit, AfterViewInit {
   router = inject(Router);
   treesService = inject(TreesService);
   nodesService = inject(NodesService);
-  authService = inject(AuthService);
   dialogService = inject(DialogService);
   i18n = inject(I18nService);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly focusService = inject(CanvasFocusService);
-
-  isGuest$ = this.authService.isGuest$;
 
   tree: Tree | null = null;
   nodes: SkillNode[] = [];
@@ -154,13 +144,6 @@ export class CanvasComponent implements OnInit, AfterViewInit {
     return node.verified ? 'canvas.statusVerified' : 'canvas.statusUnverified';
   }
 
-  // AI Generation State
-  showAiPrompt = false;
-  aiPrompt = '';
-  isGenerating = false;
-  private pendingAiPrompt: string | null = null;
-  private shouldAutoOpenAi = false;
-
   // Tree Title Edit State
   isEditingTreeTitle = false;
   editTreeTitleData = '';
@@ -196,67 +179,6 @@ export class CanvasComponent implements OnInit, AfterViewInit {
     this.isEditingTreeTitle = false;
   }
 
-  openAiPrompt() {
-    if (this.isDemoTree) return;
-    this.isGuest$.pipe(take(1)).subscribe(isGuest => {
-      if (isGuest) {
-        this.dialogService.alert(
-          this.i18n.t('canvas.guestAiUnavailable'),
-          this.i18n.t('canvas.loginRequiredTitle')
-        );
-        return;
-      }
-      this.showAiPrompt = true;
-      this.aiPrompt = '';
-    });
-  }
-
-  closeAiPrompt() {
-    if (this.isGenerating) return;
-    this.showAiPrompt = false;
-    this.aiPrompt = '';
-  }
-
-  generateWithAi() {
-    if (this.isDemoTree || this.isGenerating) return;
-    this.isGuest$.pipe(take(1)).subscribe(isGuest => {
-      if (isGuest) return;
-      if (!this.tree || !this.aiPrompt.trim()) return;
-      this.isGenerating = true;
-      
-      this.treesService.generateTree(this.tree.id, this.aiPrompt).pipe(
-        finalize(() => {
-          this.isGenerating = false;
-        }),
-      ).subscribe({
-        next: (newNodes) => {
-          const generatedNodes = Array.isArray(newNodes) ? newNodes : [];
-          // Create a new array reference to trigger change detection
-          this.nodes = [...this.nodes, ...generatedNodes];
-          this.showAiPrompt = false;
-          this.aiPrompt = '';
-          this.centerViewOnRootNode();
-          this.cdr.detectChanges();
-        },
-        error: (err) => {
-          console.error('Error generating tree', err);
-          const backendMessage =
-            typeof err?.error?.message === 'string'
-              ? err.error.message
-              : typeof err?.message === 'string'
-                ? err.message
-                : '';
-
-          this.dialogService.alert(
-            backendMessage
-              ? `${this.i18n.t('canvas.generateError')} ${backendMessage}`
-              : this.i18n.t('canvas.generateError'),
-          );
-        }
-      });
-    });
-  }
-
   availableIcons = [
     { name: 'fitness_center', label: 'Gym' },
     { name: 'code', label: 'Code' },
@@ -269,11 +191,9 @@ export class CanvasComponent implements OnInit, AfterViewInit {
   @ViewChild('svgCanvas') svgCanvas!: ElementRef<SVGSVGElement>;
 
   ngOnInit() {
-    combineLatest([this.route.paramMap, this.route.queryParamMap]).subscribe(([params, queryParams]) => {
+    this.route.paramMap.subscribe((params) => {
       const id = params.get('id');
       if (id) {
-        this.pendingAiPrompt = (queryParams.get('aiPrompt') || '').trim();
-        this.shouldAutoOpenAi = queryParams.get('openAi') === '1';
         this.loadTree(id);
       }
     });
@@ -317,14 +237,12 @@ export class CanvasComponent implements OnInit, AfterViewInit {
           this.nodes = tree.nodes;
           this.loading = false;
           this.centerViewOnRootNode();
-          this.maybeOpenAiPromptFromQuery();
         } else {
           // Fetch separately if not included
           this.nodesService.getNodesByTree(id).subscribe(nodes => {
             this.nodes = nodes;
             this.loading = false;
             this.centerViewOnRootNode();
-            this.maybeOpenAiPromptFromQuery();
           });
         }
       },
@@ -337,7 +255,6 @@ export class CanvasComponent implements OnInit, AfterViewInit {
             this.nodes = tree.nodes || [];
             this.isDemoTree = false;
             this.centerViewOnRootNode();
-            this.maybeOpenAiPromptFromQuery();
           },
           error: () => {
             this.router.navigate(['/dashboard']);
@@ -347,36 +264,10 @@ export class CanvasComponent implements OnInit, AfterViewInit {
     });
   }
 
-  private maybeOpenAiPromptFromQuery() {
-    if (!this.shouldAutoOpenAi || this.isDemoTree) {
-      this.shouldAutoOpenAi = false;
-      this.pendingAiPrompt = null;
-      return;
-    }
-
-    this.isGuest$.pipe(take(1)).subscribe(isGuest => {
-      if (isGuest) {
-        this.shouldAutoOpenAi = false;
-        this.pendingAiPrompt = null;
-        return;
-      }
-
-      this.showAiPrompt = true;
-      this.aiPrompt = this.pendingAiPrompt ?? '';
-      this.shouldAutoOpenAi = false;
-      this.pendingAiPrompt = null;
-      this.cdr.markForCheck();
-    });
-  }
-
   // --- Pointer Events Engine ---
 
   private getSvgPoint(clientX: number, clientY: number): { x: number, y: number } {
-    const pt = this.svgCanvas.nativeElement.createSVGPoint();
-    pt.x = clientX;
-    pt.y = clientY;
-    const inverse = this.svgCanvas.nativeElement.getScreenCTM()?.inverse();
-    return inverse ? pt.matrixTransform(inverse) : pt;
+    return getSvgPoint(this.svgCanvas.nativeElement, clientX, clientY);
   }
 
   onCanvasContextMenu(event: MouseEvent) {
@@ -408,11 +299,7 @@ export class CanvasComponent implements OnInit, AfterViewInit {
       }
     } else if (this.activePointers.size === 2) {
       this.interactionState = 'pinching';
-      const pointers = Array.from(this.activePointers.values());
-      this.initialPinchDistance = Math.hypot(
-        pointers[0].clientX - pointers[1].clientX,
-        pointers[0].clientY - pointers[1].clientY
-      );
+      this.initialPinchDistance = computeInitialPinchDistance(Array.from(this.activePointers.values()));
       this.initialViewBox = { ...this.viewBox };
     }
   }
@@ -494,51 +381,32 @@ export class CanvasComponent implements OnInit, AfterViewInit {
 
     if (this.interactionState === 'pinching' && this.activePointers.size === 2) {
       event.preventDefault();
-      const pointers = Array.from(this.activePointers.values());
-      const currentDistance = Math.hypot(
-        pointers[0].clientX - pointers[1].clientX,
-        pointers[0].clientY - pointers[1].clientY
+      const result = computePinchStep(
+        Array.from(this.activePointers.values()),
+        this.initialPinchDistance,
+        this.zoomLevel,
+        this.viewBox,
       );
-      
-      if (this.initialPinchDistance > 0) {
-        const pinchScale = this.initialPinchDistance / currentDistance;
-        const newZoom = this.zoomLevel / pinchScale;
-        
-        // Clamp zoom level
-        if (newZoom >= 0.15 && newZoom <= 5) {
-          this.zoomLevel = newZoom;
-          const newW = window.innerWidth / this.zoomLevel;
-          const newH = window.innerHeight / this.zoomLevel;
-
-          const dw = newW - this.viewBox.w;
-          const dh = newH - this.viewBox.h;
-          this.viewBox.x -= dw / 2;
-          this.viewBox.y -= dh / 2;
-          this.viewBox.w = newW;
-          this.viewBox.h = newH;
-        }
-        
-        this.initialPinchDistance = currentDistance;
+      if (result) {
+        this.zoomLevel = result.zoomLevel;
+        this.viewBox = result.viewBox;
+        this.initialPinchDistance = result.newPinchDistance;
       }
     } else if (this.interactionState === 'panning') {
       event.preventDefault();
-      const dx = (event.clientX - this.dragStartScreen.x) * (this.viewBox.w / window.innerWidth);
-      const dy = (event.clientY - this.dragStartScreen.y) * (this.viewBox.h / window.innerHeight);
+      const { dx, dy } = computePanDelta(event.clientX, event.clientY, this.dragStartScreen, this.viewBox);
       this.viewBox.x -= dx;
       this.viewBox.y -= dy;
       this.dragStartScreen = { x: event.clientX, y: event.clientY };
     } else if (this.interactionState === 'selecting' && this.selectionStart && this.selectionBox) {
       event.preventDefault();
       const svgP = this.getSvgPoint(event.clientX, event.clientY);
-      const box = this.selectionBox;
-      box.x = Math.min(this.selectionStart.x, svgP.x);
-      box.y = Math.min(this.selectionStart.y, svgP.y);
-      box.w = Math.abs(svgP.x - this.selectionStart.x);
-      box.h = Math.abs(svgP.y - this.selectionStart.y);
+      this.selectionBox = computeSelectionBox(this.selectionStart, svgP);
 
       if (!event.ctrlKey && !event.metaKey) this.selectedNodes.clear();
 
       this.filteredNodes.forEach(node => {
+        const box = this.selectionBox!;
         if (
           node.positionX >= box.x &&
           node.positionX <= box.x + box.w &&
@@ -611,15 +479,8 @@ export class CanvasComponent implements OnInit, AfterViewInit {
       this.selectionStart = null;
     } else if (this.interactionState === 'linking' && this.linkSourceNode) {
       const svgP = this.getSvgPoint(event.clientX, event.clientY);
-      let targetNode = null;
-      for (const n of this.filteredNodes) {
-        if (n.id === this.linkSourceNode.id) continue;
-        const dist = Math.hypot(n.positionX - svgP.x, n.positionY - svgP.y);
-        if (dist < 50) {
-          targetNode = n;
-          break;
-        }
-      }
+      const candidates = this.filteredNodes.filter(n => n.id !== this.linkSourceNode!.id);
+      const targetNode = findDropTarget(candidates, svgP, 50);
       if (targetNode) {
         this.completeLink(targetNode);
       } else {
@@ -970,70 +831,20 @@ export class CanvasComponent implements OnInit, AfterViewInit {
   }
 
   private findRootNode(nodes: SkillNode[]): SkillNode | undefined {
-    if (!nodes.length) return undefined;
-
-    const nodeIds = new Set(nodes.map(node => node.id));
-    return nodes.find(node => !node.parentId || !nodeIds.has(node.parentId)) ?? nodes[0];
+    return findRootNode(nodes);
   }
 
   private centerViewOnNodes(nodes: SkillNode[]) {
     if (!nodes.length) return;
-
-    const nodeRadius = 80;
-    const minX = Math.min(...nodes.map(node => node.positionX - nodeRadius));
-    const maxX = Math.max(...nodes.map(node => node.positionX + nodeRadius));
-    const minY = Math.min(...nodes.map(node => node.positionY - nodeRadius));
-    const maxY = Math.max(...nodes.map(node => node.positionY + nodeRadius));
-
-    const viewport = this.getViewportSafeArea();
-
-    const contentWidth = Math.max(1, maxX - minX);
-    const contentHeight = Math.max(1, maxY - minY);
-    const zoomToFit = Math.min(viewport.availableWidth / contentWidth, viewport.availableHeight / contentHeight);
-    const clampedZoom = Math.min(5, Math.max(0.15, Math.min(1, zoomToFit)));
-
-    this.zoomLevel = clampedZoom;
-    this.viewBox.w = viewport.width / this.zoomLevel;
-    this.viewBox.h = viewport.height / this.zoomLevel;
-
-    const centerX = (minX + maxX) / 2;
-    const centerY = (minY + maxY) / 2;
-    const safeCenterX = viewport.safeLeft + viewport.availableWidth / 2;
-    const safeCenterY = viewport.safeTop + viewport.availableHeight / 2;
-    this.viewBox.x = centerX - safeCenterX / this.zoomLevel;
-    this.viewBox.y = centerY - safeCenterY / this.zoomLevel;
+    const result = computeCenterOnNodes(this.svgCanvas?.nativeElement ?? null, nodes);
+    this.viewBox = result.viewBox;
+    this.zoomLevel = result.zoomLevel;
   }
 
   private centerViewOnNode(node: SkillNode) {
-    const viewport = this.getViewportSafeArea();
-
-    this.zoomLevel = 1;
-    this.viewBox.w = viewport.width / this.zoomLevel;
-    this.viewBox.h = viewport.height / this.zoomLevel;
-
-    const safeCenterX = viewport.safeLeft + viewport.availableWidth / 2;
-    const safeCenterY = viewport.safeTop + viewport.availableHeight / 2;
-    this.viewBox.x = node.positionX - safeCenterX / this.zoomLevel;
-    this.viewBox.y = node.positionY - safeCenterY / this.zoomLevel;
-  }
-
-  private getViewportSafeArea() {
-    const width = this.svgCanvas?.nativeElement.clientWidth || window.innerWidth;
-    const height = this.svgCanvas?.nativeElement.clientHeight || window.innerHeight;
-    const isCompactViewport = width <= 992;
-    const safeTop = isCompactViewport ? 126 : 112;
-    const safeBottom = isCompactViewport ? 108 : 36;
-    const safeLeft = isCompactViewport ? 12 : 360;
-    const safeRight = isCompactViewport ? 12 : 24;
-
-    return {
-      width,
-      height,
-      safeTop,
-      safeLeft,
-      availableWidth: Math.max(1, width - safeLeft - safeRight),
-      availableHeight: Math.max(1, height - safeTop - safeBottom),
-    };
+    const result = computeCenterOnNode(this.svgCanvas?.nativeElement ?? null, node);
+    this.viewBox = result.viewBox;
+    this.zoomLevel = result.zoomLevel;
   }
 
   setStatusFilter(filter: NodeStatusFilter) {

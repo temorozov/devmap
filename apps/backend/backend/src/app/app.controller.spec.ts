@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { TreesService } from './trees/trees.service';
 
 describe('AppController', () => {
   let app: TestingModule;
@@ -9,7 +10,10 @@ describe('AppController', () => {
   beforeAll(async () => {
     app = await Test.createTestingModule({
       controllers: [AppController],
-      providers: [AppService],
+      providers: [
+        AppService,
+        { provide: TreesService, useValue: {} },
+      ],
     }).compile();
   });
 
@@ -17,6 +21,13 @@ describe('AppController', () => {
     it('should return "Hello API"', () => {
       const appController = app.get<AppController>(AppController);
       expect(appController.getData()).toEqual({ message: 'Hello API' });
+    });
+  });
+
+  describe('health', () => {
+    it('should return { status: "ok" }', () => {
+      const appController = app.get<AppController>(AppController);
+      expect(appController.health()).toEqual({ status: 'ok' });
     });
   });
 });

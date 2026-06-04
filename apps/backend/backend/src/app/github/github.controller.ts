@@ -1,15 +1,15 @@
-import { Controller, Post, UseGuards, Req, RawBodyRequest, Headers, HttpCode, Logger, BadRequestException } from '@nestjs/common';
+import { Controller, Post, UseGuards, Req, RawBodyRequest, Headers, HttpCode, Logger, BadRequestException, ServiceUnavailableException } from '@nestjs/common';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { Request } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AuthenticatedRequest } from '../auth/authenticated-request';
 import { GitHubSyncService } from './github-sync.service';
-import { getEnv } from '../config/env';
+import { getOptionalEnv } from '../config/env';
 
 @Controller('github')
 export class GitHubController {
   private readonly logger = new Logger(GitHubController.name);
-  private readonly webhookSecret = getEnv('GITHUB_WEBHOOK_SECRET');
+  private readonly webhookSecret = getOptionalEnv('GITHUB_WEBHOOK_SECRET');
 
   constructor(private readonly syncService: GitHubSyncService) {}
 
@@ -26,6 +26,10 @@ export class GitHubController {
     @Headers('x-hub-signature-256') signature: string,
     @Headers('x-github-event') event: string,
   ) {
+    if (!this.webhookSecret) {
+      throw new ServiceUnavailableException('Webhooks not configured');
+    }
+
     const rawBody = req.rawBody;
 
     if (!rawBody) {

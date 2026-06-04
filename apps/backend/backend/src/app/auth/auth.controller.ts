@@ -22,7 +22,8 @@ export class AuthController {
 
     @Get('google')
     @UseGuards(GoogleOauthGuard)
-    async googleAuth() {}
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    googleAuth() {}
 
     @Get('google/callback')
     @UseGuards(GoogleOauthGuard)
@@ -34,7 +35,8 @@ export class AuthController {
 
     @Get('discord')
     @UseGuards(DiscordOauthGuard)
-    async discordAuth() {}
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    discordAuth() {}
 
     @Get('discord/callback')
     @UseGuards(DiscordOauthGuard)
@@ -46,7 +48,8 @@ export class AuthController {
 
     @Get('github')
     @UseGuards(GitHubOauthGuard)
-    async githubAuth() {}
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    githubAuth() {}
 
     @Get('github/callback')
     @UseGuards(GitHubOauthGuard)

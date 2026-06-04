@@ -27,8 +27,8 @@ describe('LandingComponent', () => {
   it('should render the primary landing content', () => {
     const compiled = fixture.nativeElement as HTMLElement;
 
-    expect(compiled.querySelector('.landing-page')).not.toBeNull();
-    expect(compiled.textContent).toContain('Skill Tree');
+    expect(compiled.querySelector('.page')).not.toBeNull();
+    expect(compiled.textContent).toContain('DevMap');
   });
 
   it('routes authenticated users to the dashboard from the primary CTA', () => {

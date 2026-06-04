@@ -294,30 +294,6 @@
         </div>
     </aside>
 
-    <div class="modal-overlay" *ngIf="showAiPrompt">
-        <div class="modal-content" style="max-width: 500px; width: 90%;">
-            <div class="panel-header">
-                <h3>{{ i18n.t('canvas.generateTitle') }}</h3>
-                <button class="icon-btn" (click)="closeAiPrompt()" [disabled]="isGenerating">
-                    <span class="material-icons">close</span>
-                </button>
-            </div>
-            <div class="panel-body mt-4">
-                <p class="text-muted mb-4">{{ i18n.t('canvas.generateText') }}</p>
-                <div class="form-group">
-                    <textarea class="detail-input desc-textarea" [(ngModel)]="aiPrompt" rows="4" [placeholder]="i18n.t('canvas.generatePlaceholder')"></textarea>
-                </div>
-                <div class="modal-actions mt-4">
-                    <button class="btn-secondary" (click)="closeAiPrompt()" [disabled]="isGenerating">{{ i18n.t('canvas.cancel') }}</button>
-                    <button class="btn-primary btn-ai modal-ai-btn" (click)="generateWithAi()" [disabled]="isGenerating || !aiPrompt.trim()">
-                        <span class="material-icons" [class.spinning]="isGenerating">{{ isGenerating ? 'refresh' : 'auto_awesome' }}</span>
-                        <span>{{ isGenerating ? i18n.t('canvas.aiGenerating') : i18n.t('canvas.generate') }}</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Backdrop closes on click; keyboard users dismiss via the close button below. -->
     <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
     <div class="modal-overlay help-overlay" *ngIf="showHelp" (click)="closeHelp()">

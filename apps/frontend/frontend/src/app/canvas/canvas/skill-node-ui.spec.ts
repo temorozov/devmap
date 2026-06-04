@@ -18,12 +18,14 @@ describe('skill-node-ui', () => {
   });
 
   it('builds a node ui model with progress and localized status key', () => {
-    expect(getNodeUiModel({ level: 1, maxLevel: 4 }, 3)).toEqual({
+    expect(getNodeUiModel({ level: 1, maxLevel: 4, verified: false, source: 'manual' }, 3)).toEqual({
       status: 'in-progress',
       statusLabelKey: 'canvas.statusInProgress',
       level: 1,
       maxLevel: 4,
       progressPercent: 25,
+      verified: false,
+      source: 'manual',
     });
     expect(getNodeStatusLabelKey('completed')).toBe('canvas.statusCompleted');
   });

@@ -1,5 +1,6 @@
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import helmet from 'helmet';
 
 import { AppModule } from './app/app.module';
 import { getEnv, getEnvList } from './app/config/env';
@@ -34,7 +35,16 @@ async function bootstrap() {
   const backendUrl = getEnv('BACKEND_URL');
   const corsOrigins = expandCorsOrigins(getEnvList('CORS_ORIGINS'));
 
+  app.enableShutdownHooks();
+
   app.setGlobalPrefix(globalPrefix);
+
+  // Security headers — CSP disabled (API-only server; nginx handles frontend headers).
+  // crossOriginResourcePolicy set to cross-origin so SVG badges are embeddable on GitHub.
+  app.use(helmet({
+    contentSecurityPolicy: false,
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  }));
 
   app.useGlobalPipes(
     new ValidationPipe({

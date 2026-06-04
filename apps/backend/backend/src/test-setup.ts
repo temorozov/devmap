@@ -1,8 +1,9 @@
 process.env.DATABASE_URL ??= 'postgresql://user:pass@localhost:5432/skill_tree_test';
 process.env.JWT_SECRET ??= 'test-secret';
 process.env.FRONTEND_URL ??= 'http://localhost:4200';
-process.env.EMAIL_CONFIRM_URL ??= 'http://localhost:4200/confirm-email';
-process.env.EMAIL_FROM ??= 'noreply@example.com';
+process.env.GITHUB_CLIENT_ID ??= 'github-client-id';
+process.env.GITHUB_CLIENT_SECRET ??= 'github-client-secret';
+process.env.GITHUB_CALLBACK_URL ??= 'http://localhost:3333/auth/github/callback';
 process.env.GOOGLE_CLIENT_ID ??= 'google-client-id';
 process.env.GOOGLE_CLIENT_SECRET ??= 'google-client-secret';
 process.env.GOOGLE_CALLBACK_URL ??= 'http://localhost:3333/auth/google/callback';

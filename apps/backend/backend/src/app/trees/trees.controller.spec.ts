@@ -5,7 +5,6 @@ process.env.DATABASE_URL ??= 'postgresql://test:test@localhost:5432/test';
 
 import { TreesController } from './trees.controller';
 import { TreesService } from './trees.service';
-import { BatchGenerationService } from './batch-generation.service';
 
 describe('TreesController', () => {
   let controller: TreesController;
@@ -17,10 +16,6 @@ describe('TreesController', () => {
       providers: [
         {
           provide: TreesService,
-          useValue: {},
-        },
-        {
-          provide: BatchGenerationService,
           useValue: {},
         },
       ],

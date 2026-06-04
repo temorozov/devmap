@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
-import { ScheduleModule } from '@nestjs/schedule';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -9,7 +8,6 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { TreesModule } from './trees/trees.module';
 import { NodesModule } from './nodes/nodes.module';
-import { EmailModule } from './email/email.module';
 import { GitHubModule } from './github/github.module';
 
 @Module({
@@ -18,9 +16,8 @@ import { GitHubModule } from './github/github.module';
       isGlobal: true,
       ignoreEnvFile: true,
     }),
-    ScheduleModule.forRoot(),
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 60 }]),
-    PrismaModule, AuthModule, TreesModule, NodesModule, EmailModule, GitHubModule
+    PrismaModule, AuthModule, TreesModule, NodesModule, GitHubModule
   ],
   controllers: [AppController],
   providers: [AppService],
