@@ -63,6 +63,26 @@
                 </button>
             </div>
         </div>
+
+        <div class="map-legend glass-panel">
+            <div class="legend-title">Reading the map</div>
+            <div class="legend-row">
+                <span class="legend-swatch legend-dot legend-core"></span>
+                <span class="legend-text">Bright glow = core (5+ repos)</span>
+            </div>
+            <div class="legend-row">
+                <span class="legend-swatch legend-dot legend-familiar"></span>
+                <span class="legend-text">Soft glow = familiar (2–4 repos)</span>
+            </div>
+            <div class="legend-row">
+                <span class="legend-swatch legend-dot legend-faint"></span>
+                <span class="legend-text">Faint = exposure / aspirational</span>
+            </div>
+            <div class="legend-row legend-row-edge">
+                <span class="legend-swatch legend-edge"></span>
+                <span class="legend-text">Lines = builds on (prerequisite)</span>
+            </div>
+        </div>
     </div>
 
     <div class="canvas-action-dock glass-panel" *ngIf="!loading && !isEmptyTree">
@@ -125,7 +145,7 @@
                       [attr.height]="selectionBox.h"
                       class="selection-box" />
 
-                <g *ngFor="let node of filteredNodes; trackBy: trackByNodeId" class="skill-node" [ngClass]="getNodeStatusClass(node)" [class.selected]="selectedNode?.id === node.id"
+                <g *ngFor="let node of filteredNodes; trackBy: trackByNodeId" class="skill-node" [ngClass]="[getNodeStatusClass(node), getNodeProficiencyClass(node)]" [class.selected]="selectedNode?.id === node.id"
                     [class.multi-selected]="selectedNodes.has(node.id)"
                     [class.completed]="node.level === (node.maxLevel || defaultMaxLevel)"
                     [class.verified]="node.verified"

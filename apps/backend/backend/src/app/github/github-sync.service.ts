@@ -222,6 +222,16 @@ export class GitHubSyncService {
     }
   }
 
+  /**
+   * Build the map as a *skill dependency graph* rather than category buckets.
+   *
+   * Each detected skill nests under the prerequisite it builds on
+   * (JavaScript → TypeScript → Angular, Node.js/TypeScript → NestJS). Only edges
+   * where both ends are actually detected are kept, so the tree reflects this
+   * developer's real lineage. Foundations (skills with no detected prerequisite)
+   * hang off a synthetic root. This is what makes the map say something the flat
+   * profile list cannot: how the skills connect and build on each other.
+   */
   private buildLayoutNodes(techs: DetectedTech[]): Array<{
     title: string;
     icon: string;
@@ -229,37 +239,52 @@ export class GitHubSyncService {
     parentIndex: number | null;
     tech: DetectedTech | null;
   }> {
-    // Group by category, category header = parent node
-    const categoryMap = new Map<string, DetectedTech[]>();
+    const detectedTitles = new Set(techs.map((t) => t.canonicalTitle));
+
+    // Prerequisites restricted to skills this developer actually has.
+    const detectedPrereqs = new Map<string, string[]>();
     for (const tech of techs) {
-      const existing = categoryMap.get(tech.category) ?? [];
-      existing.push(tech);
-      categoryMap.set(tech.category, existing);
+      detectedPrereqs.set(
+        tech.canonicalTitle,
+        (tech.prerequisites ?? []).filter(
+          (p) => detectedTitles.has(p) && p !== tech.canonicalTitle,
+        ),
+      );
     }
 
-    const CATEGORY_ICONS: Record<string, string> = {
-      language: 'code',
-      frontend: 'web',
-      backend: 'dns',
-      database: 'storage',
-      devops: 'cloud',
-      mobile: 'smartphone',
-      testing: 'science',
-      ml: 'psychology',
-      tooling: 'settings',
+    // Longest prerequisite-chain depth, memoized and cycle-safe.
+    const depthCache = new Map<string, number>();
+    const computeDepth = (title: string, stack: Set<string>): number => {
+      const cached = depthCache.get(title);
+      if (cached !== undefined) return cached;
+      if (stack.has(title)) return 0; // prerequisite cycle guard
+      stack.add(title);
+      const prereqs = detectedPrereqs.get(title) ?? [];
+      const depth = prereqs.length === 0
+        ? 0
+        : 1 + Math.max(...prereqs.map((p) => computeDepth(p, stack)));
+      stack.delete(title);
+      depthCache.set(title, depth);
+      return depth;
+    };
+    for (const tech of techs) computeDepth(tech.canonicalTitle, new Set());
+
+    // Nest a skill under its deepest prerequisite, so it sits on its most
+    // specific foundation (NestJS → TypeScript rather than NestJS → Node.js).
+    const parentTitleOf = (title: string): string | null => {
+      const prereqs = detectedPrereqs.get(title) ?? [];
+      if (prereqs.length === 0) return null;
+      return prereqs.reduce((best, p) =>
+        (depthCache.get(p) ?? 0) > (depthCache.get(best) ?? 0) ? p : best,
+      );
     };
 
-    const CATEGORY_LABELS: Record<string, string> = {
-      language: 'Languages',
-      frontend: 'Frontend',
-      backend: 'Backend',
-      database: 'Databases',
-      devops: 'DevOps',
-      mobile: 'Mobile',
-      testing: 'Testing',
-      ml: 'ML / AI',
-      tooling: 'Tooling',
-    };
+    // Shallow → deep so every parent is emitted before its children.
+    const ordered = [...techs].sort((a, b) => {
+      const da = depthCache.get(a.canonicalTitle) ?? 0;
+      const db = depthCache.get(b.canonicalTitle) ?? 0;
+      return da !== db ? da - db : a.canonicalTitle.localeCompare(b.canonicalTitle);
+    });
 
     const result: Array<{
       title: string;
@@ -268,34 +293,23 @@ export class GitHubSyncService {
       parentIndex: number | null;
       tech: DetectedTech | null;
     }> = [];
+    const indexByTitle = new Map<string, number>();
 
-    // Root node
+    // Synthetic root anchors the foundations ("your foundation").
     result.push({ title: 'Dev Skills', icon: 'account_tree', parentTitle: null, parentIndex: null, tech: null });
+    indexByTitle.set('Dev Skills', 0);
 
-    const categoryHeaderIndices = new Map<string, number>();
-
-    for (const [category, categoryTechs] of categoryMap) {
-      if (!categoryTechs.length) continue;
-
-      const headerIndex = result.length;
+    for (const tech of ordered) {
+      const parentTitle = parentTitleOf(tech.canonicalTitle) ?? 'Dev Skills';
+      const parentIndex = indexByTitle.get(parentTitle) ?? 0;
+      indexByTitle.set(tech.canonicalTitle, result.length);
       result.push({
-        title: CATEGORY_LABELS[category] ?? category,
-        icon: CATEGORY_ICONS[category] ?? 'folder',
-        parentTitle: 'Dev Skills',
-        parentIndex: 0,
-        tech: null,
+        title: tech.canonicalTitle,
+        icon: tech.icon,
+        parentTitle,
+        parentIndex,
+        tech,
       });
-      categoryHeaderIndices.set(category, headerIndex);
-
-      for (const tech of categoryTechs) {
-        result.push({
-          title: tech.canonicalTitle,
-          icon: tech.icon,
-          parentTitle: CATEGORY_LABELS[category] ?? category,
-          parentIndex: headerIndex,
-          tech,
-        });
-      }
     }
 
     return result;

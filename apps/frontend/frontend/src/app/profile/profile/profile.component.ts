@@ -300,6 +300,8 @@ export class ProfileComponent implements OnInit, OnDestroy {
     const categoryMap = new Map<string, SkillGroup>();
 
     for (const node of nodes) {
+      // Skip the structural root ("Dev Skills"); only real skills have a parent.
+      if (!node.parentId) continue;
       const category = this.inferCategory(node);
       const meta = CATEGORY_META[category] ?? { label: 'Other', icon: 'star', order: 99 };
 

@@ -333,6 +333,91 @@
     gap: 0.32rem;
 }
 
+.map-legend {
+    padding: 0.62rem 0.7rem;
+    border-radius: 10px;
+    background: rgba(22, 27, 34, 0.92);
+    border: 1px solid var(--border) !important;
+    border-color: var(--border) !important;
+    box-shadow: var(--shadow-lg);
+    backdrop-filter: blur(12px);
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.legend-title {
+    font-size: 0.72rem;
+    font-weight: 650;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: rgba(214, 222, 235, 0.72);
+}
+
+.legend-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.legend-text {
+    font-size: 0.74rem;
+    line-height: 1.2;
+    color: rgba(226, 232, 240, 0.86);
+}
+
+.legend-swatch {
+    flex-shrink: 0;
+    width: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.legend-dot {
+    height: 12px;
+
+    &::before {
+        content: '';
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: color-mix(in srgb, var(--bg-card) 78%, #3fb950 22%);
+        border: 1.5px solid #3fb950;
+    }
+}
+
+.legend-core::before {
+    box-shadow: 0 0 9px rgba(63, 185, 80, 0.7);
+}
+
+.legend-familiar::before {
+    box-shadow: 0 0 5px rgba(63, 185, 80, 0.35);
+}
+
+.legend-faint::before {
+    opacity: 0.5;
+    border-color: #6e7681;
+    background: color-mix(in srgb, var(--bg-card) 86%, #6e7681 14%);
+    box-shadow: none;
+}
+
+.legend-row-edge {
+    margin-top: 0.05rem;
+}
+
+.legend-edge {
+    height: 12px;
+
+    &::before {
+        content: '';
+        width: 16px;
+        height: 2px;
+        border-radius: 2px;
+        background: rgba(125, 211, 252, 0.7);
+    }
+}
+
 .filter-chip {
     display: inline-flex;
     align-items: center;
@@ -769,6 +854,59 @@
 
         .progress-ring-fill {
             filter: drop-shadow(0 0 4px rgba(74, 222, 128, 0.5));
+        }
+    }
+
+    /* Proficiency tiers — encode "how strong" via glow + presence.
+       Core skills (5+ repos) read as anchors; aspirational ones stay faint. */
+    &.prof-core {
+        .node-aura {
+            opacity: 0.6;
+            fill: rgba(var(--node-status-rgb), 0.16);
+        }
+
+        .node-bg {
+            stroke-width: 2.8;
+            filter: drop-shadow(0 0 12px rgba(var(--node-status-rgb), 0.5));
+        }
+
+        .node-label {
+            font-weight: 700;
+        }
+    }
+
+    &.prof-familiar {
+        .node-aura {
+            opacity: 0.4;
+        }
+
+        .node-bg {
+            filter: drop-shadow(0 0 7px rgba(var(--node-status-rgb), 0.32));
+        }
+    }
+
+    &.prof-exposure {
+        .node-aura {
+            opacity: 0.18;
+        }
+    }
+
+    &.prof-aspirational {
+        .node-aura {
+            opacity: 0.1;
+        }
+
+        .node-bg {
+            opacity: 0.82;
+        }
+
+        .node-icon {
+            opacity: 0.72;
+        }
+
+        .node-label {
+            fill: var(--text-muted);
+            font-weight: 500;
         }
     }
 

@@ -144,6 +144,23 @@ export class CanvasComponent implements OnInit, AfterViewInit {
     return node.verified ? 'canvas.statusVerified' : 'canvas.statusUnverified';
   }
 
+  /**
+   * Visual proficiency tier, driven by how many repos a skill is verified in.
+   * Encodes "strength" on the map: core skills glow brightest, aspirational
+   * (unverified) ones stay faint. Mirrors the profile's core/familiar/exposure.
+   */
+  getNodeProficiencyClass(node: Pick<SkillNode, 'verified' | 'evidence'>): string {
+    if (!node.verified) return 'prof-aspirational';
+    const evidence = (node.evidence as Array<Record<string, unknown>> | null | undefined) ?? [];
+    const meta = evidence.find((e) => e['_meta']);
+    const repoCount = meta
+      ? ((meta['repoCount'] as number) ?? 0)
+      : evidence.filter((e) => !e['_meta']).length;
+    if (repoCount >= 5) return 'prof-core';
+    if (repoCount >= 2) return 'prof-familiar';
+    return 'prof-exposure';
+  }
+
   // Tree Title Edit State
   isEditingTreeTitle = false;
   editTreeTitleData = '';

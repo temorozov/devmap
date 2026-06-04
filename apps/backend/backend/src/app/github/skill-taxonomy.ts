@@ -32,19 +32,19 @@ export const SKILL_TAXONOMY: TaxonomyEntry[] = [
   { canonicalTitle: 'PHP',        category: 'language', icon: 'code', aliases: ['php'] },
   { canonicalTitle: 'Dart',       category: 'language', icon: 'code', aliases: ['dart'] },
   { canonicalTitle: 'Elixir',     category: 'language', icon: 'code', aliases: ['elixir'] },
-  { canonicalTitle: 'Scala',      category: 'language', icon: 'code', aliases: ['scala'] },
-  { canonicalTitle: 'C++',        category: 'language', icon: 'code', aliases: ['c++', 'cpp'] },
+  { canonicalTitle: 'Scala',      category: 'language', icon: 'code', aliases: ['scala'], prerequisites: ['Java'] },
+  { canonicalTitle: 'C++',        category: 'language', icon: 'code', aliases: ['c++', 'cpp'], prerequisites: ['C'] },
   { canonicalTitle: 'C',          category: 'language', icon: 'code', aliases: ['c'] },
   { canonicalTitle: 'Shell',      category: 'language', icon: 'terminal', aliases: ['shell', 'bash', 'shellscript'] },
   { canonicalTitle: 'Assembly',   category: 'language', icon: 'memory', aliases: ['assembly'] },
   { canonicalTitle: 'Perl',       category: 'language', icon: 'code', aliases: ['perl'] },
   { canonicalTitle: 'Lua',        category: 'language', icon: 'code', aliases: ['lua'] },
   { canonicalTitle: 'Haskell',    category: 'language', icon: 'code', aliases: ['haskell'] },
-  { canonicalTitle: 'Clojure',    category: 'language', icon: 'code', aliases: ['clojure'] },
+  { canonicalTitle: 'Clojure',    category: 'language', icon: 'code', aliases: ['clojure'], prerequisites: ['Java'] },
   { canonicalTitle: 'OCaml',      category: 'language', icon: 'code', aliases: ['ocaml'] },
   { canonicalTitle: 'Zig',        category: 'language', icon: 'code', aliases: ['zig'] },
-  { canonicalTitle: 'Objective-C', category: 'language', icon: 'code', aliases: ['objective-c', 'objectivec'] },
-  { canonicalTitle: 'Groovy',     category: 'language', icon: 'code', aliases: ['groovy'] },
+  { canonicalTitle: 'Objective-C', category: 'language', icon: 'code', aliases: ['objective-c', 'objectivec'], prerequisites: ['C'] },
+  { canonicalTitle: 'Groovy',     category: 'language', icon: 'code', aliases: ['groovy'], prerequisites: ['Java'] },
   { canonicalTitle: 'Julia',      category: 'language', icon: 'code', aliases: ['julia'] },
 
   // ── Frontend frameworks ────────────────────────────────────────────────────
@@ -56,15 +56,15 @@ export const SKILL_TAXONOMY: TaxonomyEntry[] = [
   { canonicalTitle: 'Nuxt',     category: 'frontend', icon: 'web', aliases: ['nuxt', 'nuxtjs', '@nuxt/core', '@nuxt/kit'], prerequisites: ['Vue.js'] },
   { canonicalTitle: 'SvelteKit', category: 'frontend', icon: 'web', aliases: ['@sveltejs/kit', 'sveltekit'], prerequisites: ['Svelte'] },
   { canonicalTitle: 'Remix',    category: 'frontend', icon: 'web', aliases: ['@remix-run/react', '@remix-run/node', 'remix'], prerequisites: ['React'] },
-  { canonicalTitle: 'Astro',    category: 'frontend', icon: 'web', aliases: ['astro', '@astrojs/core'] },
+  { canonicalTitle: 'Astro',    category: 'frontend', icon: 'web', aliases: ['astro', '@astrojs/core'], prerequisites: ['JavaScript'] },
   { canonicalTitle: 'Tailwind CSS', category: 'frontend', icon: 'style', aliases: ['tailwindcss', 'tailwind', '@tailwindcss/forms'] },
   { canonicalTitle: 'Sass',     category: 'frontend', icon: 'style', aliases: ['sass', 'node-sass', 'sass-loader'] },
-  { canonicalTitle: 'Storybook', category: 'tooling', icon: 'auto_stories', aliases: ['@storybook/react', '@storybook/vue3', '@storybook/angular', '@storybook/core', 'storybook'] },
+  { canonicalTitle: 'Storybook', category: 'tooling', icon: 'auto_stories', aliases: ['@storybook/react', '@storybook/vue3', '@storybook/angular', '@storybook/core', 'storybook'], prerequisites: ['JavaScript'] },
 
   // ── Build tools ───────────────────────────────────────────────────────────
-  { canonicalTitle: 'Vite',    category: 'tooling', icon: 'flash_on', aliases: ['vite', '@vitejs/plugin-react', '@vitejs/plugin-vue'] },
-  { canonicalTitle: 'Webpack', category: 'tooling', icon: 'settings', aliases: ['webpack', 'webpack-cli', 'webpack-dev-server'] },
-  { canonicalTitle: 'Turbopack / Turborepo', category: 'tooling', icon: 'speed', aliases: ['turbo', '@turbo/gen', 'turborepo'] },
+  { canonicalTitle: 'Vite',    category: 'tooling', icon: 'flash_on', aliases: ['vite', '@vitejs/plugin-react', '@vitejs/plugin-vue'], prerequisites: ['JavaScript'] },
+  { canonicalTitle: 'Webpack', category: 'tooling', icon: 'settings', aliases: ['webpack', 'webpack-cli', 'webpack-dev-server'], prerequisites: ['JavaScript'] },
+  { canonicalTitle: 'Turbopack / Turborepo', category: 'tooling', icon: 'speed', aliases: ['turbo', '@turbo/gen', 'turborepo'], prerequisites: ['JavaScript'] },
 
   // ── Node.js backend ────────────────────────────────────────────────────────
   { canonicalTitle: 'Node.js',     category: 'backend', icon: 'dns', aliases: ['node', 'nodejs'] },
@@ -74,7 +74,7 @@ export const SKILL_TAXONOMY: TaxonomyEntry[] = [
   { canonicalTitle: 'Hono',        category: 'backend', icon: 'dns', aliases: ['hono'], prerequisites: ['TypeScript'] },
   { canonicalTitle: 'Koa',         category: 'backend', icon: 'dns', aliases: ['koa', 'koa-router'], prerequisites: ['Node.js'] },
   { canonicalTitle: 'tRPC',        category: 'backend', icon: 'api', aliases: ['@trpc/server', '@trpc/client', '@trpc/react-query'], prerequisites: ['TypeScript'] },
-  { canonicalTitle: 'Apollo Server', category: 'backend', icon: 'api', aliases: ['apollo-server', '@apollo/server', 'apollo-server-express'] },
+  { canonicalTitle: 'Apollo Server', category: 'backend', icon: 'api', aliases: ['apollo-server', '@apollo/server', 'apollo-server-express'], prerequisites: ['Node.js'] },
   { canonicalTitle: 'gRPC',        category: 'backend', icon: 'api', aliases: ['@grpc/grpc-js', 'grpc', '@grpc/proto-loader'] },
 
   // ── Python backend ────────────────────────────────────────────────────────
@@ -101,11 +101,11 @@ export const SKILL_TAXONOMY: TaxonomyEntry[] = [
   { canonicalTitle: 'Redis',      category: 'database', icon: 'storage', aliases: ['redis', 'ioredis', 'aioredis'] },
   { canonicalTitle: 'SQLite',     category: 'database', icon: 'storage', aliases: ['sqlite', 'sqlite3', 'better-sqlite3', 'aiosqlite'] },
   { canonicalTitle: 'Elasticsearch', category: 'database', icon: 'storage', aliases: ['elasticsearch', '@elastic/elasticsearch', 'elasticsearch-py'] },
-  { canonicalTitle: 'Supabase',   category: 'database', icon: 'storage', aliases: ['@supabase/supabase-js', 'supabase'] },
+  { canonicalTitle: 'Supabase',   category: 'database', icon: 'storage', aliases: ['@supabase/supabase-js', 'supabase'], prerequisites: ['PostgreSQL'] },
   { canonicalTitle: 'Firebase',   category: 'database', icon: 'storage', aliases: ['firebase', 'firebase-admin', '@firebase/app'] },
 
   // ── ORMs / query builders ─────────────────────────────────────────────────
-  { canonicalTitle: 'Prisma',      category: 'tooling', icon: 'settings', aliases: ['prisma', '@prisma/client', 'prisma-client-js'] },
+  { canonicalTitle: 'Prisma',      category: 'tooling', icon: 'settings', aliases: ['prisma', '@prisma/client', 'prisma-client-js'], prerequisites: ['TypeScript'] },
   { canonicalTitle: 'TypeORM',     category: 'tooling', icon: 'settings', aliases: ['typeorm'], prerequisites: ['TypeScript'] },
   { canonicalTitle: 'Drizzle',     category: 'tooling', icon: 'settings', aliases: ['drizzle-orm', 'drizzle-kit'], prerequisites: ['TypeScript'] },
   { canonicalTitle: 'Sequelize',   category: 'tooling', icon: 'settings', aliases: ['sequelize', 'sequelize-cli'], prerequisites: ['Node.js'] },
@@ -130,12 +130,12 @@ export const SKILL_TAXONOMY: TaxonomyEntry[] = [
   { canonicalTitle: 'Flutter',      category: 'mobile', icon: 'smartphone', aliases: ['flutter', 'flutter_test', 'flutter_sdk'], prerequisites: ['Dart'] },
 
   // ── Testing ───────────────────────────────────────────────────────────────
-  { canonicalTitle: 'Jest',       category: 'testing', icon: 'science', aliases: ['jest', '@jest/core', 'jest-environment-jsdom', '@types/jest'] },
-  { canonicalTitle: 'Vitest',     category: 'testing', icon: 'science', aliases: ['vitest', '@vitest/coverage-v8'] },
-  { canonicalTitle: 'Playwright', category: 'testing', icon: 'science', aliases: ['playwright', '@playwright/test'] },
-  { canonicalTitle: 'Cypress',    category: 'testing', icon: 'science', aliases: ['cypress', 'cypress-io'] },
+  { canonicalTitle: 'Jest',       category: 'testing', icon: 'science', aliases: ['jest', '@jest/core', 'jest-environment-jsdom', '@types/jest'], prerequisites: ['JavaScript'] },
+  { canonicalTitle: 'Vitest',     category: 'testing', icon: 'science', aliases: ['vitest', '@vitest/coverage-v8'], prerequisites: ['Vite', 'JavaScript'] },
+  { canonicalTitle: 'Playwright', category: 'testing', icon: 'science', aliases: ['playwright', '@playwright/test'], prerequisites: ['JavaScript'] },
+  { canonicalTitle: 'Cypress',    category: 'testing', icon: 'science', aliases: ['cypress', 'cypress-io'], prerequisites: ['JavaScript'] },
   { canonicalTitle: 'pytest',     category: 'testing', icon: 'science', aliases: ['pytest', 'pytest-asyncio', 'pytest-cov'], prerequisites: ['Python'] },
-  { canonicalTitle: 'Testing Library', category: 'testing', icon: 'science', aliases: ['@testing-library/react', '@testing-library/vue', '@testing-library/dom', 'testing-library'] },
+  { canonicalTitle: 'Testing Library', category: 'testing', icon: 'science', aliases: ['@testing-library/react', '@testing-library/vue', '@testing-library/dom', 'testing-library'], prerequisites: ['JavaScript'] },
 
   // ── ML / Data Science ─────────────────────────────────────────────────────
   { canonicalTitle: 'PyTorch',     category: 'ml', icon: 'psychology', aliases: ['torch', 'torchvision', 'torchaudio'], prerequisites: ['Python'] },
@@ -150,14 +150,14 @@ export const SKILL_TAXONOMY: TaxonomyEntry[] = [
   { canonicalTitle: 'OpenAI SDK',  category: 'ml', icon: 'psychology', aliases: ['openai', '@openai/openai'], prerequisites: ['Python'] },
 
   // ── API / Protocols ───────────────────────────────────────────────────────
-  { canonicalTitle: 'GraphQL',    category: 'tooling', icon: 'hub', aliases: ['graphql', '@apollo/client', 'graphql-tag'] },
-  { canonicalTitle: 'REST API',   category: 'tooling', icon: 'api', aliases: ['axios', 'supertest', 'got', 'node-fetch'] },
-  { canonicalTitle: 'WebSockets', category: 'tooling', icon: 'sync', aliases: ['socket.io', 'ws', '@nestjs/websockets', 'socket.io-client'] },
-  { canonicalTitle: 'JWT / Auth', category: 'tooling', icon: 'lock', aliases: ['jsonwebtoken', 'passport', 'passport-jwt', '@nestjs/jwt', 'python-jose', 'authjs', 'next-auth'] },
+  { canonicalTitle: 'GraphQL',    category: 'tooling', icon: 'hub', aliases: ['graphql', '@apollo/client', 'graphql-tag'], prerequisites: ['JavaScript'] },
+  { canonicalTitle: 'REST API',   category: 'tooling', icon: 'api', aliases: ['axios', 'supertest', 'got', 'node-fetch'], prerequisites: ['Node.js'] },
+  { canonicalTitle: 'WebSockets', category: 'tooling', icon: 'sync', aliases: ['socket.io', 'ws', '@nestjs/websockets', 'socket.io-client'], prerequisites: ['Node.js'] },
+  { canonicalTitle: 'JWT / Auth', category: 'tooling', icon: 'lock', aliases: ['jsonwebtoken', 'passport', 'passport-jwt', '@nestjs/jwt', 'python-jose', 'authjs', 'next-auth'], prerequisites: ['Node.js'] },
 
   // ── Observability / Tooling ──────────────────────────────────────────────
-  { canonicalTitle: 'ESLint',   category: 'tooling', icon: 'check_circle', aliases: ['eslint', '@eslint/js', '@typescript-eslint/parser'] },
-  { canonicalTitle: 'Prettier', category: 'tooling', icon: 'format_paint', aliases: ['prettier', 'eslint-config-prettier'] },
+  { canonicalTitle: 'ESLint',   category: 'tooling', icon: 'check_circle', aliases: ['eslint', '@eslint/js', '@typescript-eslint/parser'], prerequisites: ['JavaScript'] },
+  { canonicalTitle: 'Prettier', category: 'tooling', icon: 'format_paint', aliases: ['prettier', 'eslint-config-prettier'], prerequisites: ['JavaScript'] },
 ];
 
 export interface MappedSkill {
