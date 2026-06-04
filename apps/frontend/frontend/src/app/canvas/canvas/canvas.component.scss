@@ -379,6 +379,7 @@
 
     &::before {
         content: '';
+        display: block;
         width: 12px;
         height: 12px;
         border-radius: 50%;
@@ -388,15 +389,19 @@
 }
 
 .legend-core::before {
-    box-shadow: 0 0 9px rgba(63, 185, 80, 0.7);
+    background: color-mix(in srgb, var(--bg-card) 78%, #f59e0b 22%);
+    border-color: #f59e0b;
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.7);
 }
 
 .legend-familiar::before {
-    box-shadow: 0 0 5px rgba(63, 185, 80, 0.35);
+    background: color-mix(in srgb, var(--bg-card) 78%, #38bdf8 22%);
+    border-color: #38bdf8;
+    box-shadow: 0 0 5px rgba(56, 189, 248, 0.45);
 }
 
 .legend-faint::before {
-    opacity: 0.5;
+    opacity: 0.55;
     border-color: #6e7681;
     background: color-mix(in srgb, var(--bg-card) 86%, #6e7681 14%);
     box-shadow: none;
@@ -857,17 +862,16 @@
         }
     }
 
-    /* Proficiency tiers — encode "how strong" via glow + presence.
-       Core skills (5+ repos) read as anchors; aspirational ones stay faint. */
+    /* Proficiency tiers — override the full node color scheme per tier so the
+       aura, border, and glow all speak the same hue. Gold = mastery,
+       cyan = familiar, grey = exposure, dimmed = aspirational. */
     &.prof-core {
-        .node-aura {
-            opacity: 0.6;
-            fill: rgba(var(--node-status-rgb), 0.16);
-        }
+        --node-status-color: #f59e0b;
+        --node-status-rgb: 245, 158, 11;
 
         .node-bg {
             stroke-width: 2.8;
-            filter: drop-shadow(0 0 12px rgba(var(--node-status-rgb), 0.5));
+            filter: drop-shadow(0 0 12px rgba(245, 158, 11, 0.65));
         }
 
         .node-label {
@@ -876,28 +880,38 @@
     }
 
     &.prof-familiar {
-        .node-aura {
-            opacity: 0.4;
-        }
+        --node-status-color: #38bdf8;
+        --node-status-rgb: 56, 189, 248;
 
         .node-bg {
-            filter: drop-shadow(0 0 7px rgba(var(--node-status-rgb), 0.32));
+            filter: drop-shadow(0 0 7px rgba(56, 189, 248, 0.45));
         }
     }
 
     &.prof-exposure {
+        --node-status-color: #6e7681;
+        --node-status-rgb: 110, 118, 129;
+
         .node-aura {
             opacity: 0.18;
+        }
+
+        .node-bg {
+            filter: drop-shadow(0 0 3px rgba(110, 118, 129, 0.15));
         }
     }
 
     &.prof-aspirational {
+        --node-status-color: #4a5568;
+        --node-status-rgb: 74, 85, 104;
+
         .node-aura {
             opacity: 0.1;
         }
 
         .node-bg {
             opacity: 0.82;
+            filter: none;
         }
 
         .node-icon {
