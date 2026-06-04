@@ -46,14 +46,6 @@ export class LoginComponent implements OnInit {
     });
   }
 
-  loginWithGoogle() {
-    window.location.href = `${appRuntimeConfig.apiUrl}/auth/google`;
-  }
-
-  loginWithDiscord() {
-    window.location.href = `${appRuntimeConfig.apiUrl}/auth/discord`;
-  }
-
   loginWithGitHub() {
     window.location.href = `${appRuntimeConfig.apiUrl}/auth/github`;
   }

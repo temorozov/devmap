@@ -69,7 +69,6 @@ cp .env.production.example .env.production
 | `GITHUB_WEBHOOK_SECRET` | recommended | Webhook HMAC verification |
 | `RESEND_API_KEY` | optional | Email digest + skills-updated emails |
 | `OPENAI_API_KEY` | optional | AI skill inference (JD matcher) |
-| `GOOGLE_*` / `DISCORD_*` | optional | Additional OAuth providers |
 
 See `.env.example` and `docs/DEPLOYMENT_INSTRUCTIONS.md` for the full list.
 

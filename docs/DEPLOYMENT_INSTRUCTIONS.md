@@ -47,17 +47,10 @@ OPENAI_API_KEY=
 AI_OPENAI_MODEL=gpt-4o-mini
 AI_REQUEST_TIMEOUT_MS=30000
 
-# Optional OAuth providers
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
-GOOGLE_CALLBACK_URL=https://yourdomain.com/api/auth/google/callback
-DISCORD_CLIENT_ID=
-DISCORD_CLIENT_SECRET=
-DISCORD_CALLBACK_URL=https://yourdomain.com/api/auth/discord/callback
 OAUTH_FRONTEND_REDIRECT_URL=
 ```
 
-Optional integrations degrade gracefully — missing `RESEND_API_KEY` skips emails, missing `OPENAI_API_KEY` falls back to literal skill matching in the JD matcher, missing Google/Discord vars disable those login methods.
+Optional integrations degrade gracefully — missing `RESEND_API_KEY` skips emails, missing `OPENAI_API_KEY` falls back to literal skill matching in the JD matcher.
 
 ## 2. Deploy
 

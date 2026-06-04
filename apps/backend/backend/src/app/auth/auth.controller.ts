@@ -4,8 +4,6 @@ import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { Response as ExpressResponse } from 'express';
 import { getEnv } from '../config/env';
-import { GoogleOauthGuard } from './google-oauth.guard';
-import { DiscordOauthGuard } from './discord-oauth.guard';
 import { GitHubOauthGuard } from './github-oauth.guard';
 import { AuthenticatedRequest } from './authenticated-request';
 
@@ -18,32 +16,6 @@ export class AuthController {
     @Post('guest')
     async createGuest() {
         return this.authService.registerGuest();
-    }
-
-    @Get('google')
-    @UseGuards(GoogleOauthGuard)
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
-    googleAuth() {}
-
-    @Get('google/callback')
-    @UseGuards(GoogleOauthGuard)
-    async googleAuthRedirect(@Req() req: AuthenticatedRequest, @Res() res: ExpressResponse) {
-        const result = await this.authService.login(req.user);
-        const frontendUrl = getEnv('FRONTEND_URL');
-        res.redirect(`${frontendUrl}/login?token=${result.access_token}`);
-    }
-
-    @Get('discord')
-    @UseGuards(DiscordOauthGuard)
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
-    discordAuth() {}
-
-    @Get('discord/callback')
-    @UseGuards(DiscordOauthGuard)
-    async discordAuthRedirect(@Req() req: AuthenticatedRequest, @Res() res: ExpressResponse) {
-        const result = await this.authService.login(req.user);
-        const frontendUrl = getEnv('FRONTEND_URL');
-        res.redirect(`${frontendUrl}/login?token=${result.access_token}`);
     }
 
     @Get('github')
