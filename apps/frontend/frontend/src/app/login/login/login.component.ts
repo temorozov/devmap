@@ -3,16 +3,19 @@ import { CommonModule } from '@angular/common';
 import { AuthService } from '../../auth.service';
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { appRuntimeConfig } from '../../app-config';
+import { DEMO_GRAPH_NODES } from '../../shared/data/demo-graph';
+import { SkillGraphComponent } from '../../shared/components/skill-graph/skill-graph.component';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, SkillGraphComponent],
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LoginComponent implements OnInit {
+  readonly graphNodes = DEMO_GRAPH_NODES;
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);

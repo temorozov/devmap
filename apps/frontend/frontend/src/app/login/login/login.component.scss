@@ -24,8 +24,21 @@
   }
 }
 
+.login-graph {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  opacity: 0.5;
+  pointer-events: none;
+  mask-image: radial-gradient(ellipse at 50% 45%, transparent 8%, rgba(0, 0, 0, 0.55) 42%, black 80%);
+  -webkit-mask-image: radial-gradient(ellipse at 50% 45%, transparent 8%, rgba(0, 0, 0, 0.55) 42%, black 80%);
+
+  app-skill-graph { position: absolute; inset: 0; }
+}
+
 .back-link {
   position: absolute;
+  z-index: 2;
   top: 1.25rem;
   left: 1.5rem;
   display: inline-flex;
@@ -231,6 +244,7 @@
 
 .login-footer {
   position: absolute;
+  z-index: 2;
   bottom: 1.5rem;
   left: 0;
   right: 0;

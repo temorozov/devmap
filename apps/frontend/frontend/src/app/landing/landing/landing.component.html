@@ -100,75 +100,16 @@
         </div>
       </div>
 
-      <!-- Skill map visual preview -->
-      <div class="hero-visual" aria-hidden="true">
-        <div class="visual-card">
-          <div class="visual-header">
-            <div class="visual-avatar">
-              <span class="material-icons" style="font-size:1.1rem;color:var(--text-muted)">person</span>
-            </div>
-            <div>
-              <div class="visual-name">alexdev</div>
-              <div class="visual-handle">devmap.sh/u/alexdev</div>
-            </div>
-            <div class="visual-verified-badge">
-              <span class="material-icons" style="font-size:0.85rem">verified</span>
-              Verified
-            </div>
+      <!-- Live interactive skill graph -->
+      <div class="hero-visual">
+        <div class="graph-frame">
+          <div class="graph-frame-bar">
+            <span class="gf-dot"></span><span class="gf-dot"></span><span class="gf-dot"></span>
+            <span class="gf-path">devmap.sh/u/alexdev</span>
+            <span class="gf-live"><i></i>live</span>
           </div>
-
-          <div class="visual-stats">
-            <div class="vstat">
-              <span class="vstat-num">14</span>
-              <span class="vstat-label">Verified skills</span>
-            </div>
-            <div class="vstat">
-              <span class="vstat-num">23</span>
-              <span class="vstat-label">Repos scanned</span>
-            </div>
-            <div class="vstat">
-              <span class="vstat-num">4</span>
-              <span class="vstat-label">Categories</span>
-            </div>
-          </div>
-
-          <div class="visual-skills">
-            <div class="vskill-group">
-              <div class="vskill-label">Languages</div>
-              <div class="vskill-chips">
-                <span class="vchip vchip-verified">TypeScript</span>
-                <span class="vchip vchip-verified">Python</span>
-                <span class="vchip vchip-verified">Go</span>
-              </div>
-            </div>
-            <div class="vskill-group">
-              <div class="vskill-label">Frontend</div>
-              <div class="vskill-chips">
-                <span class="vchip vchip-verified">React</span>
-                <span class="vchip vchip-verified">Tailwind CSS</span>
-                <span class="vchip vchip-dim">Svelte</span>
-              </div>
-            </div>
-            <div class="vskill-group">
-              <div class="vskill-label">Backend</div>
-              <div class="vskill-chips">
-                <span class="vchip vchip-verified">Node.js</span>
-                <span class="vchip vchip-verified">NestJS</span>
-                <span class="vchip vchip-verified">FastAPI</span>
-              </div>
-            </div>
-            <div class="vskill-group">
-              <div class="vskill-label">DevOps</div>
-              <div class="vskill-chips">
-                <span class="vchip vchip-verified">Docker</span>
-                <span class="vchip vchip-verified">GitHub Actions</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="visual-footer">
-            <span class="material-icons" style="font-size:0.85rem;color:var(--green)">sync</span>
-            Synced from GitHub · 23 repos · today
+          <div class="graph-frame-stage">
+            <app-skill-graph [nodes]="graphNodes"></app-skill-graph>
           </div>
         </div>
       </div>
@@ -179,6 +120,7 @@
   <section class="how">
     <div class="section-inner">
       <div class="section-head">
+        <span class="sec-kicker"><span class="sk-num">01</span> · HOW IT WORKS</span>
         <h2>Verified in 30 seconds</h2>
         <p>No forms, no self-reporting. Your repos speak for themselves.</p>
       </div>
@@ -232,7 +174,7 @@
   <section class="proof-section">
     <div class="section-inner proof-inner">
       <div class="proof-copy">
-        <p class="proof-kicker">How it looks</p>
+        <span class="sec-kicker"><span class="sk-num">02</span> · EVIDENCE</span>
         <h2>Every skill links to real evidence</h2>
         <p class="proof-sub">
           Verified skills show exactly which repos they come from — not a badge you clicked yourself.
@@ -311,6 +253,7 @@
   <section class="features">
     <div class="section-inner">
       <div class="section-head">
+        <span class="sec-kicker"><span class="sk-num">03</span> · WHY DEVMAP</span>
         <h2>Why it's more than a resume</h2>
       </div>
 

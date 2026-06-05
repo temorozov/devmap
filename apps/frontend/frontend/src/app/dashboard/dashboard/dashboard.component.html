@@ -112,6 +112,7 @@
       <!-- ══ PROFILE SECTION ══ -->
       <section class="pane" *ngIf="view === 'profile'">
         <div class="pane-head">
+          <span class="sec-kicker"><span class="sk-num">◆</span> PROFILE</span>
           <h1 class="pane-title">Your profile</h1>
           <p class="pane-sub">Your public, GitHub-verified developer profile — share it anywhere.</p>
         </div>
@@ -156,17 +157,55 @@
           </div>
         </div>
 
-        <div class="devmap-skills-preview pane-skills" *ngIf="topSkillsPreview.length > 0">
-          <span class="devmap-skill-chip" *ngFor="let s of topSkillsPreview">{{ s }}</span>
-          <span class="devmap-skill-more" *ngIf="myVerifiedSkills.length > 6">+{{ myVerifiedSkills.length - 6 }} more</span>
+        <div class="profile-bento" *ngIf="myVerifiedSkills.length > 0">
+          <div class="bento-left">
+            <div class="stat-strip stat-strip-2x2">
+              <div class="stat-tile">
+                <span class="stat-tile-num">{{ myVerifiedSkills.length }}</span>
+                <span class="stat-tile-label">Verified skills</span>
+              </div>
+              <div class="stat-tile">
+                <span class="stat-tile-num">{{ viewStats?.total ?? 0 }}</span>
+                <span class="stat-tile-label">Profile views</span>
+              </div>
+              <div class="stat-tile">
+                <span class="stat-tile-num">{{ viewStats?.thisWeek ?? 0 }}</span>
+                <span class="stat-tile-label">Views this week</span>
+              </div>
+              <div class="stat-tile">
+                <span class="stat-tile-num">{{ devMap?.updatedLabel || '—' }}</span>
+                <span class="stat-tile-label">Last synced</span>
+              </div>
+            </div>
+
+            <div class="devmap-skills-preview pane-skills" *ngIf="topSkillsPreview.length > 0">
+              <span class="pane-skills-label">Verified from your repos</span>
+              <span class="devmap-skill-chip" *ngFor="let s of topSkillsPreview">{{ s }}</span>
+              <span class="devmap-skill-more" *ngIf="myVerifiedSkills.length > 6">+{{ myVerifiedSkills.length - 6 }} more</span>
+            </div>
+          </div>
+
+          <div class="profile-map-block bento-right" *ngIf="hasMapGraph">
+            <div class="profile-map-head">
+              <span class="sec-kicker"><span class="sk-num">◆</span> SKILL MAP</span>
+              <button class="btn-view-map" (click)="view = 'skillmap'">
+                Explore
+                <span class="material-icons" style="font-size:0.9rem">arrow_forward</span>
+              </button>
+            </div>
+            <div class="map-graph-stage map-graph-preview">
+              <app-skill-graph [nodes]="mapGraphNodes"></app-skill-graph>
+            </div>
+          </div>
         </div>
       </section>
 
       <!-- ══ SKILL MAP SECTION ══ -->
       <section class="pane" *ngIf="view === 'skillmap'">
         <div class="pane-head">
+          <span class="sec-kicker"><span class="sk-num">◆</span> SKILL MAP</span>
           <h1 class="pane-title">Skill map</h1>
-          <p class="pane-sub">Your interactive, GitHub-verified skill graph.</p>
+          <p class="pane-sub">Your interactive, GitHub-verified skill graph — sized by repos, linked by what it builds on.</p>
         </div>
 
         <div class="devmap-section" *ngIf="devMap">
@@ -178,10 +217,15 @@
               GitHub-verified
             </span>
             <button class="btn-view-map" (click)="openTree(devMap.id)" style="margin-left:auto">
-              <span class="material-icons" style="font-size:0.9rem">open_in_new</span>
-              Open map
+              <span class="material-icons" style="font-size:0.9rem">open_in_full</span>
+              Full screen
             </button>
           </div>
+
+          <div class="map-graph-stage map-graph-workspace" *ngIf="hasMapGraph">
+            <app-skill-graph [nodes]="mapGraphNodes"></app-skill-graph>
+          </div>
+
           <div class="devmap-skills-preview" *ngIf="topSkillsPreview.length > 0">
             <span class="devmap-skill-chip" *ngFor="let s of topSkillsPreview">{{ s }}</span>
             <span class="devmap-skill-more" *ngIf="myVerifiedSkills.length > 6">+{{ myVerifiedSkills.length - 6 }} more</span>
@@ -211,18 +255,16 @@
       <!-- ══ CAREER SECTION ══ -->
       <section class="pane" *ngIf="view === 'career'">
         <div class="pane-head">
+          <span class="sec-kicker"><span class="sk-num">◆</span> CAREER</span>
           <h1 class="pane-title">Career tools</h1>
           <p class="pane-sub">Target a role and prove you fit a job — using only your verified skills.</p>
         </div>
 
         <!-- Skill gap -->
         <div class="gap-section" *ngIf="myVerifiedSkills.length > 0">
-          <div class="gap-header">
-            <div>
-              <h2 class="gap-title">Skill gap tracker</h2>
-              <p class="gap-sub">Pick a target role and see what's missing from your verified map</p>
-            </div>
-          </div>
+          <span class="sec-kicker"><span class="sk-num">◆</span> SKILL GAP</span>
+          <h2 class="gap-title">Skill gap tracker</h2>
+          <p class="gap-sub">Pick a target role and see what's missing from your verified map.</p>
 
           <div class="role-selector">
             <button
@@ -238,50 +280,62 @@
             >Clear</button>
           </div>
 
-          <div class="gap-analysis" *ngIf="targetRole">
-            <div class="gap-progress-wrap">
-              <div class="gap-progress-bar">
-                <div class="gap-progress-fill" [style.width.%]="gapPercent"></div>
-              </div>
-              <span class="gap-progress-label">
-                {{ requiredHave.length }}/{{ coreSlots.length }} core skills verified
-                <span class="gap-percent">{{ gapPercent }}%</span>
-              </span>
+          <div class="readiness-card" *ngIf="gapAnalysis as gap">
+            <div class="readiness-head">
+              <span class="readiness-role">{{ gap.role.label }}</span>
+              <span class="readiness-pct">{{ gap.readinessPercent }}% ready</span>
+            </div>
+            <div class="readiness-bar">
+              <div class="readiness-fill" [style.width.%]="gap.readinessPercent"></div>
             </div>
 
-            <div class="gap-row" *ngIf="requiredHave.length > 0">
-              <span class="gap-row-label gap-have">
-                <span class="material-icons" style="font-size:0.8rem">check_circle</span>
-                You have
-              </span>
-              <div class="gap-chips">
-                <span class="gap-chip gap-chip-have" *ngFor="let s of requiredHave">{{ s }}</span>
-              </div>
-            </div>
-
-            <div class="gap-row" *ngIf="requiredMissing.length > 0">
-              <span class="gap-row-label gap-missing">
-                <span class="material-icons" style="font-size:0.8rem">radio_button_unchecked</span>
-                Missing
-              </span>
-              <div class="gap-chips">
-                <span class="gap-chip gap-chip-missing" *ngFor="let s of requiredMissing">{{ s }}</span>
-              </div>
-            </div>
-
-            <div class="gap-row" *ngIf="recommendedSlots.length > 0">
-              <span class="gap-row-label gap-nice">
-                <span class="material-icons" style="font-size:0.8rem">star_outline</span>
-                Recommended
-              </span>
-              <div class="gap-chips">
+            <div class="readiness-tier">
+              <span class="readiness-tier-label">Core</span>
+              <div class="readiness-chips">
                 <span
-                  class="gap-chip"
-                  *ngFor="let s of recommendedSlots"
-                  [class.gap-chip-have]="s.matched"
-                  [class.gap-chip-dim]="!s.matched"
+                  class="rchip"
+                  *ngFor="let s of gap.core"
+                  [class.rchip-strong]="s.strength === 'strong'"
+                  [class.rchip-have]="s.strength === 'medium'"
+                  [class.rchip-weak]="s.strength === 'weak'"
+                  [class.rchip-missing]="s.strength === 'missing'"
+                  [title]="s.strength === 'weak' ? (s.matched + ' — proven only in isolated repos, not alongside other role skills') : ''"
+                >
+                  <span class="material-icons">{{ s.matched ? (s.strength === 'weak' ? 'warning_amber' : 'check') : 'add' }}</span>
+                  {{ s.matched || s.label }}
+                  <span class="rchip-repos" *ngIf="s.matched && s.repoCount > 0">· {{ s.repoCount }}</span>
+                </span>
+              </div>
+            </div>
+
+            <div class="readiness-tier" *ngIf="gap.recommended.length > 0">
+              <span class="readiness-tier-label">Recommended</span>
+              <div class="readiness-chips">
+                <span
+                  class="rchip rchip-sm"
+                  *ngFor="let s of gap.recommended"
+                  [class.rchip-have]="s.matched"
+                  [class.rchip-rec]="!s.matched"
                 >{{ s.matched || s.label }}</span>
               </div>
+            </div>
+
+            <!-- What to learn next -->
+            <div class="learn-next" *ngIf="nextSteps.length > 0">
+              <span class="readiness-tier-label">Learn next</span>
+              <ul class="learn-list">
+                <li class="learn-item" *ngFor="let step of nextSteps" [class.is-near]="step.kind === 'near-ready'">
+                  <span class="material-icons learn-icon">
+                    {{ step.kind === 'near-ready' ? 'bolt' : (step.kind === 'deepen' ? 'trending_up' : 'arrow_forward') }}
+                  </span>
+                  <span class="learn-text"><strong>{{ step.title }}</strong> — {{ step.reason }}</span>
+                </li>
+              </ul>
+            </div>
+
+            <div class="learn-done" *ngIf="nextSteps.length === 0">
+              <span class="material-icons">verified</span>
+              You cover every skill this role needs — keep shipping to deepen them.
             </div>
           </div>
         </div>

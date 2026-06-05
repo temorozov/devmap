@@ -1,0 +1,92 @@
+<div
+  #host
+  class="graph-host"
+  (pointerdown)="onPointerDown($event)"
+  (pointermove)="onPointerMove($event)"
+  (pointerup)="onPointerUp()"
+  (pointercancel)="onPointerUp()"
+  (pointerleave)="onNodeLeave()"
+>
+  <svg class="graph-svg" [attr.viewBox]="viewBoxStr" preserveAspectRatio="xMidYMid slice">
+    <defs>
+      <radialGradient id="sg-core" cx="38%" cy="34%" r="75%">
+        <stop offset="0%" stop-color="#7ee89a" />
+        <stop offset="55%" stop-color="#3fb950" />
+        <stop offset="100%" stop-color="#1f6f33" />
+      </radialGradient>
+      <radialGradient id="sg-familiar" cx="38%" cy="34%" r="75%">
+        <stop offset="0%" stop-color="#9fd0ff" />
+        <stop offset="55%" stop-color="#58a6ff" />
+        <stop offset="100%" stop-color="#1f5fb0" />
+      </radialGradient>
+      <radialGradient id="sg-exposure" cx="38%" cy="34%" r="75%">
+        <stop offset="0%" stop-color="#cdb1ff" />
+        <stop offset="55%" stop-color="#a371f7" />
+        <stop offset="100%" stop-color="#5b3aa6" />
+      </radialGradient>
+    </defs>
+
+    <!-- edges -->
+    <g class="edges">
+      <path
+        *ngFor="let e of edges; trackBy: trackEdge"
+        class="edge"
+        [class.lit]="isEdgeLit(e)"
+        [class.dim]="hovered && !isEdgeLit(e)"
+        [attr.d]="edgePath(e)"
+      />
+    </g>
+
+    <!-- nodes -->
+    <g class="nodes">
+      <g
+        *ngFor="let n of sim; trackBy: trackById"
+        class="node"
+        [class.tier-core]="n.tier === 'core'"
+        [class.tier-familiar]="n.tier === 'familiar'"
+        [class.tier-exposure]="n.tier === 'exposure'"
+        [class.active]="hovered?.id === n.id"
+        [class.faded]="hovered && hovered.id !== n.id"
+        [attr.transform]="'translate(' + n.x.toFixed(1) + ',' + n.y.toFixed(1) + ')'"
+        (pointerdown)="onPointerDownNode($event, n)"
+        (pointerenter)="onNodeEnter(n)"
+        (pointerleave)="onNodeLeave()"
+      >
+        <circle class="aura" [attr.r]="n.r + 13" />
+        <circle class="halo" [attr.r]="n.r + 4" />
+        <circle class="core" [attr.r]="n.r" [attr.fill]="'url(#sg-' + n.tier + ')'" />
+        <circle class="sheen" [attr.r]="n.r" />
+        <text class="label" [attr.y]="n.r + 16" text-anchor="middle">{{ n.label }}</text>
+      </g>
+    </g>
+  </svg>
+
+  <!-- hover card -->
+  <div
+    *ngIf="hovered"
+    class="hover-card"
+    [class.tier-core]="hovered.tier === 'core'"
+    [class.tier-familiar]="hovered.tier === 'familiar'"
+    [class.tier-exposure]="hovered.tier === 'exposure'"
+    [style.left.px]="hoverScreen.x"
+    [style.top.px]="hoverScreen.y"
+  >
+    <div class="hc-title">{{ hovered.label }}</div>
+    <div class="hc-meta">
+      <span *ngIf="hovered.group">{{ hovered.group }}</span>
+      <span *ngIf="hovered.group" class="hc-dot">·</span>
+      <span>{{ hovered.repos }} repo{{ hovered.repos === 1 ? '' : 's' }}</span>
+      <span class="hc-tier">{{ hovered.tier }}</span>
+    </div>
+  </div>
+
+  <!-- chrome -->
+  <ng-container *ngIf="chrome">
+    <div class="hint-chip">drag · scroll to zoom</div>
+    <div class="legend">
+      <span class="lg lg-core"><i></i>core</span>
+      <span class="lg lg-familiar"><i></i>familiar</span>
+      <span class="lg lg-exposure"><i></i>exposure</span>
+    </div>
+  </ng-container>
+</div>

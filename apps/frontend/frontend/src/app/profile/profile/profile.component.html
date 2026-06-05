@@ -95,11 +95,11 @@
       <!-- Stats -->
       <div class="profile-stats">
         <div class="stat">
-          <span class="stat-num">{{ profile.verifiedSkills }}</span>
+          <span class="stat-num">{{ verifiedSkillCount }}</span>
           <span class="stat-label">Verified skills</span>
         </div>
         <div class="stat">
-          <span class="stat-num">{{ profile.totalSkills }}</span>
+          <span class="stat-num">{{ totalSkillCount }}</span>
           <span class="stat-label">Total skills</span>
         </div>
         <div class="stat">
@@ -136,9 +136,9 @@
     </div>
 
     <!-- Verified banner -->
-    <div class="verified-banner" *ngIf="profile.verifiedSkills > 0">
+    <div class="verified-banner" *ngIf="verifiedSkillCount > 0">
       <span class="material-icons" style="font-size:0.9rem;color:var(--green)">verified</span>
-      <span>Skill map verified from GitHub — {{ profile.verifiedSkills }} skills detected in real repos</span>
+      <span>Skill map verified from GitHub — {{ verifiedSkillCount }} skills detected in real repos</span>
       <a
         *ngIf="profile.devMap"
         [routerLink]="'/tree/' + profile.devMap.sharedToken"
@@ -151,11 +151,8 @@
 
     <!-- Target role section -->
     <div class="role-section" *ngIf="gapAnalysis as gap">
+      <span class="sec-kicker section-kicker"><span class="sk-num">◆</span> ROLE READINESS</span>
       <div class="role-header">
-        <span class="role-badge">
-          <span class="material-icons" style="font-size:0.85rem">track_changes</span>
-          Targeting
-        </span>
         <span class="role-label">{{ gap.role.label }}</span>
         <span class="role-pct">{{ gap.readinessPercent }}% ready</span>
       </div>
@@ -233,8 +230,21 @@
       <a routerLink="/login" class="no-map-cta">Build yours →</a>
     </div>
 
+    <!-- Live skill graph -->
+    <section class="profile-graph" *ngIf="hasGraph">
+      <div class="pg-head">
+        <span class="sec-kicker"><span class="sk-num">◆</span> SKILL MAP</span>
+        <p class="pg-sub">Verified skills, sized by repos and linked by what they build on.</p>
+      </div>
+      <div class="pg-stage">
+        <app-skill-graph [nodes]="graphNodes"></app-skill-graph>
+      </div>
+    </section>
+
     <!-- Skill map available — show nodes grouped by category -->
-    <div class="skill-categories" *ngIf="profile.devMap && profile.devMap.nodes && profile.devMap.nodes.length > 0">
+    <section class="skills-section" *ngIf="profile.devMap && profile.devMap.nodes && profile.devMap.nodes.length > 0">
+    <span class="sec-kicker section-kicker"><span class="sk-num">◆</span> VERIFIED SKILLS · {{ totalSkillCount }}</span>
+    <div class="skill-categories">
 
       <ng-container *ngFor="let group of skillGroups">
         <div class="skill-group" *ngIf="group.skills.length > 0">
@@ -270,6 +280,7 @@
         </div>
       </ng-container>
     </div>
+    </section>
 
   </div>
 

@@ -1,45 +1,44 @@
-import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { CanvasComponent } from './canvas.component';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TreesService } from '../../trees.service';
 import { NodesService } from '../../nodes.service';
-import { DialogService } from '../../shared/services/dialog.service';
 import { of } from 'rxjs';
 
 describe('CanvasComponent', () => {
   let component: CanvasComponent;
   let fixture: ComponentFixture<CanvasComponent>;
-  let treesServiceMock: {
-    getTree: jest.Mock;
-    getSharedTree: jest.Mock;
+
+  const verifiedNode = {
+    id: 'react',
+    treeId: '1',
+    title: 'React',
+    parentId: 'ts',
+    verified: true,
+    evidence: [{ repo: 'a' }, { repo: 'b' }, { repo: 'c' }] as never,
+    positionX: 0,
+    positionY: 0,
+    progress: 100,
+    createdAt: '',
+    updatedAt: '',
   };
-  let dialogServiceMock: {
-    alert: jest.Mock;
-  };
+  const baseNode = { ...verifiedNode, id: 'ts', title: 'TypeScript', parentId: undefined };
 
   beforeEach(async () => {
-    treesServiceMock = {
-      getTree: jest.fn(() => of({ id: '1', title: 'Tree', nodes: [] })),
-      getSharedTree: jest.fn(() => of({ id: '1', title: 'Tree', nodes: [] })),
-    };
-    dialogServiceMock = {
-      alert: jest.fn(),
-    };
-
     await TestBed.configureTestingModule({
       imports: [CanvasComponent],
       providers: [
-        {
-          provide: ActivatedRoute,
-          useValue: {
-            paramMap: of({ get: () => '1' }),
-          }
-        },
+        { provide: ActivatedRoute, useValue: { paramMap: of({ get: () => '1' }) } },
         { provide: Router, useValue: { navigate: jest.fn() } },
-        { provide: TreesService, useValue: treesServiceMock },
+        {
+          provide: TreesService,
+          useValue: {
+            getTree: jest.fn(() => of({ id: '1', title: 'Tree', nodes: [baseNode, verifiedNode] })),
+            getSharedTree: jest.fn(() => of({ id: '1', title: 'Tree', nodes: [] })),
+          },
+        },
         { provide: NodesService, useValue: { getNodesByTree: () => of([]) } },
-        { provide: DialogService, useValue: dialogServiceMock }
-      ]
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(CanvasComponent);
@@ -51,35 +50,12 @@ describe('CanvasComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('centers the canvas on the root node when a tree loads', fakeAsync(() => {
-    const rootNode = {
-      id: 'root-node',
-      treeId: '1',
-      title: 'Root',
-      positionX: 1200,
-      positionY: 900,
-      progress: 0,
-      createdAt: '',
-      updatedAt: '',
-    };
-    const childNode = {
-      ...rootNode,
-      id: 'child-node',
-      title: 'Child',
-      parentId: 'root-node',
-      positionX: 1600,
-      positionY: 1200,
-    };
-    treesServiceMock.getTree.mockReturnValue(of({ id: '1', title: 'Tree', nodes: [childNode, rootNode] }));
-
+  it('maps tree nodes into graph nodes with prerequisite edges', () => {
     component.loadTree('1');
-    tick();
-
-    const safeCenterX = 360 + (window.innerWidth - 360 - 24) / 2;
-    const safeCenterY = 112 + (window.innerHeight - 112 - 36) / 2;
-
-    expect(component.zoomLevel).toBe(1);
-    expect(component.viewBox.x).toBe(rootNode.positionX - safeCenterX);
-    expect(component.viewBox.y).toBe(rootNode.positionY - safeCenterY);
-  }));
+    const graph = component.graphNodes;
+    expect(graph.length).toBe(2);
+    const react = graph.find((n) => n.id === 'react');
+    expect(react?.deps).toEqual(['ts']);
+    expect(react?.tier).toBe('familiar'); // 3 repos → familiar
+  });
 });

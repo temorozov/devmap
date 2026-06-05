@@ -3,11 +3,13 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { AuthService } from '../../auth.service';
 import { DEMO_TREE_ID } from '../../shared/data/demo-sample';
+import { DEMO_GRAPH_NODES } from '../../shared/data/demo-graph';
+import { SkillGraphComponent } from '../../shared/components/skill-graph/skill-graph.component';
 
 @Component({
   selector: 'app-landing',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, SkillGraphComponent],
   templateUrl: './landing.component.html',
   styleUrl: './landing.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -15,6 +17,7 @@ import { DEMO_TREE_ID } from '../../shared/data/demo-sample';
 export class LandingComponent {
   private readonly authService = inject(AuthService);
   readonly demoTreeUrl = `/tree/${DEMO_TREE_ID}`;
+  readonly graphNodes = DEMO_GRAPH_NODES;
 
   get isLoggedIn(): boolean {
     return this.authService.hasValidToken();

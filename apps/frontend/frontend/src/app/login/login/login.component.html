@@ -1,5 +1,10 @@
 <div class="login-page">
 
+  <!-- Ambient brand graph -->
+  <div class="login-graph" aria-hidden="true">
+    <app-skill-graph [nodes]="graphNodes" [chrome]="false"></app-skill-graph>
+  </div>
+
   <!-- Back link -->
   <a class="back-link" routerLink="/">
     <span class="material-icons">arrow_back</span>

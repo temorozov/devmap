@@ -3,23 +3,31 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { TreesService, Tree, ProfileViewStats, ExploreProfile } from '../../trees.service';
+import { NodesService, SkillNode } from '../../nodes.service';
 import { AuthService } from '../../auth.service';
 import { DialogService } from '../../shared/services/dialog.service';
 import { ROLE_PROFILES, ROLE_PROFILE_KEYS, RoleProfile } from '../../shared/data/role-profiles';
 import { AppSidebarComponent } from '../../shared/components/app-sidebar/app-sidebar.component';
+import { SkillGraphComponent, SkillGraphNode } from '../../shared/components/skill-graph/skill-graph.component';
+import { skillNodesToGraph } from '../../shared/components/skill-graph/skill-graph.mapper';
+import {
+  GapAnalysis, NextStep,
+  buildRepoSkillsMap, computeGapAnalysis, computeNextSteps, verifiedSkillTitles,
+} from '../../shared/data/skill-gap';
 
 type DashboardView = 'profile' | 'skillmap' | 'career';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, AppSidebarComponent],
+  imports: [CommonModule, FormsModule, RouterModule, AppSidebarComponent, SkillGraphComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardComponent implements OnInit {
   readonly treesService = inject(TreesService);
+  readonly nodesService = inject(NodesService);
   readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
@@ -39,6 +47,8 @@ export class DashboardComponent implements OnInit {
   syncNewSkills: string[] = [];
   exploreProfiles: ExploreProfile[] = [];
   profileLinkCopied = false;
+  mapGraphNodes: SkillGraphNode[] = [];
+  private devMapNodes: SkillNode[] = [];
 
   jdText = '';
   jdMatching = false;
@@ -58,30 +68,6 @@ export class DashboardComponent implements OnInit {
   get profileUrl(): string {
     const h = this.getHandle();
     return h ? `${window.location.origin}/u/${h}` : '';
-  }
-
-  private resolveSlot(slot: import('../../shared/data/role-profiles').SkillRequirement): { label: string; matched: string | null } {
-    if (typeof slot === 'string') {
-      return { label: slot, matched: this.myVerifiedSkills.includes(slot) ? slot : null };
-    }
-    const hit = slot.any.find(s => this.myVerifiedSkills.includes(s)) ?? null;
-    return { label: slot.label, matched: hit };
-  }
-
-  get coreSlots(): { label: string; matched: string | null }[] {
-    return (this.targetRole?.core ?? []).map(s => this.resolveSlot(s));
-  }
-
-  get recommendedSlots(): { label: string; matched: string | null }[] {
-    return (this.targetRole?.recommended ?? []).map(s => this.resolveSlot(s));
-  }
-
-  get requiredHave(): string[] { return this.coreSlots.filter(s => s.matched).map(s => s.matched!); }
-  get requiredMissing(): string[] { return this.coreSlots.filter(s => !s.matched).map(s => s.label); }
-
-  get gapPercent(): number {
-    const total = this.coreSlots.length;
-    return total ? Math.round((this.requiredHave.length / total) * 100) : 0;
   }
 
   isGuest$ = this.authService.isGuest$;
@@ -165,12 +151,43 @@ export class DashboardComponent implements OnInit {
         this.trees = data.map(t => this.toViewModel(t));
         this.loading = false;
         this.cdr.markForCheck();
+        this.loadMapGraph();
       },
       error: () => {
         this.loading = false;
         this.cdr.markForCheck();
       },
     });
+  }
+
+  /** Fetch the dev map's nodes and map them into the inline live graph. */
+  private loadMapGraph() {
+    const map = this.devMap;
+    if (!map) { this.mapGraphNodes = []; return; }
+    this.nodesService.getNodesByTree(map.id).subscribe({
+      next: (nodes) => {
+        this.devMapNodes = nodes;
+        this.mapGraphNodes = skillNodesToGraph(nodes);
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  /** Strength-weighted role readiness (same algorithm as the public profile). */
+  get gapAnalysis(): GapAnalysis | null {
+    const role = this.targetRole;
+    if (!role || this.devMapNodes.length === 0) return null;
+    return computeGapAnalysis(role, verifiedSkillTitles(this.devMapNodes), buildRepoSkillsMap(this.devMapNodes));
+  }
+
+  /** Ordered "what to learn next" suggestions. */
+  get nextSteps(): NextStep[] {
+    const gap = this.gapAnalysis;
+    return gap ? computeNextSteps(gap, verifiedSkillTitles(this.devMapNodes)) : [];
+  }
+
+  get hasMapGraph(): boolean {
+    return this.mapGraphNodes.length >= 3;
   }
 
   openTree(id: string) {

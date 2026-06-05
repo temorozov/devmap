@@ -4,7 +4,13 @@ import { Title, Meta } from '@angular/platform-browser';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { TreesService, PublicProfile } from '../../trees.service';
 import { NodeEvidence, SkillNode } from '../../nodes.service';
-import { ROLE_PROFILES, RoleProfile, SkillRequirement, SKILL_PREREQUISITES } from '../../shared/data/role-profiles';
+import { ROLE_PROFILES, RoleProfile } from '../../shared/data/role-profiles';
+import { SkillGraphComponent, SkillGraphNode } from '../../shared/components/skill-graph/skill-graph.component';
+import { skillNodesToGraph } from '../../shared/components/skill-graph/skill-graph.mapper';
+import {
+  GapAnalysis, NearReadyHint, TopProject,
+  buildRepoSkillsMap, computeGapAnalysis, computeNearReadyHints, computeTopProject, verifiedSkillTitles,
+} from '../../shared/data/skill-gap';
 
 const CATEGORY_META: Record<string, { label: string; icon: string; order: number }> = {
   language: { label: 'Languages',  icon: 'code',           order: 1 },
@@ -32,35 +38,11 @@ interface SkillGroup {
   }>;
 }
 
-interface SlotResult {
-  label: string;
-  matched: string | null;
-  repoCount: number;
-  strength: 'strong' | 'medium' | 'weak' | 'missing';
-}
-
-interface GapAnalysis {
-  role: RoleProfile;
-  core: SlotResult[];
-  recommended: SlotResult[];
-  emerging: SlotResult[];
-  readinessPercent: number;
-}
-
-interface NearReadyHint {
-  title: string;
-  prereqs: string[];
-}
-
-interface TopProject {
-  repo: string;
-  skills: string[];
-}
 
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, SkillGraphComponent],
   templateUrl: './profile.component.html',
   styleUrls: ['./profile.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -84,6 +66,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
       next: (profile) => {
         this.profile = profile;
         this.skillGroups = this.buildSkillGroups(profile);
+        this.graphNodes = skillNodesToGraph(profile.devMap?.nodes ?? []);
         this.loading = false;
         this.cdr.markForCheck();
         this.updateMeta(profile);
@@ -102,9 +85,19 @@ export class ProfileComponent implements OnInit, OnDestroy {
       : '';
   }
 
+  /** Real skill counts derived from the grouped skills (excludes the structural root). */
+  get totalSkillCount(): number {
+    return this.skillGroups.reduce((n, g) => n + g.skills.length, 0);
+  }
+
+  get verifiedSkillCount(): number {
+    return this.skillGroups.reduce((n, g) => n + g.skills.filter(s => s.verified).length, 0);
+  }
+
   get verifiedPercent(): number {
-    if (!this.profile?.totalSkills) return 0;
-    return Math.round((this.profile.verifiedSkills / this.profile.totalSkills) * 100);
+    const total = this.totalSkillCount;
+    if (!total) return 0;
+    return Math.round((this.verifiedSkillCount / total) * 100);
   }
 
   get memberSinceYear(): string {
@@ -116,128 +109,39 @@ export class ProfileComponent implements OnInit, OnDestroy {
     return this.profile?.targetRole ? (ROLE_PROFILES[this.profile.targetRole] ?? null) : null;
   }
 
+  private get devMapNodes(): SkillNode[] {
+    return this.profile?.devMap?.nodes ?? [];
+  }
+
   get verifiedSkillTitles(): string[] {
-    return this.skillGroups.flatMap(g => g.skills.filter(s => s.verified).map(s => s.title));
+    return verifiedSkillTitles(this.devMapNodes);
   }
 
-  private buildRepoSkillsMap(): Map<string, Set<string>> {
-    const map = new Map<string, Set<string>>();
-    for (const group of this.skillGroups) {
-      for (const skill of group.skills) {
-        if (!skill.verified || !skill.evidence?.length) continue;
-        for (const ev of skill.evidence) {
-          if (!ev.repo) continue;
-          if (!map.has(ev.repo)) map.set(ev.repo, new Set());
-          map.get(ev.repo)!.add(skill.title);
-        }
-      }
-    }
-    return map;
-  }
+  /**
+   * Skills mapped into the live force-graph — built from the real tree nodes
+   * (same source as the dashboard/canvas) so the map is identical everywhere.
+   * Cached so the @Input reference stays stable across change detection.
+   */
+  graphNodes: SkillGraphNode[] = [];
 
-  private coOccurrenceStrength(
-    title: string,
-    otherCoreMatches: string[],
-    repoMap: Map<string, Set<string>>
-  ): { strength: 'strong' | 'medium' | 'weak'; repoCount: number } {
-    let maxCoOccurring = 0;
-    let repoCount = 0;
-    for (const [, skills] of repoMap) {
-      if (!skills.has(title)) continue;
-      repoCount++;
-      const n = otherCoreMatches.filter(s => s !== title && skills.has(s)).length;
-      if (n > maxCoOccurring) maxCoOccurring = n;
-    }
-    const strength = maxCoOccurring >= 2 ? 'strong' : maxCoOccurring >= 1 ? 'medium' : 'weak';
-    return { strength, repoCount };
-  }
-
-  private repoCount(title: string, repoMap: Map<string, Set<string>>): number {
-    let n = 0;
-    for (const skills of repoMap.values()) if (skills.has(title)) n++;
-    return n;
+  get hasGraph(): boolean {
+    return this.graphNodes.length >= 3;
   }
 
   get gapAnalysis(): GapAnalysis | null {
     const role = this.targetRoleProfile;
     if (!role) return null;
-    const verified = this.verifiedSkillTitles;
-    const repoMap = this.buildRepoSkillsMap();
-
-    const matchTitle = (slot: SkillRequirement): string | null =>
-      typeof slot === 'string'
-        ? (verified.includes(slot) ? slot : null)
-        : (slot.any.find(s => verified.includes(s)) ?? null);
-
-    const slotLabel = (slot: SkillRequirement): string =>
-      typeof slot === 'string' ? slot : slot.label;
-
-    const coreMatches = role.core.map(matchTitle).filter(Boolean) as string[];
-
-    const core: SlotResult[] = role.core.map(slot => {
-      const matched = matchTitle(slot);
-      if (!matched) return { label: slotLabel(slot), matched: null, repoCount: 0, strength: 'missing' };
-      const { strength, repoCount } = this.coOccurrenceStrength(matched, coreMatches, repoMap);
-      return { label: slotLabel(slot), matched, repoCount, strength };
-    });
-
-    const recommended: SlotResult[] = role.recommended.map(slot => {
-      const matched = matchTitle(slot);
-      const rc = matched ? this.repoCount(matched, repoMap) : 0;
-      return { label: slotLabel(slot), matched, repoCount: rc, strength: matched ? 'medium' : 'missing' };
-    });
-
-    const emerging: SlotResult[] = role.emerging.map(s => ({
-      label: s, matched: verified.includes(s) ? s : null,
-      repoCount: verified.includes(s) ? this.repoCount(s, repoMap) : 0,
-      strength: (verified.includes(s) ? 'medium' : 'missing') as 'medium' | 'missing',
-    }));
-
-    const strengthScore = (s: SlotResult['strength']) =>
-      ({ strong: 1.0, medium: 0.7, weak: 0.4, missing: 0 })[s];
-
-    const coreScore = core.length === 0 ? 1
-      : core.reduce((sum, s) => sum + strengthScore(s.strength), 0) / core.length;
-    const recScore  = recommended.length === 0 ? 1
-      : recommended.filter(s => s.matched).length / recommended.length;
-    const emgScore  = emerging.length === 0 ? 1
-      : emerging.filter(s => s.matched).length / emerging.length;
-
-    const readinessPercent = Math.round((coreScore * 0.6 + recScore * 0.3 + emgScore * 0.1) * 100);
-
-    return { role, core, recommended, emerging, readinessPercent };
+    return computeGapAnalysis(role, this.verifiedSkillTitles, buildRepoSkillsMap(this.devMapNodes));
   }
 
   get topProject(): TopProject | null {
     const gap = this.gapAnalysis;
-    if (!gap) return null;
-    const repoMap = this.buildRepoSkillsMap();
-    const coreMatched = gap.core.filter(s => s.matched).map(s => s.matched!);
-    let best: TopProject | null = null;
-    for (const [repo, skills] of repoMap) {
-      const covered = coreMatched.filter(s => skills.has(s));
-      if (covered.length >= 2 && (!best || covered.length > best.skills.length)) {
-        best = { repo, skills: covered };
-      }
-    }
-    return best;
+    return gap ? computeTopProject(gap, buildRepoSkillsMap(this.devMapNodes)) : null;
   }
 
   get nearReadyHints(): NearReadyHint[] {
-    const analysis = this.gapAnalysis;
-    if (!analysis) return [];
-    const verified = this.verifiedSkillTitles;
-    const missing = [
-      ...analysis.core.filter(s => !s.matched).map(s => s.label),
-      ...analysis.recommended.filter(s => !s.matched).map(s => s.label),
-    ];
-    return missing
-      .filter(skill => {
-        const prereqs = SKILL_PREREQUISITES[skill];
-        return prereqs?.length && prereqs.every(p => verified.includes(p));
-      })
-      .slice(0, 2)
-      .map(skill => ({ title: skill, prereqs: SKILL_PREREQUISITES[skill] }));
+    const gap = this.gapAnalysis;
+    return gap ? computeNearReadyHints(gap, this.verifiedSkillTitles) : [];
   }
 
   ngOnDestroy() {
