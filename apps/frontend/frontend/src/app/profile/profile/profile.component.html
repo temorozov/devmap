@@ -17,17 +17,17 @@
         </svg>
         DevMap
       </a>
-      <a class="nav-explore-link" routerLink="/explore">
-        <span class="material-icons" style="font-size:0.9rem">explore</span>
-        Explore
-      </a>
-    </div>
-    <div class="nav-actions" *ngIf="profile">
-      <a *ngIf="isOwner" routerLink="/dashboard" class="share-btn share-btn-edit">
+      <a *ngIf="isOwner && profile" routerLink="/dashboard" class="share-btn share-btn-edit">
         <span class="material-icons" style="font-size:0.9rem">tune</span>
         Edit my stack
       </a>
-      <button class="share-btn share-btn-primary" (click)="copyProfileLink()" title="Copy profile link">
+    </div>
+    <div class="nav-actions">
+      <a routerLink="/explore" class="share-btn share-btn-explore">
+        <span class="material-icons" style="font-size:0.9rem">explore</span>
+        Explore
+      </a>
+      <button *ngIf="profile" class="share-btn share-btn-primary" (click)="copyProfileLink()" title="Copy profile link">
         <span class="material-icons" style="font-size:0.9rem">{{ linkCopied ? 'check' : 'ios_share' }}</span>
         {{ linkCopied ? 'Copied!' : 'Share' }}
       </button>

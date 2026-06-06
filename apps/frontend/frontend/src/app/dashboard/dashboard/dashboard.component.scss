@@ -193,6 +193,17 @@
   }
 }
 
+.ua-view {
+  background: var(--blue-dim, rgba(88,166,255,0.1));
+  border-color: var(--blue-border, rgba(88,166,255,0.3));
+  color: var(--blue, #58a6ff);
+
+  &:hover:not(:disabled) {
+    background: rgba(88,166,255,0.18);
+    border-color: rgba(88,166,255,0.5);
+  }
+}
+
 .ua-refresh .material-icons {
   color: var(--green);
 }

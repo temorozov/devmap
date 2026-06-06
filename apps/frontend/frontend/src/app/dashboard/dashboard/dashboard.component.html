@@ -52,7 +52,7 @@
           <span class="material-icons">code</span>
           README badge
         </button>
-        <button class="ua-btn" (click)="openProfile()" [disabled]="!profileUrl">
+        <button class="ua-btn ua-view" (click)="openProfile()" [disabled]="!profileUrl">
           <span class="material-icons">visibility</span> View profile
         </button>
         <button class="ua-btn ua-refresh" (click)="refreshFromGitHub()" [disabled]="refreshing || (isGuest$ | async)">

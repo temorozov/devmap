@@ -61,7 +61,7 @@ export class TreesController {
     }
 
     @Get('badge/:handle')
-    @Header('Cache-Control', 'public, max-age=300, s-maxage=300, stale-while-revalidate=300')
+    @Header('Cache-Control', 'public, max-age=60, s-maxage=60, stale-while-revalidate=60')
     async getBadge(
         @Param('handle') handle: string,
         @Query('theme') theme: string,

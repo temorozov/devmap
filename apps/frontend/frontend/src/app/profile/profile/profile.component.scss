@@ -65,22 +65,13 @@
 
 .nav-logo { width: 18px; height: 18px; color: var(--green); }
 
-.nav-explore-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.3rem 0.65rem;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: var(--text-muted);
+.share-btn-explore {
+  background: var(--bg-elevated);
+  border-color: var(--border);
+  color: var(--text);
   text-decoration: none;
-  transition: color 0.15s, background 0.15s;
 
-  &:hover {
-    color: var(--text);
-    background: rgba(255,255,255,0.06);
-  }
+  &:hover { background: var(--bg-card); border-color: var(--text-subtle); color: var(--text); }
 }
 
 .share-btn {
