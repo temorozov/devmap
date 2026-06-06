@@ -54,13 +54,11 @@ export class GitHubSyncService {
 
     const allDetected = await this.github.detectTechnologies(user.githubAccessToken, user.githubUsername);
 
-    // Cut the noise: keep skills seen in 2+ repos (matches the guest-scan
-    // threshold) and drop anything the user explicitly removed before — a
-    // blacklist so a refresh never re-adds a skill they curated out.
-    const excluded = new Set((user.excludedSkills ?? []).map((s) => s.toLowerCase()));
+    // Cut the noise: keep skills seen in 2+ repos (matches the guest-scan threshold).
+    // Per-sync skips come from the preview modal (user unchecks skills they don't want this time).
     const skipped = new Set(skip.map((s) => s.toLowerCase()));
     const detectedTechs = allDetected.filter(
-      (t) => t.repos.length >= 2 && !excluded.has(t.canonicalTitle.toLowerCase()) && !skipped.has(t.canonicalTitle.toLowerCase()),
+      (t) => t.repos.length >= 2 && !skipped.has(t.canonicalTitle.toLowerCase()),
     );
 
     this.logger.log(
@@ -395,9 +393,8 @@ export class GitHubSyncService {
       throw new NotFoundException('GitHub account not connected or token missing.');
     }
     const allDetected = await this.github.detectTechnologies(user.githubAccessToken, user.githubUsername);
-    const excluded = new Set((user.excludedSkills ?? []).map((s) => s.toLowerCase()));
     return allDetected
-      .filter((t) => t.repos.length >= 2 && !excluded.has(t.canonicalTitle.toLowerCase()))
+      .filter((t) => t.repos.length >= 2)
       .map((t) => ({ title: t.canonicalTitle, category: t.category, icon: t.icon ?? '', repoCount: t.repos.length }));
   }
 
