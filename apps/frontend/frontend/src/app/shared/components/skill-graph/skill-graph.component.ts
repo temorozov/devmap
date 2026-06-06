@@ -20,7 +20,7 @@ export interface SkillGraphNode {
   id: string;
   label: string;
   tier: SkillTier;
-  /** Number of repos a skill is verified in — drives node size. */
+  /** Number of repos a skill is used in — drives node size. */
   repos: number;
   /** Optional sub-label shown in the hover card (e.g. "backend"). */
   group?: string;

@@ -61,7 +61,7 @@ export class TreesController {
     }
 
     @Get('badge/:handle')
-    @Header('Cache-Control', 'public, max-age=3600, s-maxage=3600')
+    @Header('Cache-Control', 'public, max-age=300, s-maxage=300, stale-while-revalidate=300')
     async getBadge(
         @Param('handle') handle: string,
         @Query('theme') theme: string,
@@ -83,12 +83,12 @@ export class TreesController {
         const backendUrl = (process.env['BACKEND_URL'] ?? process.env['FRONTEND_URL'] ?? 'https://devmap.app').replace(/\/$/, '');
         const frontendUrl = (process.env['FRONTEND_URL'] ?? 'https://devmap.app').replace(/\/$/, '');
         const profileUrl = `${frontendUrl}/u/${handle}`;
-        const cardUrl = `${backendUrl}/api/badge/${data.displayHandle}?theme=dark`;
-        const title = `@${data.displayHandle} — ${data.totalCount} GitHub-verified skills | DevMap`;
+        const cardUrl = `${backendUrl}/api/trees/badge/${data.displayHandle}?theme=dark`;
+        const title = `@${data.displayHandle} — ${data.totalCount} skills | DevMap`;
         const skillNames = data.skills.slice(0, 5).map(s => s.title);
         const description = skillNames.length > 0
-            ? `${skillNames.join(', ')}${data.totalCount > 5 ? ` +${data.totalCount - 5} more` : ''} · verified from ${data.repoCount} GitHub repos`
-            : `${data.totalCount} GitHub-verified developer skills on DevMap.`;
+            ? `${skillNames.join(', ')}${data.totalCount > 5 ? ` +${data.totalCount - 5} more` : ''} · dev stack on DevMap`
+            : `Developer skill stack on DevMap.`;
         res.setHeader('Content-Type', 'text/html; charset=utf-8');
         res.send(`<!DOCTYPE html><html><head>
 <meta charset="utf-8">

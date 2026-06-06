@@ -146,8 +146,8 @@ export class TreesService {
                     take: 1,
                     select: {
                         nodes: {
-                            where: { verified: true, source: 'github', level: { gte: 2 } },
-                            select: { title: true },
+                            where: { parentId: { not: null } },
+                            select: { title: true, level: true },
                             orderBy: { level: 'desc' },
                         },
                     },
@@ -346,7 +346,7 @@ export class TreesService {
             requiredTitles.add(title);
         }
 
-        // Get user's verified skills with evidence
+        // Get user's GitHub-detected skills with evidence
         const devMap = await this.prisma.tree.findFirst({
             where: { userId, title: 'My Dev Map' },
             select: {

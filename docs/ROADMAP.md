@@ -1,63 +1,58 @@
 # Roadmap
 
+> **June 2026 pivot:** DevMap moved away from "GitHub-verified skills" toward "show your stack beautifully in one link." The GitHub scan is now an editable draft, not a gate. Role readiness, skill-gap tracking, and the verified-rate stats were removed; Explore and Compare were merged.
+
 ## Done
 
-**Retention loop**
-- GitHub webhook auto-sync — map updates on every push, no user action needed
-- Profile view counter — 24h IP-dedup, "N views this week" on dashboard and profile
-- Weekly email digest — Monday 9am UTC cron, view count + trend, skips without RESEND_API_KEY
-- Skills-updated email — fires on re-sync when new skills detected vs previous scan
+**Show your stack**
+- GitHub scan drafts an editable stack — detect 50+ techs, then add/remove/level by hand
+- "Refresh from GitHub" — manual re-scan that preserves manual edits (replaced automatic webhook sync)
+- "Used in N repos" shown as a quiet badge, not a requirement
 
-**Acquisition loop**
-- README badge — `GET /api/trees/badge/:handle` returns shields.io-style SVG; dashboard "Add to README" modal with one-click markdown copy
-- OG meta tags — profile page sets og:title/og:image/twitter:card on load; `/api/trees/og/:handle` endpoint for bot crawlers
-- Explore page — `/explore` discovery feed of recently active devs with top skills
+**Beautiful profile**
+- Public profile at `/u/handle` — user card + interactive skill map + grouped stack list
+- Stripped the old profile noise: no role readiness, no verified-rate/view stats banners
+- OG meta tags — profile page sets og:title/og:image/twitter:card on load; `/api/trees/og/:handle` for bot crawlers
 
-**Profile depth**
-- Skill gap tracker — user declares target role (Senior Backend, Full-Stack, DevOps, etc.), stored in DB, shown on public profile as progress bar + have/missing chips
-- Public profile view stats — "Views this week" stat on profile
-- Landing page auth awareness — logged-in users see "Dashboard" instead of "Sign in"
+**Share**
+- README badge — `GET /api/trees/badge/:handle` returns an SVG card of the stack; dashboard "README badge" modal with one-click markdown copy
+- One Share button — copy profile link + copy README badge
+
+**Explore + Compare**
+- `/explore` scans *any* public GitHub user on the fly (not just members)
+- Compare is a mode of Explore — when logged in, diff their stack against yours (mine / common / theirs)
+- `/compare/**` routes redirect to `/explore`
 
 ---
 
 ## Near-term
 
-**Webhook reliability**
-- Show webhook registration status on dashboard (which repos are hooked, last sync time)
-- Handle GitHub webhook delivery failures / retries gracefully
-- Add a "reconnect GitHub" flow for users who need to re-auth for `admin:repo_hook` scope
-
 **Profile polish**
 - Let users customize their handle (currently auto-set from GitHub username)
-- Add a "last synced" timestamp on the public profile
-- Show repo count on profile (how many repos were scanned)
+- "Last refreshed from GitHub" timestamp on the public profile
+- More layout/theming options for the public stack
+
+**Editor**
+- Bulk add/remove skills
+- Reorder categories, pin favorite skills
+- Smarter category detection for ambiguous techs
 
 **Explore improvements**
-- Pagination or infinite scroll (currently capped at 24)
-- Filter by skill or role
-- "Trending" sort (most views this week)
-
-**Email**
-- Make digest opt-out possible (unsubscribe link)
-- Weekly digest: include target role progress if set
+- Cache + pagination for live scans (rate-limit safety)
+- Filter by skill; "also uses" suggestions
 
 ---
 
 ## Later
 
-**Skill gap**
-- Add more role profiles (Data Engineer, Security Engineer, SRE, etc.)
-- Let users add custom skills to their map manually (not just GitHub-detected)
-- Show "most common missing skill" across users targeting the same role
+**Stack depth**
+- Richer per-skill detail (links to the repos a tech appears in)
+- Import from sources beyond GitHub
 
 **Discovery / SEO**
-- Sitemap of public profiles for search engine indexing
-- Role-based landing pages (`/devs/senior-backend`) for organic search
-
-**Social proof**
-- "Also uses" connections between devs with overlapping skills
-- Skills leaderboard (most verified devs per technology)
+- Sitemap of public profiles for search indexing
+- Shareable comparison links
 
 **Monetization hooks**
-- Pro badge or custom domain for profile URL
-- Recruiter view — bulk browse devs by skill set
+- Pro badge or custom domain for the profile URL
+- Recruiter view — browse devs by stack

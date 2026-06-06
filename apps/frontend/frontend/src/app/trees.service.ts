@@ -78,6 +78,14 @@ export class TreesService {
     return this.http.get<CompareResult>(`${this.apiUrl}/compare/${encodeURIComponent(handleA)}/${encodeURIComponent(handleB)}`);
   }
 
+  excludeGithubSkill(title: string) {
+    return this.http.post<{ excludedSkills: string[] }>(`${appRuntimeConfig.apiUrl}/github/exclude`, { title });
+  }
+
+  allowGithubSkill(title: string) {
+    return this.http.delete<{ excludedSkills: string[] }>(`${appRuntimeConfig.apiUrl}/github/exclude/${encodeURIComponent(title)}`);
+  }
+
 }
 
 export interface ExploreProfile {

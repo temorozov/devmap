@@ -23,6 +23,10 @@
       </a>
     </div>
     <div class="nav-actions" *ngIf="profile">
+      <a *ngIf="isOwner" routerLink="/dashboard" class="share-btn share-btn-edit">
+        <span class="material-icons" style="font-size:0.9rem">tune</span>
+        Edit my stack
+      </a>
       <button class="share-btn share-btn-primary" (click)="copyProfileLink()" title="Copy profile link">
         <span class="material-icons" style="font-size:0.9rem">{{ linkCopied ? 'check' : 'ios_share' }}</span>
         {{ linkCopied ? 'Copied!' : 'Share' }}
@@ -89,9 +93,9 @@
         <span class="material-icons" style="font-size:1.05rem">{{ linkCopied ? 'check' : 'ios_share' }}</span>
         {{ linkCopied ? 'Link copied!' : 'Share this profile' }}
       </button>
-      <button class="pa-btn pa-badge" (click)="copyBadgeSnippet()" title="Copy a README badge that links here">
-        <span class="material-icons" style="font-size:1.05rem">{{ badgeCopied ? 'check' : 'code' }}</span>
-        {{ badgeCopied ? 'Badge copied!' : 'Copy README badge' }}
+      <button class="pa-btn pa-badge" (click)="openBadgePreview()" title="Preview and copy README badge">
+        <span class="material-icons" style="font-size:1.05rem">code</span>
+        README badge
       </button>
       <a *ngIf="githubUrl" [href]="githubUrl" target="_blank" rel="noopener" class="pa-btn pa-github">
         <svg class="gh-icon-sm" viewBox="0 0 24 24" fill="currentColor" style="width:15px;height:15px">
@@ -130,47 +134,61 @@
       </div>
     </section>
 
-    <!-- Skill map available — show nodes grouped by category -->
+    <!-- Skill map available — compact badge-style rows grouped by category -->
     <section class="skills-section" *ngIf="profile.devMap && profile.devMap.nodes && profile.devMap.nodes.length > 0">
-    <span class="sec-kicker section-kicker"><span class="sk-num">◆</span> STACK · {{ totalSkillCount }}</span>
-    <div class="skill-categories">
-
-      <ng-container *ngFor="let group of skillGroups">
-        <div class="skill-group" *ngIf="group.skills.length > 0">
-          <div class="skill-group-header">
-            <span class="skill-group-icon material-icons">{{ group.icon }}</span>
-            <h2 class="skill-group-title">{{ group.label }}</h2>
-            <span class="skill-group-count">{{ group.skills.length }}</span>
-          </div>
-
-          <div class="skill-chips">
-            <div
-              class="skill-chip"
-              *ngFor="let skill of group.skills"
-              [class.skill-chip-verified]="skill.verified"
-            >
-              <div class="skill-chip-inner">
-                <span class="skill-chip-name">{{ skill.title }}</span>
-                <div class="skill-chip-badge" *ngIf="skill.verified">
-                  <span class="material-icons" style="font-size:0.7rem">verified</span>
-                </div>
-              </div>
-              <div class="skill-chip-proficiency" *ngIf="skill.proficiency">
-                <span
-                  class="proficiency-label"
-                  [class.prof-core]="skill.proficiency === 'core'"
-                  [class.prof-familiar]="skill.proficiency === 'familiar'"
-                  [class.prof-exposure]="skill.proficiency === 'exposure'"
-                >{{ skill.proficiency }}</span>
-                <span class="proficiency-repos" *ngIf="skill.repoCount > 0">· {{ skill.repoCount }} repo{{ skill.repoCount === 1 ? '' : 's' }}</span>
-              </div>
+      <span class="sec-kicker section-kicker"><span class="sk-num">◆</span> STACK · {{ totalSkillCount }}</span>
+      <div class="badge-rows">
+        <ng-container *ngFor="let group of skillGroups">
+          <div class="badge-row" *ngIf="group.skills.length > 0" [attr.data-cat]="group.category">
+            <span class="badge-cat-label">{{ group.label }}</span>
+            <div class="badge-pills">
+              <span
+                class="badge-pill"
+                *ngFor="let skill of group.skills"
+                [title]="skill.verified ? (skill.repoCount > 0 ? 'Found in ' + skill.repoCount + ' repo' + (skill.repoCount === 1 ? '' : 's') : 'From GitHub') : 'Added manually'"
+              >
+                <i class="badge-pill-dot"></i>{{ skill.title }}
+              </span>
             </div>
           </div>
-        </div>
-      </ng-container>
-    </div>
+        </ng-container>
+      </div>
     </section>
 
+  </div>
+
+  <!-- BADGE PREVIEW MODAL -->
+  <div class="badge-modal-overlay" *ngIf="showBadgeModal" (click)="closeBadgeModal()">
+    <div class="badge-modal" (click)="$event.stopPropagation()">
+      <div class="badge-modal-head">
+        <span class="badge-modal-title">README badge preview</span>
+        <button class="badge-modal-close" (click)="closeBadgeModal()">
+          <span class="material-icons" style="font-size:1.1rem">close</span>
+        </button>
+      </div>
+
+      <div class="badge-preview-stage">
+        <div class="badge-readme-mock">
+          <div class="readme-toolbar">
+            <span class="readme-dot"></span><span class="readme-dot"></span><span class="readme-dot"></span>
+            <span class="readme-filename">README.md</span>
+          </div>
+          <div class="readme-body">
+            <img [src]="badgeImageUrl" alt="DevMap badge" class="badge-img" />
+          </div>
+        </div>
+      </div>
+
+      <div class="badge-snippet-row">
+        <code class="badge-snippet-code">{{ badgeSnippet }}</code>
+        <button class="badge-copy-btn" (click)="copyBadgeSnippet()">
+          <span class="material-icons" style="font-size:1rem">{{ badgeCopied ? 'check' : 'content_copy' }}</span>
+          {{ badgeCopied ? 'Copied!' : 'Copy' }}
+        </button>
+      </div>
+
+      <p class="badge-hint">Paste this into your GitHub README to show your dev stack.</p>
+    </div>
   </div>
 
   <!-- FOOTER -->

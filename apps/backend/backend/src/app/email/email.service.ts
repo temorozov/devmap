@@ -55,7 +55,7 @@ export class EmailService {
         </td></tr>
         <tr><td style="padding:20px;background:#161b22;border:1px solid #30363d;border-radius:8px;padding-bottom:24px">
           <div style="margin-bottom:16px">${skillChips}</div>
-          <div style="font-size:0.8rem;color:#6e7681">${totalSkills} total verified skill${totalSkills === 1 ? '' : 's'} on your map</div>
+          <div style="font-size:0.8rem;color:#6e7681">${totalSkills} skill${totalSkills === 1 ? '' : 's'} in your stack</div>
         </td></tr>
         <tr><td style="padding-top:20px;padding-bottom:32px">
           <a href="${profileUrl}" style="display:inline-block;padding:10px 22px;background:#238636;color:#fff;text-decoration:none;border-radius:6px;font-size:0.88rem;font-weight:600">

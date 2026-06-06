@@ -52,9 +52,19 @@ export class GitHubSyncService {
       (lastScan?.summary as Array<{ title: string }> ?? []).map(s => s.title),
     );
 
-    const detectedTechs = await this.github.detectTechnologies(user.githubAccessToken, user.githubUsername);
+    const allDetected = await this.github.detectTechnologies(user.githubAccessToken, user.githubUsername);
 
-    this.logger.log(`Detected ${detectedTechs.length} technologies for user ${userId}`);
+    // Cut the noise: keep skills seen in 2+ repos (matches the guest-scan
+    // threshold) and drop anything the user explicitly removed before — a
+    // blacklist so a refresh never re-adds a skill they curated out.
+    const excluded = new Set((user.excludedSkills ?? []).map((s) => s.toLowerCase()));
+    const detectedTechs = allDetected.filter(
+      (t) => t.repos.length >= 2 && !excluded.has(t.canonicalTitle.toLowerCase()),
+    );
+
+    this.logger.log(
+      `Detected ${allDetected.length} technologies for user ${userId}, kept ${detectedTechs.length} after 2+ repo & blacklist filter`,
+    );
 
     // Upsert the dev map tree
     let tree = await this.prisma.tree.findFirst({
@@ -85,10 +95,19 @@ export class GitHubSyncService {
 
       const idMap = new Map<string, string>();
 
+      // Reuse an existing manual root so we never end up with two parentId=null nodes.
+      const existingRoot = await tx.node.findFirst({ where: { treeId, parentId: null } });
+      if (existingRoot) {
+        idMap.set('Dev Skills', existingRoot.id);
+      }
+
       for (let i = 0; i < layoutInput.length; i++) {
         const item = layoutInput[i];
         const pos = positions[i];
         const tech = item.tech;
+
+        // Skip synthetic root if we're reusing an existing one.
+        if (!item.tech && item.parentTitle === null && idMap.has(item.title)) continue;
 
         let parentId: string | null = null;
         if (item.parentTitle && idMap.has(item.parentTitle)) {
@@ -367,5 +386,29 @@ export class GitHubSyncService {
       select: { githubAccessToken: true },
     });
     return u?.githubAccessToken ?? '';
+  }
+
+  /** Blacklist a skill title so future GitHub syncs never re-add it. */
+  async excludeSkill(userId: string, title: string): Promise<{ excludedSkills: string[] }> {
+    const clean = title.trim();
+    if (!clean) return { excludedSkills: [] };
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { excludedSkills: true } });
+    if (!user) throw new NotFoundException('User not found');
+    const exists = user.excludedSkills.some((s) => s.toLowerCase() === clean.toLowerCase());
+    const excludedSkills = exists ? user.excludedSkills : [...user.excludedSkills, clean];
+    if (!exists) await this.prisma.user.update({ where: { id: userId }, data: { excludedSkills } });
+    return { excludedSkills };
+  }
+
+  /** Remove a skill from the blacklist (e.g. it was re-added manually). */
+  async allowSkill(userId: string, title: string): Promise<{ excludedSkills: string[] }> {
+    const clean = title.trim().toLowerCase();
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { excludedSkills: true } });
+    if (!user) throw new NotFoundException('User not found');
+    const excludedSkills = user.excludedSkills.filter((s) => s.toLowerCase() !== clean);
+    if (excludedSkills.length !== user.excludedSkills.length) {
+      await this.prisma.user.update({ where: { id: userId }, data: { excludedSkills } });
+    }
+    return { excludedSkills };
   }
 }

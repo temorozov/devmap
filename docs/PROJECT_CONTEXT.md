@@ -2,14 +2,15 @@
 
 ## Product
 
-**DevMap** is a GitHub-verified developer skill map. Users connect GitHub, DevMap scans their repos and builds a public profile at `/u/handle` showing which technologies they've actually shipped — verified from `package.json`, Dockerfiles, CI workflows, and more.
+**DevMap** lets developers show their stack — beautifully, in one link. Users connect GitHub, DevMap scans their repos to *draft* a stack from the technologies it detects (`package.json`, Dockerfiles, CI workflows, and more), and the user then edits that draft freely. The result is a public profile at `/u/handle` with a clean card, an interactive skill map, and the stack grouped by category.
+
+The GitHub scan is a **starting point, not a gate**: detected skills become editable nodes the user can add to, remove, or re-level. "Used in N repos" is shown as a quiet badge, never a requirement.
 
 The core loop:
-1. User connects GitHub → repos scanned → "My Dev Map" tree built with verified nodes
-2. Profile is public at `/u/handle` — shareable link, OG preview for Slack/Twitter
-3. Webhooks auto-sync the map on every push, without user action
-4. Weekly email digest and skills-updated email bring users back
-5. README badge and explore page drive organic acquisition
+1. User connects GitHub → repos scanned → "My Dev Map" tree drafted with detected nodes
+2. User edits the stack on the dashboard — add/remove skills, set levels; "Refresh from GitHub" re-scans on demand without clobbering manual edits
+3. Profile is public at `/u/handle` — shareable link, README badge, OG preview for Slack/Twitter
+4. Explore lets anyone scan any public GitHub user on the fly and compare stacks
 
 ## Stack
 
@@ -27,19 +28,20 @@ The core loop:
 |------|-----------|-------|
 | `/` | `LandingComponent` | Marketing page, shows Dashboard CTA when logged in |
 | `/login` | `LoginComponent` | GitHub OAuth primary, Google/Discord optional |
-| `/dashboard` | `DashboardComponent` | Trees list, GitHub sync, skill gap tracker, badge modal |
+| `/dashboard` | `DashboardComponent` | "My Stack" editor — GitHub refresh, add/remove/level skills, share link + badge modal |
 | `/tree/:id` | `CanvasComponent` | Interactive skill map editor |
-| `/u/:handle` | `ProfileComponent` | Public profile with verified skills, target role, view stats |
-| `/explore` | `ExploreComponent` | Discovery feed of recently active devs |
+| `/u/:handle` | `ProfileComponent` | Public profile — user card + interactive skill map + grouped stack list |
+| `/explore` | `ExploreComponent` | Scan any public GitHub user on the fly; compare against your stack when logged in |
+| `/compare/**` | — | Redirects to `/explore` (compare is now a mode of Explore, not a route) |
 
 ## Frontend Structure
 
 - App root: `apps/frontend/frontend/src/app`
 - `auth.service.ts` — JWT storage, `isGuest$`, `handle$`, `githubUsername$`, `loadMe()`
-- `trees.service.ts` — tree/profile/badge/explore/stats API client
+- `trees.service.ts` — tree/profile/badge/explore API client; `scanUser(handle)` + `compareUsers(a,b)` for live GitHub scans
 - `nodes.service.ts` — node CRUD
 - `app-config.ts` — reads runtime `app-config.js` for API URL
-- `shared/data/role-profiles.ts` — target role definitions (required/nice-to-have skills)
+- `shared/components/skill-graph/` — the interactive skill map rendering
 - `shared/data/demo-sample.ts` — demo tree ID
 
 ## Backend Modules
@@ -47,7 +49,7 @@ The core loop:
 | Module | Path | Responsibility |
 |--------|------|----------------|
 | `auth` | `src/app/auth` | GitHub/Google/Discord OAuth, guest auth, JWT |
-| `trees` | `src/app/trees` | Tree CRUD, public profile, view counter, badge SVG, OG page, explore, skill gap |
+| `trees` | `src/app/trees` | Tree CRUD, public profile, badge SVG, OG page, explore + compare |
 | `nodes` | `src/app/nodes` | Node CRUD |
 | `github` | `src/app/github` | GitHub API sync, webhook receiver |
 | `email` | `src/app/email` | Weekly digest cron, skills-updated email (Resend) |
@@ -66,15 +68,15 @@ Backend global prefix: `/api`
 
 ## GitHub Sync Flow
 
-1. User hits "Sync GitHub" → `POST /api/github/sync`
+1. User hits "Refresh from GitHub" → `POST /api/github/sync`
 2. `GitHubSyncService.syncUserDevMap(userId)` fetches repos via GitHub API
 3. `detectTechnologies()` reads package.json, Dockerfiles, CI files
-4. Upserts nodes in "My Dev Map" tree as verified
-5. Saves `GitHubScan` record with summary
-6. Diffs against previous scan — if new skills found and user has email, sends skills-updated email
-7. Registers webhooks on detected repos (requires `admin:repo_hook` scope + `GITHUB_WEBHOOK_SECRET` + non-localhost `BACKEND_URL`)
+4. Upserts detected nodes in the "My Dev Map" tree (`source: github`) as an editable draft — existing manual edits are preserved
+5. Saves `GitHubScan` record with summary (repo count + skill diff)
 
-Webhook flow: GitHub `push` event → `POST /api/github/webhook` → HMAC-SHA256 verification → `syncByRepo(repoFullName)` → full sync for that user
+Guest / external scans: `GET /api/github/scan/:username` scans any public GitHub user on the fly (used by Explore + Compare). Results are cached briefly and reuse a connected user's token for GitHub rate limits.
+
+Legacy infra still present in the backend: a webhook receiver (`POST /api/github/webhook`, HMAC-verified) and a weekly email digest cron. These are dormant relative to the current product flow (sync is now a manual refresh), kept for reference rather than featured.
 
 ## Key Env Vars
 
@@ -113,5 +115,5 @@ DISCORD_CLIENT_ID / DISCORD_CLIENT_SECRET / DISCORD_CALLBACK_URL
 - Profile view counter deduplicates by hashed IP within a 24h window.
 - Weekly email digest runs via `@Cron('0 9 * * 1')` (Monday 9am UTC). Skipped if no `RESEND_API_KEY`.
 - Skills-updated email fires only on re-syncs (not first sync) and only when new skills are detected.
+- README badge is served at `GET /api/trees/badge/:handle` (note the `/trees` segment — the OG image and profile meta tags must point at this full path, not `/api/badge/...`).
 - OG endpoint (`GET /api/trees/og/:handle`) is for social crawlers — configure Nginx to route Twitterbot/Slackbot there.
-- `targetRole` is stored in DB and shown on public profile as a role badge + progress bar.

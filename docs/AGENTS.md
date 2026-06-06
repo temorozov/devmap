@@ -26,19 +26,19 @@ Inspect → plan briefly → implement → verify → summarize.
 ```
 apps/frontend/frontend/src/app/
   auth.service.ts              — JWT, isGuest$, handle$, loadMe()
-  trees.service.ts             — tree/profile/badge/explore API client
+  trees.service.ts             — tree/profile/badge/explore API client (+ live GitHub scan/compare)
   nodes.service.ts             — node CRUD client
   app-config.ts                — runtime API URL
-  shared/data/role-profiles.ts — target role skill lists
+  shared/components/skill-graph/ — interactive skill map rendering
   landing/landing/             — marketing page
-  dashboard/dashboard/         — main user area
+  dashboard/dashboard/         — "My Stack" editor
   canvas/canvas/               — interactive skill map
   profile/profile/             — public profile page
   explore/                     — discovery feed
 
 apps/backend/backend/src/app/
   auth/                        — GitHub/Google/Discord OAuth, JWT, guest
-  trees/                       — CRUD, profile, badge SVG, OG page, explore, views, skill gap
+  trees/                       — CRUD, profile, badge SVG, OG page, explore + compare
   nodes/                       — node CRUD
   github/                      — GitHub API sync, webhook receiver
   email/                       — Resend email, weekly digest cron

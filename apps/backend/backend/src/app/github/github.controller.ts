@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Param, UseGuards, Req, RawBodyRequest, Headers, HttpCode, Logger, BadRequestException, ServiceUnavailableException } from '@nestjs/common';
+import { Controller, Post, Get, Delete, Param, Body, UseGuards, Req, RawBodyRequest, Headers, HttpCode, Logger, BadRequestException, ServiceUnavailableException } from '@nestjs/common';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { Request } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -22,6 +22,18 @@ export class GitHubController {
   @Get('scan/:username')
   scanUser(@Param('username') username: string) {
     return this.syncService.scanPublicUser(username);
+  }
+
+  @Post('exclude')
+  @UseGuards(JwtAuthGuard)
+  excludeSkill(@Req() req: AuthenticatedRequest, @Body() body: { title: string }) {
+    return this.syncService.excludeSkill(req.user.id, body.title ?? '');
+  }
+
+  @Delete('exclude/:title')
+  @UseGuards(JwtAuthGuard)
+  allowSkill(@Req() req: AuthenticatedRequest, @Param('title') title: string) {
+    return this.syncService.allowSkill(req.user.id, title);
   }
 
   @Post('webhook')

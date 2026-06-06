@@ -1,20 +1,17 @@
 # DevMap
 
-**GitHub-verified developer skill maps.** Connect GitHub, get a public profile at `/u/yourhandle` showing what you've actually shipped — verified from real repos, not self-reported.
+**Show your dev stack — beautifully, in one link.** Connect GitHub, get an editable map of the technologies you work with, and share a public profile at `/u/yourhandle` that recruiters and other devs can actually enjoy looking at.
 
 ---
 
 ## What it does
 
-- Scans your GitHub repos and detects 50+ technologies from `package.json`, Dockerfiles, CI workflows, and more
-- Builds a verified skill map — each skill links to the repos that prove it
-- Auto-syncs via GitHub webhooks on every push
-- Public profile at `/u/handle` with OG previews for Slack/Twitter
-- Weekly email digest + skills-updated notifications
-- README badge: `[![DevMap](https://yourhost/api/trees/badge/handle)](https://yourhost/u/handle)`
-- Skill gap tracker — declare a target role, see which required skills you have vs. missing
-- Compare any two devs — side-by-side diff of skills each one has, only counting techs used in 2+ repos (minimum familiar)
-- Explore page to discover other devs
+- **Draft from GitHub** — scans your repos and detects 50+ technologies from `package.json`, Dockerfiles, CI workflows, and more, then turns them into an editable starting point (not a locked-down verdict)
+- **Edit freely** — add, remove, and level up any skill by hand. Your stack, your call. "Used in N repos" stays as a quiet badge, never a gate
+- **Beautiful public profile** at `/u/handle` — a clean user card, an interactive skill map, and your stack grouped by category, with OG previews for Slack/Twitter
+- **README badge** — drop `[![DevMap](https://yourhost/api/trees/badge/handle)](https://yourhost/u/handle)` into any README to render a live SVG of your stack
+- **Refresh from GitHub** — a manual button re-scans your repos when you want, without clobbering your manual edits
+- **Explore & compare** — search *any* public GitHub user on the fly (not just DevMap members) and, when logged in, diff their stack against yours side by side
 
 ## Stack
 
@@ -56,12 +53,10 @@ npm run test       # tests
 |----------|----------|---------|
 | `JWT_SECRET` | yes | JWT signing |
 | `DATABASE_URL` | yes | Postgres connection |
-| `FRONTEND_URL` / `BACKEND_URL` | yes | Public URLs |
-| `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` | yes | GitHub OAuth login |
+| `FRONTEND_URL` / `BACKEND_URL` | yes | Public URLs (badge + OG image links) |
+| `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` | yes | GitHub OAuth login + repo scanning |
 | `GITHUB_CALLBACK_URL` | yes | OAuth redirect |
-| `GITHUB_WEBHOOK_SECRET` | recommended | Webhook HMAC verification |
-| `RESEND_API_KEY` | optional | Email digest + skills-updated emails |
-| `OPENAI_API_KEY` | optional | AI skill inference (JD matcher) |
+| `RESEND_API_KEY` | optional | Email (degrades gracefully without it) |
 
 See `.env.example` and `docs/DEPLOYMENT_INSTRUCTIONS.md` for the full list.
 

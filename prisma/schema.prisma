@@ -16,6 +16,7 @@ model User {
   handle            String?         @unique
   targetRole        String?
   isGuest           Boolean         @default(false)
+  excludedSkills    String[]        @default([])
   trees             Tree[]
   githubScans       GitHubScan[]
   profileViews      ProfileView[]

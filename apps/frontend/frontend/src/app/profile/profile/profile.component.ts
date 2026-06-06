@@ -4,6 +4,7 @@ import { Title, Meta } from '@angular/platform-browser';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { TreesService, PublicProfile } from '../../trees.service';
 import { NodeEvidence, SkillNode } from '../../nodes.service';
+import { AuthService } from '../../auth.service';
 import { SkillGraphComponent, SkillGraphNode } from '../../shared/components/skill-graph/skill-graph.component';
 import { skillNodesToGraph } from '../../shared/components/skill-graph/skill-graph.mapper';
 
@@ -45,6 +46,7 @@ interface SkillGroup {
 export class ProfileComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly treesService = inject(TreesService);
+  private readonly authService = inject(AuthService);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly titleService = inject(Title);
   private readonly meta = inject(Meta);
@@ -55,6 +57,9 @@ export class ProfileComponent implements OnInit, OnDestroy {
   skillGroups: SkillGroup[] = [];
   linkCopied = false;
   badgeCopied = false;
+  showBadgeModal = false;
+  badgePreviewBust = Date.now();
+  isOwner = false;
 
   ngOnInit() {
     const handle = this.route.snapshot.paramMap.get('handle') ?? '';
@@ -64,8 +69,22 @@ export class ProfileComponent implements OnInit, OnDestroy {
         this.skillGroups = this.buildSkillGroups(profile);
         this.graphNodes = skillNodesToGraph(profile.devMap?.nodes ?? []);
         this.loading = false;
-        this.cdr.markForCheck();
         this.updateMeta(profile);
+        // Determine ownership so we can show the "Edit my stack" link.
+        this.authService.loadMe().subscribe({
+          next: () => {
+            const u = (
+              this.authService as unknown as {
+                user: { getValue(): { handle?: string | null; githubUsername?: string | null; isGuest?: boolean } | null };
+              }
+            ).user.getValue();
+            const myHandle = (u?.handle ?? u?.githubUsername ?? '').toLowerCase();
+            this.isOwner = !u?.isGuest && !!myHandle && myHandle === profile.handle.toLowerCase();
+            this.cdr.markForCheck();
+          },
+          error: () => this.cdr.markForCheck(),
+        });
+        this.cdr.markForCheck();
       },
       error: () => {
         this.error = 'Profile not found';
@@ -120,7 +139,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
       ? `${topSkills}${total > 5 ? ` +${total - 5} more` : ''} · ${profile.name || profile.handle}'s stack on DevMap`
       : `${profile.name || profile.handle}'s developer stack on DevMap.`;
     const origin = window.location.origin;
-    const cardUrl = `${origin}/api/badge/${profile.handle}?theme=dark`;
+    const cardUrl = `${origin}/api/trees/badge/${profile.handle}?theme=dark`;
     const url = window.location.href;
 
     this.titleService.setTitle(title);
@@ -144,14 +163,37 @@ export class ProfileComponent implements OnInit, OnDestroy {
     setTimeout(() => { this.linkCopied = false; this.cdr.markForCheck(); }, 2000);
   }
 
-  /** Markdown badge that renders the skill card and links back to this profile. */
-  copyBadgeSnippet() {
+  get badgeSnippet(): string {
     const handle = this.profile?.handle;
-    if (!handle) return;
+    if (!handle) return '';
     const origin = window.location.origin;
     const badge = `${origin}/api/trees/badge/${handle}`;
     const profileUrl = `${origin}/u/${handle}`;
-    const snippet = `[![DevMap](${badge})](${profileUrl})`;
+    return `[![DevMap](${badge})](${profileUrl})`;
+  }
+
+  get badgeImageUrl(): string {
+    const handle = this.profile?.handle;
+    if (!handle) return '';
+    // Cache-bust the in-app preview so a stale empty badge can't stick.
+    return `${window.location.origin}/api/trees/badge/${handle}?v=${this.badgePreviewBust}`;
+  }
+
+  openBadgePreview() {
+    this.badgePreviewBust = Date.now();
+    this.showBadgeModal = true;
+    this.cdr.markForCheck();
+  }
+
+  closeBadgeModal() {
+    this.showBadgeModal = false;
+    this.badgeCopied = false;
+    this.cdr.markForCheck();
+  }
+
+  copyBadgeSnippet() {
+    const snippet = this.badgeSnippet;
+    if (!snippet) return;
     navigator.clipboard.writeText(snippet);
     this.badgeCopied = true;
     this.cdr.markForCheck();

@@ -122,18 +122,18 @@ export function buildSkillCardSvg(
     // Handle + subtitle
     const TX_X = ACX + 18 + 10;
     parts.push(tx(TX_X, 27, `@${displayHandle}`, 15, c.accent, { w: '600' }));
-    parts.push(tx(TX_X, 45, 'skills used across 2+ repos', 10, c.muted));
+    parts.push(tx(TX_X, 45, 'dev stack', 10, c.muted));
 
     // Verified chip (right side)
     const RX = W - MR;
-    const chipText = `✓ ${totalCount} skills`;
+    const chipText = `${totalCount} skills`;
     const chipW = Math.ceil(chipText.length * 6.5) + 20;
     const chipX = RX - chipW;
     const chipY = 14;
     parts.push(`<rect x="${chipX}" y="${chipY}" width="${chipW}" height="22" rx="11" fill="${c.verified}" fill-opacity="${dark ? '0.12' : '0.1'}" stroke="${c.verified}" stroke-width="0.5" stroke-opacity="0.6"/>`);
     parts.push(tx(chipX + chipW / 2, chipY + 15, chipText, 11, c.verified, { a: 'middle', w: '600' }));
     if (repoCount > 0) {
-        parts.push(tx(RX, 52, `${repoCount} repos scanned`, 10, c.muted, { a: 'end' }));
+        parts.push(tx(RX, 52, `across ${repoCount} repos`, 10, c.muted, { a: 'end' }));
     }
 
     // Skill rows with pills
@@ -172,17 +172,17 @@ export function buildSkillCardSvg(
         }
     } else {
         const cy = HEADER_H + SKILLS_TOP_PAD + ROW_H / 2;
-        parts.push(tx(ML, Math.round(cy + 4), 'No verified skills yet — connect GitHub to scan your repos', 11, c.muted));
+        parts.push(tx(ML, Math.round(cy + 4), 'No stack yet — add skills to your profile on devmap.sh', 11, c.muted));
     }
 
     // Footer
     const footerLineY = totalH - FOOTER_H;
     parts.push(`<rect x="${ML}" y="${footerLineY}" width="${W - ML - MR}" height="1" fill="${c.divider}"/>`);
     parts.push(tx(ML, totalH - 11, `devmap.sh/u/${displayHandle}`, 10, c.muted));
-    parts.push(tx(RX, totalH - 11, 'auto-synced from GitHub', 10, c.dim, { a: 'end' }));
+    parts.push(tx(RX, totalH - 11, 'devmap.sh', 10, c.dim, { a: 'end' }));
 
     return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${totalH}" role="img" aria-label="DevMap skill card for @${esc(displayHandle)}">
-  <title>@${esc(displayHandle)} — ${totalCount} GitHub-verified skills | DevMap</title>
+  <title>@${esc(displayHandle)} — ${totalCount} skills | DevMap</title>
   ${parts.join('\n  ')}
 </svg>`;
 }

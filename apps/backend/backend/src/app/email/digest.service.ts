@@ -180,7 +180,7 @@ export class DigestService {
               </td>
               <td align="right" style="vertical-align:top">
                 <div style="font-size:1.6rem;font-weight:700;color:#58a6ff;font-family:monospace;line-height:1">${data.verifiedSkills}</div>
-                <div style="font-size:0.85rem;color:#8b949e;margin-top:4px">verified skills</div>
+                <div style="font-size:0.85rem;color:#8b949e;margin-top:4px">skills in your stack</div>
               </td>
             </tr>
           </table>
