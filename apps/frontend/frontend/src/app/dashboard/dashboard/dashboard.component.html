@@ -48,9 +48,9 @@
           <span class="material-icons">{{ linkCopied ? 'check' : 'ios_share' }}</span>
           {{ linkCopied ? 'Copied!' : 'Share link' }}
         </button>
-        <button class="ua-btn" (click)="copyBadgeSnippet()" [disabled]="!profileUrl">
-          <span class="material-icons">{{ badgeCopied ? 'check' : 'code' }}</span>
-          {{ badgeCopied ? 'Badge copied!' : 'README badge' }}
+        <button class="ua-btn" (click)="openBadgePreview()" [disabled]="!profileUrl">
+          <span class="material-icons">code</span>
+          README badge
         </button>
         <button class="ua-btn" (click)="openProfile()" [disabled]="!profileUrl">
           <span class="material-icons">visibility</span> View profile
@@ -88,7 +88,7 @@
           <div class="graph-frame-bar">
             <span class="gf-dot"></span><span class="gf-dot"></span><span class="gf-dot"></span>
             <span class="gf-path">devmap.sh/u/{{ (handle$ | async) || (githubUsername$ | async) || 'you' }}</span>
-            <span class="gf-live"><i></i>live</span>
+            <span class="gf-live"><i></i>public</span>
           </div>
           <div class="graph-frame-stage">
             <app-skill-graph [nodes]="graphNodes"></app-skill-graph>
@@ -100,23 +100,30 @@
       <section class="add-skill">
         <span class="section-kicker"><span class="sk-dot">◆</span> ADD TO STACK</span>
         <form class="add-row" (ngSubmit)="addSkill()">
-          <input
-            class="add-input"
-            type="text"
-            placeholder="e.g. Rust, Kubernetes, Figma…"
-            [ngModel]="newTitle"
-            (ngModelChange)="onNameChange($event)"
-            name="newTitle"
-            autocomplete="off"
-          />
+          <div class="add-field">
+            <input
+              class="add-input"
+              type="text"
+              placeholder="e.g. Rust, Kubernetes, Figma…"
+              [ngModel]="newTitle"
+              (ngModelChange)="onNameChange($event)"
+              name="newTitle"
+              autocomplete="off"
+            />
+            <div class="correction-hint" *ngIf="correction && pendingCount === 1">
+              <span class="material-icons">auto_fix_high</span>
+              Did you mean
+              <button class="correction-btn" type="button" (click)="acceptCorrection()">{{ correction }}</button>?
+            </div>
+          </div>
           <div class="select-wrap" [class.is-multi]="pendingCount > 1">
             <select class="add-select" [(ngModel)]="newCategory" name="newCategory" [disabled]="pendingCount > 1">
               <option *ngFor="let c of categories" [value]="c.key">{{ c.label }}</option>
             </select>
-            <span class="auto-tag" *ngIf="categoryAutoDetected && pendingCount <= 1">✓ auto</span>
-            <span class="auto-tag" *ngIf="pendingCount > 1">auto · {{ pendingCount }}</span>
+            <span class="auto-label" *ngIf="categoryAutoDetected && pendingCount <= 1">✓ auto</span>
+            <span class="auto-label" *ngIf="pendingCount > 1">auto · {{ pendingCount }}</span>
           </div>
-          <button class="ua-btn ua-primary" type="submit" [disabled]="!pendingCount || adding">
+          <button class="ua-btn ua-primary add-btn" type="submit" [disabled]="!pendingCount || adding">
             <span class="material-icons">add</span>
             {{ pendingCount > 1 ? 'Add ' + pendingCount : 'Add' }}
           </button>
@@ -174,4 +181,39 @@
 
     </ng-container>
   </main>
+
+  <!-- BADGE PREVIEW MODAL -->
+  <div class="badge-modal-overlay" *ngIf="showBadgeModal" (click)="closeBadgeModal()">
+    <div class="badge-modal" (click)="$event.stopPropagation()">
+      <div class="badge-modal-head">
+        <span class="badge-modal-title">README badge preview</span>
+        <button class="badge-modal-close" (click)="closeBadgeModal()">
+          <span class="material-icons" style="font-size:1.1rem">close</span>
+        </button>
+      </div>
+
+      <div class="badge-preview-stage">
+        <div class="badge-readme-mock">
+          <div class="readme-toolbar">
+            <span class="readme-dot"></span><span class="readme-dot"></span><span class="readme-dot"></span>
+            <span class="readme-filename">README.md</span>
+          </div>
+          <div class="readme-body">
+            <img [src]="badgeImageUrl" alt="DevMap badge" class="badge-img" />
+          </div>
+        </div>
+      </div>
+
+      <div class="badge-snippet-row">
+        <code class="badge-snippet-code">{{ badgeSnippet }}</code>
+        <button class="badge-copy-btn" (click)="copyBadgeSnippet()">
+          <span class="material-icons" style="font-size:1rem">{{ badgeCopied ? 'check' : 'content_copy' }}</span>
+          {{ badgeCopied ? 'Copied!' : 'Copy' }}
+        </button>
+      </div>
+
+      <p class="badge-hint">Paste this into your GitHub README to show your dev stack.</p>
+    </div>
+  </div>
+
 </div>

@@ -13,6 +13,143 @@ import { skillNodesToGraph, skillRepoCount } from '../../shared/components/skill
 const DEV_MAP_TITLE = 'My Dev Map';
 const STACK_ROOT_TITLE = 'Dev Skills';
 
+// ── Skill name normalization ──────────────────────────────────────────────────
+
+interface SkillEntry { aliases: string[]; canonical: string }
+
+/** Canonical forms + common aliases/typos for popular technologies. */
+const SKILL_NAMES: SkillEntry[] = [
+  { aliases: ['nestjs', 'nest js', 'nest.js', 'netsjs', 'nets js'], canonical: 'Nest.js' },
+  { aliases: ['nextjs', 'next js', 'next.js', 'nex tjs', 'nxtjs'], canonical: 'Next.js' },
+  { aliases: ['reactjs', 'react js', 'react.js', 'reacts'], canonical: 'React' },
+  { aliases: ['vuejs', 'vue js', 'vue.js', 'vuej'], canonical: 'Vue.js' },
+  { aliases: ['nodejs', 'node js', 'node.js', 'ndoejs', 'nod ejs'], canonical: 'Node.js' },
+  { aliases: ['expressjs', 'express js', 'express.js', 'expresjs', 'expres js'], canonical: 'Express.js' },
+  { aliases: ['sveltejs', 'svelte js', 'svelte.js', 'svelt'], canonical: 'Svelte' },
+  { aliases: ['sveltekit', 'svelte kit', 'sveltkit', 'sveltekt'], canonical: 'SvelteKit' },
+  { aliases: ['nuxtjs', 'nuxt js', 'nuxt.js', 'nuxtj'], canonical: 'Nuxt.js' },
+  { aliases: ['angularjs', 'angluar', 'anglar', 'anglr'], canonical: 'Angular' },
+  { aliases: ['tailwindcss', 'tailwind css', 'tailwindcss', 'tailwnd', 'talwind'], canonical: 'Tailwind CSS' },
+  { aliases: ['vitejs', 'vite js', 'vite.js', 'viet'], canonical: 'Vite' },
+  { aliases: ['webpck', 'web pack', 'webpak'], canonical: 'Webpack' },
+  { aliases: ['graphql', 'grapql', 'graphqll', 'grphql'], canonical: 'GraphQL' },
+  { aliases: ['trpc', 'trpcc', 't rpc'], canonical: 'tRPC' },
+  { aliases: ['golang', 'go lang', 'golng', 'golan'], canonical: 'Go' },
+  { aliases: ['kubernetes', 'k8s', 'kuberentes', 'kubernets', 'kubernetis', 'kubernete'], canonical: 'Kubernetes' },
+  { aliases: ['docker', 'dokcer', 'dockr', 'docekr'], canonical: 'Docker' },
+  { aliases: ['postgresql', 'postgrsql', 'posgresql', 'postgesql', 'postgressql', 'postgress'], canonical: 'PostgreSQL' },
+  { aliases: ['mongodb', 'mongo db', 'mongod', 'mangodb', 'moondb'], canonical: 'MongoDB' },
+  { aliases: ['redis', 'reddis', 'readis', 'rediss'], canonical: 'Redis' },
+  { aliases: ['mysql', 'my sql', 'mysq', 'mysqll'], canonical: 'MySQL' },
+  { aliases: ['sqlite', 'sq lite', 'sqllite', 'sqllite'], canonical: 'SQLite' },
+  { aliases: ['elasticsearch', 'elastic search', 'elasticserch', 'elasticsrch'], canonical: 'Elasticsearch' },
+  { aliases: ['supabase', 'supabse', 'supabas', 'suapbase'], canonical: 'Supabase' },
+  { aliases: ['firebase', 'firebse', 'frebase', 'firebas'], canonical: 'Firebase' },
+  { aliases: ['openai', 'openaii', 'open ai', 'opanai', 'openal', 'opneai'], canonical: 'OpenAI' },
+  { aliases: ['openai sdk', 'openaii sdk', 'open ai sdk', 'opanai sdk', 'openal sdk'], canonical: 'OpenAI SDK' },
+  { aliases: ['langchain', 'lang chain', 'langchan', 'langchin'], canonical: 'LangChain' },
+  { aliases: ['huggingface', 'hugging face', 'hugingface', 'huggin face'], canonical: 'Hugging Face' },
+  { aliases: ['tensorflow', 'tensorfow', 'tensrflow', 'tensoflow'], canonical: 'TensorFlow' },
+  { aliases: ['pytorch', 'pytoch', 'pytroch', 'pytorchh'], canonical: 'PyTorch' },
+  { aliases: ['scikit-learn', 'scikit learn', 'sklearn', 'scikitlearn'], canonical: 'scikit-learn' },
+  { aliases: ['pandas', 'pandaas', 'pandass', 'pandsa'], canonical: 'Pandas' },
+  { aliases: ['numpy', 'numpay', 'nmpy', 'numpyy'], canonical: 'NumPy' },
+  { aliases: ['fastapi', 'fast api', 'fstapi', 'fasatpi'], canonical: 'FastAPI' },
+  { aliases: ['django', 'djano', 'djagno', 'djangoo'], canonical: 'Django' },
+  { aliases: ['flask', 'fask', 'flsk', 'flaask'], canonical: 'Flask' },
+  { aliases: ['spring boot', 'springboot', 'spring-boot', 'sprngboot'], canonical: 'Spring Boot' },
+  { aliases: ['rails', 'ruby on rails', 'ror', 'rubyon rails'], canonical: 'Rails' },
+  { aliases: ['laravel', 'laraavel', 'larravel', 'laravell'], canonical: 'Laravel' },
+  { aliases: ['github actions', 'gh actions', 'githubactions', 'github action'], canonical: 'GitHub Actions' },
+  { aliases: ['gitlab ci', 'gitlab-ci', 'gitlabci', 'gitlab ci/cd'], canonical: 'GitLab CI' },
+  { aliases: ['terraform', 'teraform', 'terrafrom', 'terrafrm', 'terraformd'], canonical: 'Terraform' },
+  { aliases: ['ansible', 'ansibel', 'anisble', 'ansibe'], canonical: 'Ansible' },
+  { aliases: ['argocd', 'argo cd', 'argo-cd', 'argood'], canonical: 'ArgoCD' },
+  { aliases: ['jenkins', 'jenkns', 'jenkis', 'jenkin'], canonical: 'Jenkins' },
+  { aliases: ['nginx', 'ngix', 'ngnix', 'ngnx', 'ngnix'], canonical: 'Nginx' },
+  { aliases: ['react native', 'reactnative', 'react-native', 'react natve'], canonical: 'React Native' },
+  { aliases: ['flutter', 'fluutter', 'flottr', 'fluter'], canonical: 'Flutter' },
+  { aliases: ['swiftui', 'swift ui', 'swiftui'], canonical: 'SwiftUI' },
+  { aliases: ['kotlin', 'kotln', 'kotin', 'kotlinn'], canonical: 'Kotlin' },
+  { aliases: ['typescript', 'typscript', 'typscrpt', 'typescirpt'], canonical: 'TypeScript' },
+  { aliases: ['javascript', 'javascrip', 'javascrit', 'javacsript'], canonical: 'JavaScript' },
+  { aliases: ['fastify', 'fstify', 'fastif', 'fstify'], canonical: 'Fastify' },
+  { aliases: ['prisma', 'prismaorm', 'prismaa', 'prism orm'], canonical: 'Prisma' },
+  { aliases: ['clickhouse', 'click house', 'clckhouse', 'clicckhouse'], canonical: 'ClickHouse' },
+  { aliases: ['cassandra', 'casandra', 'cassndra', 'casssandra'], canonical: 'Cassandra' },
+  { aliases: ['kafka', 'kafak', 'kafaka', 'kakfa'], canonical: 'Kafka' },
+  { aliases: ['rabbitmq', 'rabbit mq', 'rabitmq', 'rabbitq'], canonical: 'RabbitMQ' },
+  { aliases: ['playwright', 'playwrght', 'playwriht', 'playwrigh'], canonical: 'Playwright' },
+  { aliases: ['cypress', 'cypres', 'cyprss', 'cpress'], canonical: 'Cypress' },
+  { aliases: ['vitest', 'vitset', 'vtest', 'vi test'], canonical: 'Vitest' },
+  { aliases: ['storybook', 'storybok', 'stroybook', 'storbook'], canonical: 'Storybook' },
+  { aliases: ['figma', 'figm', 'fimga', 'figgma'], canonical: 'Figma' },
+  { aliases: ['remix', 'remixjs', 'remix.js', 'rmix'], canonical: 'Remix' },
+  { aliases: ['astrojs', 'astro js', 'astro.js', 'astoo'], canonical: 'Astro' },
+  { aliases: ['grpc', 'grpcc', 'g rpc', 'grpv'], canonical: 'gRPC' },
+  { aliases: ['apollo', 'apollographql', 'apollo graphql', 'apolllo'], canonical: 'Apollo' },
+  { aliases: ['hono', 'honoo', 'honno'], canonical: 'Hono' },
+  { aliases: ['dynamo db', 'dynamodb', 'dynamo', 'dynamobd'], canonical: 'DynamoDB' },
+  { aliases: ['stripe', 'strpe', 'stipe', 'stripee'], canonical: 'Stripe' },
+  { aliases: ['deno', 'denoo', 'deno.js', 'de no'], canonical: 'Deno' },
+  { aliases: ['bunjs', 'bun.js', 'bun js', 'bun.sh'], canonical: 'Bun' },
+  { aliases: ['websocket', 'websockets', 'web socket', 'web sockets'], canonical: 'WebSockets' },
+];
+
+function levenshtein(a: string, b: string): number {
+  const m = a.length, n = b.length;
+  const dp: number[] = Array.from({ length: n + 1 }, (_, j) => j);
+  for (let i = 1; i <= m; i++) {
+    let prev = dp[0];
+    dp[0] = i;
+    for (let j = 1; j <= n; j++) {
+      const temp = dp[j];
+      dp[j] = a[i - 1] === b[j - 1] ? prev : 1 + Math.min(prev, dp[j], dp[j - 1]);
+      prev = temp;
+    }
+  }
+  return dp[n];
+}
+
+/**
+ * Returns the canonical form of a skill name if the input is a known alias or
+ * close typo. Returns null when the input is already canonical or has no match.
+ */
+function normalizeSkillTitle(raw: string): string | null {
+  const lower = raw.toLowerCase().trim();
+  if (!lower) return null;
+
+  // Exact alias match
+  for (const { aliases, canonical } of SKILL_NAMES) {
+    if (aliases.includes(lower)) return canonical;
+  }
+
+  // Input already matches canonical (case-insensitive) — no correction needed
+  for (const { canonical } of SKILL_NAMES) {
+    if (canonical.toLowerCase() === lower) return null;
+  }
+
+  // Fuzzy match — only for inputs ≥ 5 chars to avoid false positives
+  if (lower.length >= 5) {
+    let best: string | null = null;
+    let bestDist = Infinity;
+    for (const { aliases, canonical } of SKILL_NAMES) {
+      for (const alias of [...aliases, canonical.toLowerCase()]) {
+        if (alias.length < 4) continue;
+        const dist = levenshtein(lower, alias);
+        const threshold = Math.min(2, Math.floor(Math.max(lower.length, alias.length) * 0.25));
+        if (dist > 0 && dist <= threshold && dist < bestDist) {
+          bestDist = dist;
+          best = canonical;
+        }
+      }
+    }
+    return best;
+  }
+
+  return null;
+}
+
 /** Order matters: mobile before frontend (React Native contains "react"). */
 const CATEGORY_PATTERNS: Array<[RegExp, string]> = [
   [/react[\s.]?native|expo\b|flutter|swiftui|jetpack[\s.]?compose/i, 'mobile'],
@@ -93,11 +230,14 @@ export class DashboardComponent implements OnInit {
 
   linkCopied = false;
   badgeCopied = false;
+  showBadgeModal = false;
+  badgePreviewBust = Date.now();
 
   // Add-skill form
   newTitle = '';
   newCategory = 'language';
   categoryAutoDetected = false;
+  correction: string | null = null;
   adding = false;
 
   isGuest$ = this.authService.isGuest$;
@@ -262,6 +402,28 @@ export class DashboardComponent implements OnInit {
     } else {
       this.categoryAutoDetected = false;
     }
+    // Typo / alias correction hint for a single skill
+    if (titles.length === 1) {
+      const norm = normalizeSkillTitle(titles[0]);
+      this.correction = norm && norm !== titles[0] ? norm : null;
+    } else {
+      this.correction = null;
+    }
+  }
+
+  acceptCorrection() {
+    if (!this.correction) return;
+    const corrected = this.correction;
+    this.correction = null;
+    this.newTitle = corrected;
+    const detected = detectCategoryFromTitle(corrected);
+    if (detected) {
+      this.newCategory = detected;
+      this.categoryAutoDetected = true;
+    } else {
+      this.categoryAutoDetected = false;
+    }
+    this.cdr.markForCheck();
   }
 
   levelCssClass(skill: StackSkill): string {
@@ -272,7 +434,7 @@ export class DashboardComponent implements OnInit {
   }
 
   addSkill() {
-    const titles = this.parseTitles(this.newTitle);
+    const titles = this.parseTitles(this.newTitle).map((t) => normalizeSkillTitle(t) ?? t);
     if (!titles.length || this.adding) return;
     this.adding = true;
     this.cdr.markForCheck();
@@ -301,8 +463,14 @@ export class DashboardComponent implements OnInit {
       )
       .subscribe({
         next: () => {
+          // Un-blacklist each manually-added title so a future GitHub sync
+          // can restore it if the user added it back intentionally.
+          for (const title of titles) {
+            this.treesService.allowGithubSkill(title).subscribe();
+          }
           this.newTitle = '';
           this.categoryAutoDetected = false;
+          this.correction = null;
           this.adding = false;
           this.loadStack();
         },
@@ -355,6 +523,10 @@ export class DashboardComponent implements OnInit {
         this.loadStack();
       },
     });
+    // If it came from GitHub, blacklist it so a future sync won't re-add it.
+    if (skill.source === 'github') {
+      this.treesService.excludeGithubSkill(skill.title).subscribe();
+    }
   }
 
   /** Remove every skill from the stack at once (keeps the empty map ready to refill). */
@@ -407,11 +579,36 @@ export class DashboardComponent implements OnInit {
     }, 2000);
   }
 
-  copyBadgeSnippet() {
+  get badgeSnippet(): string {
     const h = this.currentHandle();
-    if (!h) return;
+    if (!h) return '';
     const origin = window.location.origin;
-    const snippet = `[![DevMap](${origin}/api/trees/badge/${h})](${origin}/u/${h})`;
+    return `[![DevMap](${origin}/api/trees/badge/${h})](${origin}/u/${h})`;
+  }
+
+  get badgeImageUrl(): string {
+    const h = this.currentHandle();
+    if (!h) return '';
+    // Cache-bust the in-app preview so it always reflects the current stack
+    // (the badge route is cached, and a stale empty version must not stick).
+    return `${window.location.origin}/api/trees/badge/${h}?v=${this.badgePreviewBust}`;
+  }
+
+  openBadgePreview() {
+    this.badgePreviewBust = Date.now();
+    this.showBadgeModal = true;
+    this.cdr.markForCheck();
+  }
+
+  closeBadgeModal() {
+    this.showBadgeModal = false;
+    this.badgeCopied = false;
+    this.cdr.markForCheck();
+  }
+
+  copyBadgeSnippet() {
+    const snippet = this.badgeSnippet;
+    if (!snippet) return;
     navigator.clipboard.writeText(snippet);
     this.badgeCopied = true;
     this.cdr.markForCheck();
