@@ -23,14 +23,6 @@
       </a>
     </div>
     <div class="nav-actions" *ngIf="profile">
-      <a
-        class="share-btn"
-        [routerLink]="'/compare/' + profile.handle"
-        title="Compare skills with another dev"
-      >
-        <span class="material-icons" style="font-size:0.9rem">compare_arrows</span>
-        Compare
-      </a>
       <button class="share-btn share-btn-primary" (click)="copyProfileLink()" title="Copy profile link">
         <span class="material-icons" style="font-size:0.9rem">{{ linkCopied ? 'check' : 'ios_share' }}</span>
         {{ linkCopied ? 'Copied!' : 'Share' }}
@@ -67,9 +59,6 @@
         <div class="avatar-placeholder" *ngIf="!profile.githubUsername">
           <span class="material-icons">person</span>
         </div>
-        <div class="avatar-verified" *ngIf="profile.verifiedSkills > 0" title="GitHub-verified">
-          <span class="material-icons" style="font-size:0.75rem">verified</span>
-        </div>
       </div>
 
       <div class="profile-identity">
@@ -92,29 +81,6 @@
         </div>
       </div>
 
-      <!-- Stats -->
-      <div class="profile-stats">
-        <div class="stat">
-          <span class="stat-num">{{ verifiedSkillCount }}</span>
-          <span class="stat-label">Verified skills</span>
-        </div>
-        <div class="stat">
-          <span class="stat-num">{{ totalSkillCount }}</span>
-          <span class="stat-label">Total skills</span>
-        </div>
-        <div class="stat">
-          <span class="stat-num">{{ verifiedPercent }}%</span>
-          <span class="stat-label">Verified rate</span>
-        </div>
-        <div class="stat" *ngIf="profile.views && profile.views.thisWeek > 4">
-          <span class="stat-num stat-num-views">{{ profile.views.thisWeek }}</span>
-          <span class="stat-label">Views this week</span>
-        </div>
-        <div class="stat" *ngIf="!profile.views || profile.views.thisWeek <= 4">
-          <span class="stat-num">{{ memberSinceYear }}</span>
-          <span class="stat-label">Member since</span>
-        </div>
-      </div>
     </div>
 
     <!-- Prominent action bar -->
@@ -123,93 +89,16 @@
         <span class="material-icons" style="font-size:1.05rem">{{ linkCopied ? 'check' : 'ios_share' }}</span>
         {{ linkCopied ? 'Link copied!' : 'Share this profile' }}
       </button>
-      <a class="pa-btn pa-compare" [routerLink]="'/compare/' + profile.handle">
-        <span class="material-icons" style="font-size:1.05rem">compare_arrows</span>
-        Compare skills
-      </a>
+      <button class="pa-btn pa-badge" (click)="copyBadgeSnippet()" title="Copy a README badge that links here">
+        <span class="material-icons" style="font-size:1.05rem">{{ badgeCopied ? 'check' : 'code' }}</span>
+        {{ badgeCopied ? 'Badge copied!' : 'Copy README badge' }}
+      </button>
       <a *ngIf="githubUrl" [href]="githubUrl" target="_blank" rel="noopener" class="pa-btn pa-github">
         <svg class="gh-icon-sm" viewBox="0 0 24 24" fill="currentColor" style="width:15px;height:15px">
           <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
         </svg>
         View on GitHub
       </a>
-    </div>
-
-    <!-- Verified banner -->
-    <div class="verified-banner" *ngIf="verifiedSkillCount > 0">
-      <span class="material-icons" style="font-size:0.9rem;color:var(--green)">verified</span>
-      <span>Skill map verified from GitHub — {{ verifiedSkillCount }} skills detected in real repos</span>
-      <a
-        *ngIf="profile.devMap"
-        [routerLink]="'/tree/' + profile.devMap.sharedToken"
-        class="banner-view-map"
-      >
-        <span class="material-icons" style="font-size:0.85rem">hub</span>
-        View interactive map
-      </a>
-    </div>
-
-    <!-- Target role section -->
-    <div class="role-section" *ngIf="gapAnalysis as gap">
-      <span class="sec-kicker section-kicker"><span class="sk-num">◆</span> ROLE READINESS</span>
-      <div class="role-header">
-        <span class="role-label">{{ gap.role.label }}</span>
-        <span class="role-pct">{{ gap.readinessPercent }}% ready</span>
-      </div>
-      <div class="role-progress-wrap">
-        <div class="role-progress-bar">
-          <div class="role-progress-fill" [style.width.%]="gap.readinessPercent"></div>
-        </div>
-      </div>
-
-      <!-- Core skills -->
-      <div class="role-tier">
-        <span class="tier-label tier-label-core">Core</span>
-        <div class="tier-chips">
-          <span
-            *ngFor="let slot of gap.core"
-            class="role-chip"
-            [class.role-chip-strong]="slot.strength === 'strong'"
-            [class.role-chip-medium]="slot.strength === 'medium'"
-            [class.role-chip-weak]="slot.strength === 'weak'"
-            [class.role-chip-missing]="slot.strength === 'missing'"
-            [title]="slot.strength === 'weak' ? (slot.matched + ' — only in isolated repos, not alongside other role skills') : ''"
-          >
-            <span class="material-icons chip-icon" *ngIf="slot.matched && slot.strength !== 'weak'">check</span>
-            <span class="material-icons chip-icon chip-icon-weak" *ngIf="slot.strength === 'weak'">warning_amber</span>
-            {{ slot.matched || slot.label }}
-            <span class="chip-repos" *ngIf="slot.matched && slot.repoCount > 0">· {{ slot.repoCount }}</span>
-          </span>
-        </div>
-      </div>
-
-      <!-- Recommended skills -->
-      <div class="role-tier" *ngIf="gap.recommended.length > 0">
-        <span class="tier-label tier-label-rec">Recommended</span>
-        <div class="tier-chips">
-          <span
-            *ngFor="let slot of gap.recommended"
-            class="role-chip role-chip-sm"
-            [class.role-chip-have]="slot.matched"
-            [class.role-chip-rec-missing]="!slot.matched"
-          >
-            {{ slot.matched || slot.label }}
-            <span class="chip-repos" *ngIf="slot.matched && slot.repoCount > 1">· {{ slot.repoCount }}</span>
-          </span>
-        </div>
-      </div>
-
-      <!-- Top project callout -->
-      <div class="top-project" *ngIf="topProject">
-        <span class="material-icons top-project-icon">folder_special</span>
-        <span>Best coverage: <code class="top-project-repo">{{ topProject.repo }}</code> has {{ topProject.skills.join(' + ') }}</span>
-      </div>
-
-      <!-- Near-ready hints -->
-      <div class="near-ready-hint" *ngFor="let hint of nearReadyHints">
-        <span class="material-icons near-ready-icon">bolt</span>
-        <span>Close to <strong>{{ hint.title }}</strong> — you already have {{ hint.prereqs.join(' + ') }}</span>
-      </div>
     </div>
 
     <!-- No skill map yet -->
@@ -234,7 +123,7 @@
     <section class="profile-graph" *ngIf="hasGraph">
       <div class="pg-head">
         <span class="sec-kicker"><span class="sk-num">◆</span> SKILL MAP</span>
-        <p class="pg-sub">Verified skills, sized by repos and linked by what they build on.</p>
+        <p class="pg-sub">The stack at a glance — sized by usage and linked by what builds on what.</p>
       </div>
       <div class="pg-stage">
         <app-skill-graph [nodes]="graphNodes"></app-skill-graph>
@@ -243,7 +132,7 @@
 
     <!-- Skill map available — show nodes grouped by category -->
     <section class="skills-section" *ngIf="profile.devMap && profile.devMap.nodes && profile.devMap.nodes.length > 0">
-    <span class="sec-kicker section-kicker"><span class="sk-num">◆</span> VERIFIED SKILLS · {{ totalSkillCount }}</span>
+    <span class="sec-kicker section-kicker"><span class="sk-num">◆</span> STACK · {{ totalSkillCount }}</span>
     <div class="skill-categories">
 
       <ng-container *ngFor="let group of skillGroups">
@@ -298,7 +187,7 @@
         </svg>
         DevMap
       </a>
-      <span class="footer-text">— GitHub-verified developer skill maps</span>
+      <span class="footer-text">— show your dev stack in one link</span>
       <a routerLink="/login" class="footer-cta">Build yours →</a>
     </div>
   </footer>

@@ -1,14 +1,19 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
-import { TreesService, ExploreProfile } from '../trees.service';
+import {
+  TreesService,
+  ExploreProfile,
+  GuestScanResult,
+  CompareResult,
+} from '../trees.service';
 import { AuthService } from '../auth.service';
-import { AppSidebarComponent } from '../shared/components/app-sidebar/app-sidebar.component';
 
 @Component({
   selector: 'app-explore',
   standalone: true,
-  imports: [CommonModule, RouterModule, AppSidebarComponent],
+  imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './explore.component.html',
   styleUrls: ['./explore.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -19,39 +24,106 @@ export class ExploreComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly cdr = inject(ChangeDetectorRef);
 
-  profiles: ExploreProfile[] = [];
-  loading = true;
+  members: ExploreProfile[] = [];
+  membersLoading = true;
+
+  searchHandle = '';
+  scanLoading = false;
+  scanResult: GuestScanResult | null = null;
+  scanError = '';
+
+  compareLoading = false;
+  compareResult: CompareResult | null = null;
+  compareError = '';
 
   readonly isGuest$ = this.authService.isGuest$;
   readonly handle$ = this.authService.handle$;
   readonly githubUsername$ = this.authService.githubUsername$;
 
-  onSync() {
-    this.router.navigate(['/dashboard'], { queryParams: { scan: 1 } });
-  }
-
-  onLogout() {
-    this.authService.logout();
-  }
-
   ngOnInit() {
     this.authService.loadMe().subscribe(() => this.cdr.markForCheck());
     this.treesService.getExploreProfiles().subscribe({
-      next: (profiles) => {
-        this.profiles = profiles;
-        this.loading = false;
+      next: (members) => {
+        this.members = members;
+        this.membersLoading = false;
         this.cdr.markForCheck();
       },
       error: () => {
-        this.loading = false;
+        this.membersLoading = false;
         this.cdr.markForCheck();
       },
     });
   }
 
-  avatarUrl(profile: ExploreProfile): string {
-    return profile.githubUsername
-      ? `https://avatars.githubusercontent.com/${profile.githubUsername}`
-      : '';
+  search() {
+    const h = this.searchHandle.trim().replace(/^@/, '');
+    if (!h || this.scanLoading) return;
+    this.scanLoading = true;
+    this.scanResult = null;
+    this.compareResult = null;
+    this.scanError = '';
+    this.compareError = '';
+    this.cdr.markForCheck();
+
+    this.treesService.scanUser(h).subscribe({
+      next: (result) => {
+        this.scanResult = result;
+        this.scanLoading = false;
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.scanError = err?.error?.message ?? `Could not find @${h} on GitHub.`;
+        this.scanLoading = false;
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  searchMember(handle: string) {
+    this.searchHandle = handle;
+    this.search();
+  }
+
+  compareWithMe() {
+    const myHandle = this.currentHandle();
+    if (!myHandle || !this.scanResult) return;
+    this.compareLoading = true;
+    this.compareError = '';
+    this.cdr.markForCheck();
+
+    this.treesService.compareUsers(myHandle, this.scanResult.handle).subscribe({
+      next: (result) => {
+        this.compareResult = result;
+        this.compareLoading = false;
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.compareError = err?.error?.message ?? 'Could not compare stacks.';
+        this.compareLoading = false;
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  clearScan() {
+    this.scanResult = null;
+    this.compareResult = null;
+    this.scanError = '';
+    this.compareError = '';
+    this.searchHandle = '';
+    this.cdr.markForCheck();
+  }
+
+  logout() {
+    this.authService.logout();
+  }
+
+  private currentHandle(): string {
+    const u = (
+      this.authService as unknown as {
+        user: { getValue(): { handle?: string | null; githubUsername?: string | null } | null };
+      }
+    ).user.getValue();
+    return u?.handle ?? u?.githubUsername ?? '';
   }
 }

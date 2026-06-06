@@ -3,22 +3,14 @@ import { HttpClient } from '@angular/common/http';
 import { appRuntimeConfig } from './app-config';
 import { SkillNode } from './nodes.service';
 
-export interface ProfileViewStats {
-  thisWeek: number;
-  lastWeek: number;
-  total: number;
-}
-
 export interface PublicProfile {
   handle: string;
   name: string | null;
   githubUsername: string | null;
-  targetRole: string | null;
   memberSince: string;
   verifiedSkills: number;
   totalSkills: number;
   devMap: Tree | null;
-  views?: ProfileViewStats;
 }
 
 export interface Tree {
@@ -74,30 +66,18 @@ export class TreesService {
     );
   }
 
-  getViewStats() {
-    return this.http.get<ProfileViewStats>(`${this.apiUrl}/my/view-stats`);
-  }
-
-  matchJd(text: string) {
-    return this.http.post<{
-      required: number;
-      matched: { title: string; level: number }[];
-      missing: string[];
-      score: number;
-    }>(`${this.apiUrl}/my/jd-match`, { text });
-  }
-
-  getMySkills() {
-    return this.http.get<string[]>(`${this.apiUrl}/my/skills`);
-  }
-
   getExploreProfiles() {
     return this.http.get<ExploreProfile[]>(`${this.apiUrl}/explore`);
   }
 
-  saveTargetRole(roleKey: string) {
-    return this.http.put(`${this.apiUrl}/my/target-role`, { roleKey });
+  scanUser(username: string) {
+    return this.http.get<GuestScanResult>(`${appRuntimeConfig.apiUrl}/github/scan/${encodeURIComponent(username)}`);
   }
+
+  compareUsers(handleA: string, handleB: string) {
+    return this.http.get<CompareResult>(`${this.apiUrl}/compare/${encodeURIComponent(handleA)}/${encodeURIComponent(handleB)}`);
+  }
+
 }
 
 export interface ExploreProfile {
@@ -106,4 +86,33 @@ export interface ExploreProfile {
   githubUsername: string | null;
   verifiedSkills: number;
   topSkills: string[];
+}
+
+export interface GuestScanSkill {
+  title: string;
+  category: string;
+  icon: string;
+  repoCount: number;
+}
+
+export interface GuestScanResult {
+  handle: string;
+  skills: GuestScanSkill[];
+  scannedAt: string;
+}
+
+export interface CompareProfile {
+  handle: string;
+  name: string | null;
+  githubUsername: string | null;
+  skillCount: number;
+  source: 'member' | 'github';
+}
+
+export interface CompareResult {
+  a: CompareProfile;
+  b: CompareProfile;
+  inCommon: string[];
+  onlyA: string[];
+  onlyB: string[];
 }

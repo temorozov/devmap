@@ -4,13 +4,8 @@ import { Title, Meta } from '@angular/platform-browser';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { TreesService, PublicProfile } from '../../trees.service';
 import { NodeEvidence, SkillNode } from '../../nodes.service';
-import { ROLE_PROFILES, RoleProfile } from '../../shared/data/role-profiles';
 import { SkillGraphComponent, SkillGraphNode } from '../../shared/components/skill-graph/skill-graph.component';
 import { skillNodesToGraph } from '../../shared/components/skill-graph/skill-graph.mapper';
-import {
-  GapAnalysis, NearReadyHint, TopProject,
-  buildRepoSkillsMap, computeGapAnalysis, computeNearReadyHints, computeTopProject, verifiedSkillTitles,
-} from '../../shared/data/skill-gap';
 
 const CATEGORY_META: Record<string, { label: string; icon: string; order: number }> = {
   language: { label: 'Languages',  icon: 'code',           order: 1 },
@@ -59,6 +54,7 @@ export class ProfileComponent implements OnInit, OnDestroy {
   error = '';
   skillGroups: SkillGroup[] = [];
   linkCopied = false;
+  badgeCopied = false;
 
   ngOnInit() {
     const handle = this.route.snapshot.paramMap.get('handle') ?? '';
@@ -90,33 +86,6 @@ export class ProfileComponent implements OnInit, OnDestroy {
     return this.skillGroups.reduce((n, g) => n + g.skills.length, 0);
   }
 
-  get verifiedSkillCount(): number {
-    return this.skillGroups.reduce((n, g) => n + g.skills.filter(s => s.verified).length, 0);
-  }
-
-  get verifiedPercent(): number {
-    const total = this.totalSkillCount;
-    if (!total) return 0;
-    return Math.round((this.verifiedSkillCount / total) * 100);
-  }
-
-  get memberSinceYear(): string {
-    if (!this.profile?.memberSince) return '—';
-    return new Date(this.profile.memberSince).getFullYear().toString();
-  }
-
-  get targetRoleProfile(): RoleProfile | null {
-    return this.profile?.targetRole ? (ROLE_PROFILES[this.profile.targetRole] ?? null) : null;
-  }
-
-  private get devMapNodes(): SkillNode[] {
-    return this.profile?.devMap?.nodes ?? [];
-  }
-
-  get verifiedSkillTitles(): string[] {
-    return verifiedSkillTitles(this.devMapNodes);
-  }
-
   /**
    * Skills mapped into the live force-graph — built from the real tree nodes
    * (same source as the dashboard/canvas) so the map is identical everywhere.
@@ -126,22 +95,6 @@ export class ProfileComponent implements OnInit, OnDestroy {
 
   get hasGraph(): boolean {
     return this.graphNodes.length >= 3;
-  }
-
-  get gapAnalysis(): GapAnalysis | null {
-    const role = this.targetRoleProfile;
-    if (!role) return null;
-    return computeGapAnalysis(role, this.verifiedSkillTitles, buildRepoSkillsMap(this.devMapNodes));
-  }
-
-  get topProject(): TopProject | null {
-    const gap = this.gapAnalysis;
-    return gap ? computeTopProject(gap, buildRepoSkillsMap(this.devMapNodes)) : null;
-  }
-
-  get nearReadyHints(): NearReadyHint[] {
-    const gap = this.gapAnalysis;
-    return gap ? computeNearReadyHints(gap, this.verifiedSkillTitles) : [];
   }
 
   ngOnDestroy() {
@@ -159,14 +112,13 @@ export class ProfileComponent implements OnInit, OnDestroy {
   }
 
   private updateMeta(profile: PublicProfile) {
-    const topSkills = this.skillGroups
-      .flatMap(g => g.skills.filter(s => s.verified).map(s => s.title))
-      .slice(0, 5)
-      .join(', ');
-    const title = `@${profile.handle} — ${profile.verifiedSkills} GitHub-verified skills | DevMap`;
+    const allSkills = this.skillGroups.flatMap(g => g.skills.map(s => s.title));
+    const topSkills = allSkills.slice(0, 5).join(', ');
+    const total = this.totalSkillCount;
+    const title = `@${profile.handle} — dev stack | DevMap`;
     const description = topSkills
-      ? `${topSkills}${profile.verifiedSkills > 5 ? ` +${profile.verifiedSkills - 5} more` : ''} · verified from GitHub repos`
-      : `${profile.verifiedSkills} GitHub-verified developer skills on DevMap.`;
+      ? `${topSkills}${total > 5 ? ` +${total - 5} more` : ''} · ${profile.name || profile.handle}'s stack on DevMap`
+      : `${profile.name || profile.handle}'s developer stack on DevMap.`;
     const origin = window.location.origin;
     const cardUrl = `${origin}/api/badge/${profile.handle}?theme=dark`;
     const url = window.location.href;
@@ -192,12 +144,18 @@ export class ProfileComponent implements OnInit, OnDestroy {
     setTimeout(() => { this.linkCopied = false; this.cdr.markForCheck(); }, 2000);
   }
 
-  getEvidenceLabel(evidence: NodeEvidence[] | null | undefined): string {
-    if (!evidence || evidence.length === 0) return '';
-    const repos = [...new Set(evidence.map(e => e.repo).filter(Boolean))];
-    return repos.length === 1
-      ? `in ${repos[0]}`
-      : `in ${repos.length} repos`;
+  /** Markdown badge that renders the skill card and links back to this profile. */
+  copyBadgeSnippet() {
+    const handle = this.profile?.handle;
+    if (!handle) return;
+    const origin = window.location.origin;
+    const badge = `${origin}/api/trees/badge/${handle}`;
+    const profileUrl = `${origin}/u/${handle}`;
+    const snippet = `[![DevMap](${badge})](${profileUrl})`;
+    navigator.clipboard.writeText(snippet);
+    this.badgeCopied = true;
+    this.cdr.markForCheck();
+    setTimeout(() => { this.badgeCopied = false; this.cdr.markForCheck(); }, 2000);
   }
 
   private buildSkillGroups(profile: PublicProfile): SkillGroup[] {

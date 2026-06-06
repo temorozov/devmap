@@ -5,7 +5,6 @@ import { CanvasComponent } from './canvas/canvas/canvas.component';
 import { LandingComponent } from './landing/landing/landing.component';
 import { ProfileComponent } from './profile/profile/profile.component';
 import { ExploreComponent } from './explore/explore.component';
-import { CompareComponent } from './compare/compare.component';
 import { authGuard } from './auth.guard';
 
 export const appRoutes: Route[] = [
@@ -13,9 +12,9 @@ export const appRoutes: Route[] = [
     { path: 'login', component: LoginComponent },
     { path: 'dashboard', component: DashboardComponent, canActivate: [authGuard] },
     { path: 'explore', component: ExploreComponent },
-    { path: 'compare', component: CompareComponent },
-    { path: 'compare/:handleA', component: CompareComponent },
-    { path: 'compare/:handleA/:handleB', component: CompareComponent },
+    { path: 'compare', redirectTo: 'explore', pathMatch: 'full' },
+    { path: 'compare/:handleA', redirectTo: 'explore', pathMatch: 'full' },
+    { path: 'compare/:handleA/:handleB', redirectTo: 'explore', pathMatch: 'full' },
     { path: 'tree/:id', component: CanvasComponent },
     { path: 'u/:handle', component: ProfileComponent },
     { path: '**', redirectTo: '' }

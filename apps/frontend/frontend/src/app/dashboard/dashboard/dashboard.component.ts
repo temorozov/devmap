@@ -1,157 +1,138 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { TreesService, Tree, ProfileViewStats, ExploreProfile } from '../../trees.service';
+import { Router, RouterModule } from '@angular/router';
+import { of, switchMap } from 'rxjs';
+import { TreesService, Tree } from '../../trees.service';
 import { NodesService, SkillNode } from '../../nodes.service';
 import { AuthService } from '../../auth.service';
 import { DialogService } from '../../shared/services/dialog.service';
-import { ROLE_PROFILES, ROLE_PROFILE_KEYS, RoleProfile } from '../../shared/data/role-profiles';
-import { AppSidebarComponent } from '../../shared/components/app-sidebar/app-sidebar.component';
 import { SkillGraphComponent, SkillGraphNode } from '../../shared/components/skill-graph/skill-graph.component';
-import { skillNodesToGraph } from '../../shared/components/skill-graph/skill-graph.mapper';
-import {
-  GapAnalysis, NextStep,
-  buildRepoSkillsMap, computeGapAnalysis, computeNextSteps, verifiedSkillTitles,
-} from '../../shared/data/skill-gap';
+import { skillNodesToGraph, skillRepoCount } from '../../shared/components/skill-graph/skill-graph.mapper';
 
-type DashboardView = 'profile' | 'skillmap' | 'career';
+const DEV_MAP_TITLE = 'My Dev Map';
+const STACK_ROOT_TITLE = 'Dev Skills';
+
+/** Category metadata + the icon written onto a node so the profile can re-bucket it. */
+const CATEGORIES: Array<{ key: string; label: string; icon: string; nodeIcon: string }> = [
+  { key: 'language', label: 'Languages', icon: 'code', nodeIcon: 'code' },
+  { key: 'frontend', label: 'Frontend', icon: 'web', nodeIcon: 'web' },
+  { key: 'backend', label: 'Backend', icon: 'dns', nodeIcon: 'dns' },
+  { key: 'database', label: 'Databases', icon: 'storage', nodeIcon: 'storage' },
+  { key: 'devops', label: 'DevOps', icon: 'cloud', nodeIcon: 'cloud' },
+  { key: 'mobile', label: 'Mobile', icon: 'smartphone', nodeIcon: 'smartphone' },
+  { key: 'testing', label: 'Testing', icon: 'science', nodeIcon: 'science' },
+  { key: 'ml', label: 'ML / AI', icon: 'psychology', nodeIcon: 'psychology' },
+  { key: 'tooling', label: 'Tooling', icon: 'settings', nodeIcon: 'settings' },
+];
+const CATEGORY_BY_KEY = new Map(CATEGORIES.map((c) => [c.key, c]));
+
+interface StackSkill {
+  id: string;
+  title: string;
+  source: 'manual' | 'github' | 'ai';
+  verified: boolean;
+  repoCount: number;
+  level: number;
+  tier: 'core' | 'familiar' | 'exposure';
+}
+
+interface StackGroup {
+  key: string;
+  label: string;
+  icon: string;
+  skills: StackSkill[];
+}
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, AppSidebarComponent, SkillGraphComponent],
+  imports: [CommonModule, FormsModule, RouterModule, SkillGraphComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardComponent implements OnInit {
-  readonly treesService = inject(TreesService);
-  readonly nodesService = inject(NodesService);
-  readonly authService = inject(AuthService);
+  private readonly treesService = inject(TreesService);
+  private readonly nodesService = inject(NodesService);
+  private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
-  private readonly route = inject(ActivatedRoute);
   private readonly dialogService = inject(DialogService);
   private readonly cdr = inject(ChangeDetectorRef);
 
-  trees: TreeViewModel[] = [];
-  view: DashboardView = 'profile';
+  readonly categories = CATEGORIES;
+
   loading = true;
-  syncing = false;
-  syncSuccess = false;
-  syncedProfileUrl = '';
-  viewStats: ProfileViewStats | null = null;
-  showBadgeModal = false;
-  badgeTheme: 'dark' | 'light' = 'dark';
+  refreshing = false;
+  tree: Tree | null = null;
+  rootId: string | null = null;
+  groups: StackGroup[] = [];
+  graphNodes: SkillGraphNode[] = [];
+
+  linkCopied = false;
   badgeCopied = false;
-  syncNewSkills: string[] = [];
-  exploreProfiles: ExploreProfile[] = [];
-  profileLinkCopied = false;
-  mapGraphNodes: SkillGraphNode[] = [];
-  private devMapNodes: SkillNode[] = [];
 
-  jdText = '';
-  jdMatching = false;
-  jdResult: { required: number; matched: { title: string; level: number }[]; missing: string[]; score: number } | null = null;
-
-  // Skill gap
-  readonly roleProfileKeys = ROLE_PROFILE_KEYS;
-  readonly roleProfiles = ROLE_PROFILES;
-  targetRoleKey = localStorage.getItem('devmap_target_role') ?? '';
-  myVerifiedSkills: string[] = [];
-  get targetRole(): RoleProfile | null { return this.roleProfiles[this.targetRoleKey] ?? null; }
-
-  get devMap(): TreeViewModel | null { return this.trees.find(t => t.title === 'My Dev Map') ?? null; }
-  get otherMaps(): TreeViewModel[] { return this.trees.filter(t => t.title !== 'My Dev Map'); }
-  get topSkillsPreview(): string[] { return this.myVerifiedSkills.slice(0, 6); }
-  get profileHandle(): string { return this.getHandle(); }
-  get profileUrl(): string {
-    const h = this.getHandle();
-    return h ? `${window.location.origin}/u/${h}` : '';
-  }
+  // Add-skill form
+  newTitle = '';
+  newCategory = 'language';
+  adding = false;
 
   isGuest$ = this.authService.isGuest$;
   handle$ = this.authService.handle$;
   githubUsername$ = this.authService.githubUsername$;
 
   ngOnInit() {
-    // Load fresh user data (handle/githubUsername may not be in old JWT)
     this.authService.loadMe().subscribe(() => this.cdr.markForCheck());
+    this.loadStack();
+  }
 
-    this.loadTrees();
-    this.loadViewStats();
-    this.loadMySkills();
-    this.loadExploreProfiles();
-
-    // Sidebar sections + auto-scan after GitHub OAuth redirect
-    this.route.queryParams.subscribe(params => {
-      const v = params['view'];
-      if (v === 'profile' || v === 'skillmap' || v === 'career') {
-        this.view = v;
-        this.cdr.markForCheck();
+  private currentHandle(): string {
+    const u = (
+      this.authService as unknown as {
+        user: { getValue(): { handle?: string | null; githubUsername?: string | null } | null };
       }
-      if (params['scan'] === '1') {
-        this.router.navigate([], { replaceUrl: true, queryParams: {} });
-        this.isGuest$.subscribe(isGuest => {
-          if (!isGuest) this.syncGitHub();
-        }).unsubscribe();
-      }
-    });
+    ).user.getValue();
+    return u?.handle ?? u?.githubUsername ?? '';
   }
 
-  loadExploreProfiles() {
-    this.treesService.getExploreProfiles().subscribe({
-      next: (profiles) => {
-        this.exploreProfiles = profiles.slice(0, 3);
-        this.cdr.markForCheck();
-      },
-    });
+  get profileUrl(): string {
+    const h = this.currentHandle();
+    return h ? `${window.location.origin}/u/${h}` : '';
   }
 
-  copyProfileLink() {
-    const url = this.profileUrl;
-    if (!url) return;
-    navigator.clipboard.writeText(url);
-    this.profileLinkCopied = true;
-    this.cdr.markForCheck();
-    setTimeout(() => { this.profileLinkCopied = false; this.cdr.markForCheck(); }, 2000);
+  get totalSkills(): number {
+    return this.groups.reduce((n, g) => n + g.skills.length, 0);
   }
 
-  loadMySkills() {
-    this.isGuest$.subscribe(isGuest => {
-      if (!isGuest) {
-        this.treesService.getMySkills().subscribe({
-          next: (skills) => { this.myVerifiedSkills = skills; this.cdr.markForCheck(); },
-        });
-      }
-    }).unsubscribe();
+  get hasGraph(): boolean {
+    return this.graphNodes.length >= 3;
   }
 
-  setTargetRole(key: string) {
-    this.targetRoleKey = key;
-    localStorage.setItem('devmap_target_role', key);
-    this.treesService.saveTargetRole(key).subscribe();
-    this.cdr.markForCheck();
-  }
-
-  loadViewStats() {
-    this.isGuest$.subscribe(isGuest => {
-      if (!isGuest) {
-        this.treesService.getViewStats().subscribe({
-          next: (stats) => { this.viewStats = stats; this.cdr.markForCheck(); },
-        });
-      }
-    }).unsubscribe();
-  }
-
-  loadTrees() {
+  // ── Loading ────────────────────────────────────────────────────────────
+  loadStack() {
     this.loading = true;
     this.treesService.getTrees().subscribe({
-      next: (data) => {
-        this.trees = data.map(t => this.toViewModel(t));
-        this.loading = false;
-        this.cdr.markForCheck();
-        this.loadMapGraph();
+      next: (trees) => {
+        this.tree = trees.find((t) => t.title === DEV_MAP_TITLE) ?? null;
+        if (!this.tree) {
+          this.groups = [];
+          this.graphNodes = [];
+          this.rootId = null;
+          this.loading = false;
+          this.cdr.markForCheck();
+          return;
+        }
+        this.nodesService.getNodesByTree(this.tree.id).subscribe({
+          next: (nodes) => {
+            this.applyNodes(nodes);
+            this.loading = false;
+            this.cdr.markForCheck();
+          },
+          error: () => {
+            this.loading = false;
+            this.cdr.markForCheck();
+          },
+        });
       },
       error: () => {
         this.loading = false;
@@ -160,150 +141,205 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  /** Fetch the dev map's nodes and map them into the inline live graph. */
-  private loadMapGraph() {
-    const map = this.devMap;
-    if (!map) { this.mapGraphNodes = []; return; }
-    this.nodesService.getNodesByTree(map.id).subscribe({
-      next: (nodes) => {
-        this.devMapNodes = nodes;
-        this.mapGraphNodes = skillNodesToGraph(nodes);
+  private applyNodes(nodes: SkillNode[]) {
+    this.rootId = nodes.find((n) => !n.parentId)?.id ?? null;
+    this.graphNodes = skillNodesToGraph(nodes);
+    this.groups = this.buildGroups(nodes);
+  }
+
+  private buildGroups(nodes: SkillNode[]): StackGroup[] {
+    const byKey = new Map<string, StackGroup>();
+    for (const node of nodes) {
+      if (!node.parentId) continue; // skip structural root
+      const key = this.inferCategory(node);
+      const meta = CATEGORY_BY_KEY.get(key) ?? { label: 'Other', icon: 'star' };
+      if (!byKey.has(key)) byKey.set(key, { key, label: meta.label, icon: meta.icon, skills: [] });
+      const repoCount = skillRepoCount(node);
+      const verified = node.verified === true || node.source === 'github';
+      const tier: StackSkill['tier'] = verified
+        ? repoCount >= 5
+          ? 'core'
+          : repoCount >= 2
+            ? 'familiar'
+            : 'exposure'
+        : 'exposure';
+      byKey.get(key)!.skills.push({
+        id: node.id,
+        title: node.title,
+        source: (node.source as StackSkill['source']) ?? 'manual',
+        verified,
+        repoCount,
+        level: node.level ?? 1,
+        tier,
+      });
+    }
+    return CATEGORIES.map((c) => byKey.get(c.key)).filter((g): g is StackGroup => !!g && g.skills.length > 0);
+  }
+
+  private inferCategory(node: SkillNode): string {
+    const icon = node.icon ?? '';
+    if (icon === 'code') return 'language';
+    if (icon === 'web' || icon === 'style') return 'frontend';
+    if (icon === 'dns' || icon === 'api') return 'backend';
+    if (icon === 'storage') return 'database';
+    if (icon === 'cloud' || icon === 'settings_suggest') return 'devops';
+    if (icon === 'smartphone') return 'mobile';
+    if (icon === 'science') return 'testing';
+    if (icon === 'psychology') return 'ml';
+    return 'tooling';
+  }
+
+  // ── GitHub refresh (manual, replaces the old webhook auto-sync) ──────────
+  refreshFromGitHub() {
+    this.refreshing = true;
+    this.cdr.markForCheck();
+    this.treesService.syncGitHub().subscribe({
+      next: () => {
+        this.refreshing = false;
+        this.loadStack();
+      },
+      error: () => {
+        this.refreshing = false;
+        this.dialogService.alert('GitHub refresh failed. Make sure your GitHub account is connected.');
         this.cdr.markForCheck();
       },
     });
   }
 
-  /** Strength-weighted role readiness (same algorithm as the public profile). */
-  get gapAnalysis(): GapAnalysis | null {
-    const role = this.targetRole;
-    if (!role || this.devMapNodes.length === 0) return null;
-    return computeGapAnalysis(role, verifiedSkillTitles(this.devMapNodes), buildRepoSkillsMap(this.devMapNodes));
-  }
+  // ── Manual editing ──────────────────────────────────────────────────────
+  addSkill() {
+    const title = this.newTitle.trim();
+    if (!title || this.adding) return;
+    const meta = CATEGORY_BY_KEY.get(this.newCategory) ?? CATEGORIES[0];
+    this.adding = true;
+    this.cdr.markForCheck();
 
-  /** Ordered "what to learn next" suggestions. */
-  get nextSteps(): NextStep[] {
-    const gap = this.gapAnalysis;
-    return gap ? computeNextSteps(gap, verifiedSkillTitles(this.devMapNodes)) : [];
-  }
-
-  get hasMapGraph(): boolean {
-    return this.mapGraphNodes.length >= 3;
-  }
-
-  openTree(id: string) {
-    this.router.navigate(['/tree', id]);
-  }
-
-  async deleteTree(event: Event, id: string) {
-    event.stopPropagation();
-    if (await this.dialogService.confirm('Delete this skill map? This cannot be undone.')) {
-      this.treesService.deleteTree(id).subscribe({
+    this.ensureRoot()
+      .pipe(
+        switchMap(({ treeId, rootId }) =>
+          this.nodesService.createNode({
+            treeId,
+            parentId: rootId,
+            title,
+            icon: meta.nodeIcon,
+            positionX: 0,
+            positionY: 0,
+            level: 1,
+            maxLevel: 3,
+          }),
+        ),
+      )
+      .subscribe({
         next: () => {
-          this.trees = this.trees.filter(t => t.id !== id);
+          this.newTitle = '';
+          this.adding = false;
+          this.loadStack();
+        },
+        error: () => {
+          this.adding = false;
+          this.dialogService.alert('Could not add skill. Please try again.');
           this.cdr.markForCheck();
         },
       });
+  }
+
+  /** Ensure a dev-map tree with a structural root exists, returning their ids. */
+  private ensureRoot() {
+    if (this.tree && this.rootId) {
+      return of({ treeId: this.tree.id, rootId: this.rootId });
     }
+    if (this.tree) {
+      return this.createRoot(this.tree.id);
+    }
+    return this.treesService.createTree(DEV_MAP_TITLE).pipe(
+      switchMap((tree) => {
+        this.tree = tree;
+        return this.createRoot(tree.id);
+      }),
+    );
+  }
+
+  private createRoot(treeId: string) {
+    return this.nodesService
+      .createNode({ treeId, title: STACK_ROOT_TITLE, icon: 'account_tree', positionX: 0, positionY: 0 })
+      .pipe(
+        switchMap((root) => {
+          this.rootId = root.id;
+          return of({ treeId, rootId: root.id });
+        }),
+      );
+  }
+
+  async removeSkill(skill: StackSkill) {
+    if (!(await this.dialogService.confirm(`Remove ${skill.title} from your stack?`))) return;
+    this.nodesService.deleteNode(skill.id).subscribe({
+      next: () => {
+        this.groups = this.groups
+          .map((g) => ({ ...g, skills: g.skills.filter((s) => s.id !== skill.id) }))
+          .filter((g) => g.skills.length > 0);
+        this.graphNodes = this.graphNodes.filter((n) => n.id !== skill.id);
+        this.cdr.markForCheck();
+      },
+      error: () => this.dialogService.alert('Could not remove skill.'),
+    });
+  }
+
+  /** Cycle a manually-added skill through proficiency levels 1 → 2 → 3. */
+  cycleLevel(skill: StackSkill) {
+    if (skill.source === 'github') return; // github tiers are derived from repos
+    const level = (skill.level % 3) + 1;
+    this.nodesService.updateNode(skill.id, { level }).subscribe({
+      next: () => {
+        skill.level = level;
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  levelLabel(skill: StackSkill): string {
+    if (skill.source === 'github') return skill.tier;
+    return ['', 'beginner', 'comfortable', 'strong'][skill.level] ?? 'beginner';
+  }
+
+  // ── Share ────────────────────────────────────────────────────────────────
+  copyProfileLink() {
+    if (!this.profileUrl) return;
+    navigator.clipboard.writeText(this.profileUrl);
+    this.linkCopied = true;
+    this.cdr.markForCheck();
+    setTimeout(() => {
+      this.linkCopied = false;
+      this.cdr.markForCheck();
+    }, 2000);
+  }
+
+  copyBadgeSnippet() {
+    const h = this.currentHandle();
+    if (!h) return;
+    const origin = window.location.origin;
+    const snippet = `[![DevMap](${origin}/api/trees/badge/${h})](${origin}/u/${h})`;
+    navigator.clipboard.writeText(snippet);
+    this.badgeCopied = true;
+    this.cdr.markForCheck();
+    setTimeout(() => {
+      this.badgeCopied = false;
+      this.cdr.markForCheck();
+    }, 2000);
+  }
+
+  openProfile() {
+    const h = this.currentHandle();
+    if (h) this.router.navigate(['/u', h]);
   }
 
   logout() {
     this.authService.logout();
   }
 
-  copyShareLink(event: Event, token: string) {
-    event.stopPropagation();
-    const url = `${window.location.origin}/tree/${token}`;
-    navigator.clipboard.writeText(url);
-    this.dialogService.alert('Share link copied to clipboard.');
+  trackByGroup(_i: number, g: StackGroup) {
+    return g.key;
   }
-
-  syncGitHub() {
-    this.syncing = true;
-    this.syncSuccess = false;
-    this.syncNewSkills = [];
-    this.cdr.markForCheck();
-    this.treesService.syncGitHub().subscribe({
-      next: (result) => {
-        this.syncing = false;
-        this.loadTrees();
-        const handle = this.authService['user'].getValue()?.handle
-          ?? this.authService['user'].getValue()?.githubUsername;
-        this.syncSuccess = true;
-        this.syncNewSkills = result.newSkills ?? [];
-        this.syncedProfileUrl = handle ? `${window.location.origin}/u/${handle}` : '';
-        this.cdr.markForCheck();
-      },
-      error: () => {
-        this.syncing = false;
-        this.dialogService.alert('GitHub sync failed. Please try again.');
-        this.cdr.markForCheck();
-      },
-    });
-  }
-
-  copyProfileUrl() {
-    navigator.clipboard.writeText(this.syncedProfileUrl);
-    this.dialogService.alert('Profile link copied to clipboard!');
-  }
-
-  private getHandle(): string {
-    return this.authService['user'].getValue()?.handle
-      ?? this.authService['user'].getValue()?.githubUsername
-      ?? '';
-  }
-
-  badgeCardUrl(theme: 'dark' | 'light' = 'dark'): string {
-    return `${window.location.origin}/api/badge/${this.getHandle()}?theme=${theme}`;
-  }
-
-  badgeMarkdownSimple(): string {
-    const handle = this.getHandle();
-    const origin = window.location.origin;
-    return `[![DevMap](${origin}/api/badge/${handle}?theme=${this.badgeTheme})](${origin}/u/${handle})`;
-  }
-
-  badgeMarkdownFull(): string {
-    const handle = this.getHandle();
-    const origin = window.location.origin;
-    const dark = `${origin}/api/badge/${handle}?theme=dark`;
-    const light = `${origin}/api/badge/${handle}?theme=light`;
-    const url = `${origin}/u/${handle}`;
-    return `<a href="${url}">\n  <picture>\n    <source media="(prefers-color-scheme: dark)" srcset="${dark}">\n    <img alt="DevMap" src="${light}">\n  </picture>\n</a>`;
-  }
-
-  copyBadgeMarkdown() {
-    navigator.clipboard.writeText(this.badgeMarkdownFull());
-    this.badgeCopied = true;
-    setTimeout(() => this.badgeCopied = false, 2000);
-  }
-
-  runJdMatch() {
-    if (!this.jdText.trim()) return;
-    this.jdMatching = true;
-    this.jdResult = null;
-    this.cdr.markForCheck();
-    this.treesService.matchJd(this.jdText).subscribe({
-      next: (result) => {
-        this.jdResult = result;
-        this.jdMatching = false;
-        this.cdr.markForCheck();
-      },
-      error: () => {
-        this.jdMatching = false;
-        this.cdr.markForCheck();
-      },
-    });
-  }
-
-  trackByTreeId(_index: number, tree: TreeViewModel) {
-    return tree.id;
-  }
-
-  private toViewModel(tree: Tree): TreeViewModel {
-    const d = new Date(tree.updatedAt);
-    const formatted = d.toLocaleDateString('en', { month: 'short', day: 'numeric', year: 'numeric' });
-    return { ...tree, updatedLabel: formatted };
+  trackBySkill(_i: number, s: StackSkill) {
+    return s.id;
   }
 }
-
-type TreeViewModel = Tree & { updatedLabel: string };

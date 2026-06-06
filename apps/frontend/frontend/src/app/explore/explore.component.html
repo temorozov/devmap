@@ -1,102 +1,216 @@
-<div class="app-shell">
+<div class="ex-page">
 
-  <app-sidebar
-    active="explore"
-    [isGuest]="(isGuest$ | async) ?? true"
-    [handle]="handle$ | async"
-    [githubUsername]="githubUsername$ | async"
-    (sync)="onSync()"
-    (logout)="onLogout()"
-  ></app-sidebar>
+  <!-- NAV -->
+  <header class="ex-nav">
+    <a class="nav-brand" routerLink="/">
+      <svg class="nav-logo" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="12" cy="12" r="3" fill="currentColor" />
+        <circle cx="4" cy="6" r="2" fill="currentColor" opacity=".6" />
+        <circle cx="20" cy="6" r="2" fill="currentColor" opacity=".6" />
+        <circle cx="4" cy="18" r="2" fill="currentColor" opacity=".6" />
+        <circle cx="20" cy="18" r="2" fill="currentColor" opacity=".6" />
+      </svg>
+      DevMap
+    </a>
+    <nav class="nav-links">
+      <a routerLink="/dashboard" class="nav-link" *ngIf="!(isGuest$ | async)">
+        <span class="material-icons">hub</span> My Stack
+      </a>
+      <a routerLink="/login" class="nav-link nav-link-cta" *ngIf="isGuest$ | async">
+        Connect GitHub
+      </a>
+      <button class="nav-link nav-logout" (click)="logout()" *ngIf="!(isGuest$ | async)">
+        <span class="material-icons">logout</span>
+      </button>
+    </nav>
+  </header>
 
-  <main class="app-shell-main ex-main">
+  <main class="ex-main">
 
-    <!-- Loading -->
-    <div class="ex-loading" *ngIf="loading">
-      <span class="material-icons spinning" style="font-size:1.5rem;color:var(--text-subtle)">refresh</span>
+    <!-- SEARCH -->
+    <section class="search-section">
+      <span class="section-kicker"><span class="sk-dot">◆</span> EXPLORE ANY GITHUB USER</span>
+      <form class="search-row" (ngSubmit)="search()">
+        <input
+          class="search-input"
+          type="text"
+          [(ngModel)]="searchHandle"
+          name="searchHandle"
+          placeholder="GitHub username, e.g. torvalds"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <button class="search-btn" type="submit" [disabled]="!searchHandle.trim() || scanLoading">
+          <span class="material-icons" [class.spinning]="scanLoading">{{ scanLoading ? 'refresh' : 'search' }}</span>
+          {{ scanLoading ? 'Scanning…' : 'Scan' }}
+        </button>
+      </form>
+      <p class="search-hint">Scans their public GitHub repos and detects skills used in 2+ projects.</p>
+    </section>
+
+    <!-- SCAN ERROR -->
+    <div class="state-msg" *ngIf="scanError">
+      <span class="material-icons" style="color:#f87171">error_outline</span>
+      {{ scanError }}
     </div>
 
-    <!-- Empty state -->
-    <div class="ex-empty" *ngIf="!loading && profiles.length === 0">
-      <span class="material-icons" style="font-size:2rem;color:var(--text-subtle)">group</span>
-      <p>No public profiles yet. Be the first.</p>
-      <a routerLink="/login" class="btn-primary" style="margin-top:0.5rem">Connect GitHub →</a>
-    </div>
+    <!-- SCAN RESULT -->
+    <section class="scan-result" *ngIf="scanResult && !scanLoading">
 
-    <ng-container *ngIf="!loading && profiles.length > 0">
-
-      <!-- Header row -->
-      <div class="ex-header-row">
-        <div>
-          <h1 class="ex-heading">
-            {{ profiles.length < 10 ? 'Early adopters' : 'Developer skill maps' }}
-          </h1>
-          <p class="ex-sub">
-            {{ profiles.length < 10
-              ? 'The first developers with GitHub-verified skill maps.'
-              : 'Real skills verified from GitHub repos — updated automatically when developers push code.' }}
-          </p>
+      <div class="scan-header">
+        <div class="scan-who">
+          <img
+            class="scan-avatar"
+            [src]="'https://avatars.githubusercontent.com/' + scanResult.handle"
+            [alt]="scanResult.handle"
+          />
+          <div class="scan-meta">
+            <h2 class="scan-handle">&#64;{{ scanResult.handle }}</h2>
+            <p class="scan-sub">{{ scanResult.skills.length }} skill{{ scanResult.skills.length === 1 ? '' : 's' }} detected from GitHub</p>
+          </div>
         </div>
-        <span class="ex-count">{{ profiles.length }} {{ profiles.length === 1 ? 'developer' : 'developers' }}</span>
+        <div class="scan-actions">
+          <a
+            class="sb-btn"
+            [href]="'https://github.com/' + scanResult.handle"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <span class="material-icons">open_in_new</span> GitHub
+          </a>
+          <button
+            class="sb-btn sb-btn-primary"
+            (click)="compareWithMe()"
+            *ngIf="!(isGuest$ | async) && !compareResult"
+            [disabled]="compareLoading"
+          >
+            <span class="material-icons" [class.spinning]="compareLoading">{{ compareLoading ? 'refresh' : 'compare_arrows' }}</span>
+            {{ compareLoading ? 'Comparing…' : 'Compare with me' }}
+          </button>
+          <button class="sb-btn" (click)="clearScan()">
+            <span class="material-icons">close</span> Clear
+          </button>
+        </div>
       </div>
 
-      <!-- Profile grid -->
-      <div class="profile-grid" [class.profile-grid-few]="profiles.length < 4">
-        <a
-          class="profile-card"
-          *ngFor="let p of profiles"
-          [routerLink]="'/u/' + p.handle"
+      <!-- Skills chips (no compare yet) -->
+      <div class="scan-skills" *ngIf="!compareResult">
+        <span
+          class="skill-chip"
+          *ngFor="let s of scanResult.skills"
+          [title]="s.repoCount + ' repos'"
         >
-          <div class="pc-top">
-            <div class="pc-avatar-wrap">
-              <img
-                *ngIf="p.githubUsername"
-                [src]="avatarUrl(p)"
-                [alt]="p.name || p.handle"
-                class="pc-avatar"
-              />
-              <div class="pc-avatar-placeholder" *ngIf="!p.githubUsername">
-                <span class="material-icons">person</span>
-              </div>
-              <div class="pc-verified-badge" title="GitHub-verified">
-                <span class="material-icons" style="font-size:0.65rem">verified</span>
-              </div>
+          {{ s.title }}
+          <span class="chip-count">{{ s.repoCount }}</span>
+        </span>
+        <span class="empty-note" *ngIf="scanResult.skills.length === 0">No detectable skills found in public repos.</span>
+      </div>
+
+      <!-- Compare error -->
+      <div class="state-msg" *ngIf="compareError">
+        <span class="material-icons" style="color:#f87171">error_outline</span> {{ compareError }}
+      </div>
+
+      <!-- Compare result -->
+      <div class="compare-grid" *ngIf="compareResult">
+
+        <div class="col col-mine">
+          <div class="col-head">
+            <span class="col-label">Only me</span>
+            <span class="col-count">{{ compareResult.onlyA.length }}</span>
+          </div>
+          <div class="col-chips">
+            <span class="skill-chip chip-mine" *ngFor="let s of compareResult.onlyA">{{ s }}</span>
+            <span class="col-empty" *ngIf="compareResult.onlyA.length === 0">None unique to you</span>
+          </div>
+        </div>
+
+        <div class="col col-common">
+          <div class="col-head">
+            <span class="col-label">In common</span>
+            <span class="col-count col-count-common">{{ compareResult.inCommon.length }}</span>
+          </div>
+          <div class="col-chips">
+            <span class="skill-chip chip-common" *ngFor="let s of compareResult.inCommon">{{ s }}</span>
+            <span class="col-empty" *ngIf="compareResult.inCommon.length === 0">No shared skills</span>
+          </div>
+        </div>
+
+        <div class="col col-theirs">
+          <div class="col-head">
+            <span class="col-label">Only &#64;{{ compareResult.b.handle }}</span>
+            <span class="col-count">{{ compareResult.onlyB.length }}</span>
+          </div>
+          <div class="col-chips">
+            <span class="skill-chip chip-theirs" *ngFor="let s of compareResult.onlyB">{{ s }}</span>
+            <span class="col-empty" *ngIf="compareResult.onlyB.length === 0">No unique skills</span>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- MEMBERS -->
+    <section class="members-section">
+      <span class="section-kicker"><span class="sk-dot">◆</span> ON DEVMAP · {{ members.length }}</span>
+
+      <div class="state-msg" *ngIf="membersLoading">
+        <span class="material-icons spinning">refresh</span> Loading…
+      </div>
+
+      <div class="ex-empty" *ngIf="!membersLoading && members.length === 0">
+        <span class="material-icons" style="font-size:2rem;color:var(--text-subtle)">group</span>
+        <p>No public profiles yet.</p>
+        <a routerLink="/login" class="sb-btn sb-btn-primary" style="margin-top:0.5rem">Connect GitHub →</a>
+      </div>
+
+      <div class="member-grid" *ngIf="!membersLoading && members.length > 0">
+        <div
+          class="member-card"
+          *ngFor="let p of members"
+          (click)="searchMember(p.handle)"
+          role="button"
+          tabindex="0"
+          (keydown.enter)="searchMember(p.handle)"
+        >
+          <div class="mc-top">
+            <img
+              *ngIf="p.githubUsername"
+              [src]="'https://avatars.githubusercontent.com/' + p.githubUsername"
+              [alt]="p.name || p.handle"
+              class="mc-avatar"
+            />
+            <div class="mc-avatar mc-avatar-ph" *ngIf="!p.githubUsername">
+              <span class="material-icons">person</span>
             </div>
-            <div class="pc-info">
-              <div class="pc-name">{{ p.name || p.handle }}</div>
-              <div class="pc-handle">&#64;{{ p.handle }}</div>
-              <div class="pc-skill-count">
-                <span class="material-icons" style="font-size:0.75rem;color:var(--green)">verified</span>
-                {{ p.verifiedSkills }} verified skill{{ p.verifiedSkills === 1 ? '' : 's' }}
-              </div>
+            <div class="mc-info">
+              <div class="mc-name">{{ p.name || p.handle }}</div>
+              <div class="mc-handle">&#64;{{ p.handle }}</div>
             </div>
           </div>
-
-          <div class="pc-skills" *ngIf="p.topSkills.length > 0">
-            <span class="pc-skill-chip" *ngFor="let s of p.topSkills">{{ s }}</span>
+          <div class="mc-skills" *ngIf="p.topSkills.length > 0">
+            <span class="mc-chip" *ngFor="let s of p.topSkills">{{ s }}</span>
           </div>
+          <div class="mc-hint">
+            <a [routerLink]="'/u/' + p.handle" (click)="$event.stopPropagation()">View map →</a>
+            <span class="mc-scan-hint">click to scan</span>
+          </div>
+        </div>
+      </div>
 
-          <div class="pc-view-hint">View skill map →</div>
+    </section>
+
+    <!-- CTA -->
+    <div class="ex-cta" *ngIf="isGuest$ | async">
+      <div class="ex-cta-inner">
+        <p class="ex-cta-title">Add your stack to the map</p>
+        <p class="ex-cta-sub">Connect GitHub to get your skill map and share it in one link.</p>
+        <a routerLink="/login" class="sb-btn sb-btn-primary">
+          Connect GitHub
         </a>
       </div>
-
-      <!-- CTA footer -->
-      <div class="ex-footer-cta">
-        <div class="ex-footer-inner">
-          <div>
-            <div class="ex-footer-title">Add your skills to the map</div>
-            <div class="ex-footer-sub">Connect GitHub — your profile appears here automatically.</div>
-          </div>
-          <a routerLink="/login" class="btn-gh-cta">
-            <svg style="width:15px;height:15px" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
-            </svg>
-            Build my DevMap
-          </a>
-        </div>
-      </div>
-
-    </ng-container>
+    </div>
 
   </main>
 </div>

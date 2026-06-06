@@ -142,7 +142,7 @@
   }
 }
 
-.pa-compare {
+.pa-badge {
   background: var(--bg-card);
   border: 1px solid var(--border);
   color: var(--text);
@@ -214,7 +214,7 @@
   }
 }
 
-.profile-avatar-wrap, .profile-identity, .profile-stats { position: relative; z-index: 1; }
+.profile-avatar-wrap, .profile-identity { position: relative; z-index: 1; }
 
 .profile-avatar-wrap {
   position: relative;
@@ -239,21 +239,6 @@
   align-items: center;
   justify-content: center;
   color: var(--text-subtle);
-}
-
-.avatar-verified {
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: var(--bg-surface);
-  border: 2px solid var(--bg-surface);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--green);
 }
 
 .profile-identity {
@@ -296,86 +281,6 @@
 }
 
 .gh-icon-sm { width: 14px; height: 14px; }
-
-.profile-stats {
-  display: flex;
-  gap: 1.5rem;
-  flex-wrap: wrap;
-  align-items: center;
-  margin-left: auto;
-
-  @media (max-width: 640px) { margin-left: 0; width: 100%; }
-}
-
-.stat {
-  text-align: center;
-  position: relative;
-  padding-left: 1.5rem;
-
-  & + .stat::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 1px;
-    height: 28px;
-    background: var(--border);
-  }
-}
-
-.profile-stats { gap: 0; }
-
-.stat-num {
-  display: block;
-  font-size: 1.5rem;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  color: var(--text);
-  font-family: var(--font-mono);
-  line-height: 1.1;
-}
-
-.stat-num-views { color: var(--green); }
-
-.stat-label {
-  font-size: 0.72rem;
-  color: var(--text-subtle);
-  margin-top: 0.15rem;
-  display: block;
-}
-
-/* ── VERIFIED BANNER ── */
-.verified-banner {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.7rem 1rem;
-  background: var(--green-dim);
-  border: 1px solid var(--green-border);
-  border-radius: 8px;
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  flex-wrap: wrap;
-}
-
-.banner-view-map {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  margin-left: auto;
-  padding: 0.3rem 0.65rem;
-  border-radius: 6px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  color: var(--text-muted);
-  font-size: 0.78rem;
-  font-weight: 500;
-  text-decoration: none;
-  transition: color 0.15s;
-
-  &:hover { color: var(--text); }
-}
 
 /* ── NO MAP ── */
 .no-map-card {
@@ -608,16 +513,6 @@
 }
 
 /* ── TARGET ROLE SECTION ── */
-.role-section {
-  margin: 0;
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 1.25rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
 
 /* unified section kicker spacing */
 .section-kicker { margin-bottom: 0.25rem; }
@@ -628,195 +523,6 @@
   gap: 0.9rem;
 }
 
-.role-header {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  flex-wrap: wrap;
-}
-
-.role-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  background: rgba(88, 166, 255, 0.1);
-  border: 1px solid rgba(88, 166, 255, 0.25);
-  color: #58a6ff;
-  font-size: 0.72rem;
-  font-weight: 600;
-  padding: 0.2rem 0.5rem;
-  border-radius: 20px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.role-label {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--text);
-}
-
-.role-pct {
-  margin-left: auto;
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--green);
-}
-
-.role-progress-wrap { width: 100%; }
-
-.role-progress-bar {
-  height: 6px;
-  background: var(--border);
-  border-radius: 3px;
-  overflow: hidden;
-}
-
-.role-progress-fill {
-  height: 100%;
-  background: var(--green);
-  border-radius: 3px;
-  transition: width 0.4s ease;
-}
-
-.role-tier {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.6rem;
-  flex-wrap: wrap;
-}
-
-.tier-label {
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  padding-top: 0.25rem;
-  flex-shrink: 0;
-  width: 90px;
-}
-
-.tier-label-core { color: var(--text-muted); }
-.tier-label-rec  { color: var(--text-subtle); }
-
-.tier-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  flex: 1;
-}
-
-.role-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  font-size: 0.78rem;
-  font-weight: 500;
-  padding: 0.22rem 0.6rem;
-  border-radius: 20px;
-  border: 1px solid transparent;
-  transition: opacity 0.15s;
-}
-
-.role-chip-sm {
-  font-size: 0.73rem;
-  padding: 0.16rem 0.5rem;
-}
-
-// strong: co-occurs with 2+ other role skills in same repo
-.role-chip-strong {
-  background: rgba(63, 185, 80, 0.12);
-  border-color: rgba(63, 185, 80, 0.35);
-  color: var(--green);
-}
-
-// medium: co-occurs with 1 other role skill, or recommended
-.role-chip-medium, .role-chip-have {
-  background: rgba(63, 185, 80, 0.07);
-  border-color: rgba(63, 185, 80, 0.22);
-  color: #6db87a;
-}
-
-// weak: verified but only in isolated repos — no other role skills nearby
-.role-chip-weak {
-  background: rgba(234, 179, 8, 0.07);
-  border-color: rgba(234, 179, 8, 0.22);
-  color: #ca8a04;
-}
-
-// missing: not found in any repos
-.role-chip-missing {
-  background: rgba(88, 166, 255, 0.07);
-  border-color: rgba(88, 166, 255, 0.18);
-  color: #58a6ff;
-}
-
-.role-chip-rec-missing {
-  background: rgba(255, 255, 255, 0.03);
-  border-color: rgba(255, 255, 255, 0.08);
-  color: var(--text-subtle);
-}
-
-.chip-icon {
-  font-size: 0.72rem !important;
-}
-
-.chip-icon-weak {
-  color: #ca8a04;
-}
-
-.chip-repos {
-  opacity: 0.65;
-  font-size: 0.68rem;
-  font-family: var(--font-mono, monospace);
-}
-
-.top-project {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  padding: 0.5rem 0.75rem;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 8px;
-  font-size: 0.8rem;
-  color: var(--text-muted);
-}
-
-.top-project-icon {
-  font-size: 0.95rem !important;
-  color: var(--text-subtle);
-  flex-shrink: 0;
-}
-
-.top-project-repo {
-  font-family: var(--font-mono, monospace);
-  font-size: 0.78rem;
-  color: var(--text);
-  background: rgba(255,255,255,0.06);
-  padding: 0.05rem 0.35rem;
-  border-radius: 4px;
-}
-
-.near-ready-hint {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  padding: 0.5rem 0.75rem;
-  background: rgba(251, 146, 60, 0.06);
-  border: 1px solid rgba(251, 146, 60, 0.18);
-  border-radius: 8px;
-  font-size: 0.8rem;
-  color: var(--text-muted);
-
-  strong { color: var(--text); font-weight: 600; }
-}
-
-.near-ready-icon {
-  font-size: 0.95rem !important;
-  color: #fb923c;
-  flex-shrink: 0;
-}
 
 /* ── Live skill graph ── */
 .profile-graph {

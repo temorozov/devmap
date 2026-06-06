@@ -1,17 +1,32 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import axios from 'axios';
 import { PrismaService } from '../prisma/prisma.service';
-import { GitHubService } from './github.service';
+import { GitHubService, GITHUB_USER_NOT_FOUND } from './github.service';
 import { EmailService } from '../email/email.service';
 import { computeTreeLayout } from './tree-layout.util';
 import { DetectedTech } from './github.types';
 import { Prisma } from '@prisma/client';
 
 const DEV_MAP_TITLE = 'My Dev Map';
+const GUEST_SCAN_TTL_MS = 30 * 60_000;
+
+export interface GuestScanSkill {
+  title: string;
+  category: string;
+  icon: string;
+  repoCount: number;
+}
+
+export interface GuestScanResult {
+  handle: string;
+  skills: GuestScanSkill[];
+  scannedAt: string;
+}
 
 @Injectable()
 export class GitHubSyncService {
   private readonly logger = new Logger(GitHubSyncService.name);
+  private readonly guestScanCache = new Map<string, { data: GuestScanResult; at: number }>();
 
   constructor(
     private readonly prisma: PrismaService,
@@ -319,5 +334,38 @@ export class GitHubSyncService {
     const repoNames = tech.repos.slice(0, 3).map((r) => r.name).join(', ');
     const extra = tech.repos.length > 3 ? ` +${tech.repos.length - 3} more` : '';
     return `Verified in ${tech.repos.length} repo${tech.repos.length === 1 ? '' : 's'}: ${repoNames}${extra}`;
+  }
+
+  async scanPublicUser(username: string): Promise<GuestScanResult> {
+    const key = username.toLowerCase();
+    const cached = this.guestScanCache.get(key);
+    if (cached && Date.now() - cached.at < GUEST_SCAN_TTL_MS) {
+      return cached.data;
+    }
+    const token = await this.getScanToken();
+    let detected: DetectedTech[];
+    try {
+      detected = await this.github.detectTechnologiesForUsername(username, token);
+    } catch (err) {
+      if (err instanceof Error && err.message === GITHUB_USER_NOT_FOUND) {
+        throw new NotFoundException(`No GitHub user found: @${username}`);
+      }
+      this.logger.warn(`Guest scan failed for @${username}: ${err instanceof Error ? err.message : String(err)}`);
+      throw new ServiceUnavailableException('Could not scan GitHub right now. Please try again in a moment.');
+    }
+    const skills: GuestScanSkill[] = detected
+      .filter((d) => d.repos.length >= 2)
+      .map((d) => ({ title: d.canonicalTitle, category: d.category, icon: d.icon, repoCount: d.repos.length }));
+    const data: GuestScanResult = { handle: username, skills, scannedAt: new Date().toISOString() };
+    this.guestScanCache.set(key, { data, at: Date.now() });
+    return data;
+  }
+
+  private async getScanToken(): Promise<string> {
+    const u = await this.prisma.user.findFirst({
+      where: { githubAccessToken: { not: null } },
+      select: { githubAccessToken: true },
+    });
+    return u?.githubAccessToken ?? '';
   }
 }
