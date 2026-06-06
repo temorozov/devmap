@@ -34,7 +34,7 @@ export class GitHubSyncService {
     private readonly emailService: EmailService,
   ) {}
 
-  async syncUserDevMap(userId: string): Promise<{ nodeCount: number; verifiedCount: number; newSkills: string[] }> {
+  async syncUserDevMap(userId: string, skip: string[] = []): Promise<{ nodeCount: number; verifiedCount: number; newSkills: string[] }> {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user?.githubAccessToken || !user.githubUsername) {
       throw new NotFoundException('GitHub account not connected or token missing.');
@@ -58,8 +58,9 @@ export class GitHubSyncService {
     // threshold) and drop anything the user explicitly removed before — a
     // blacklist so a refresh never re-adds a skill they curated out.
     const excluded = new Set((user.excludedSkills ?? []).map((s) => s.toLowerCase()));
+    const skipped = new Set(skip.map((s) => s.toLowerCase()));
     const detectedTechs = allDetected.filter(
-      (t) => t.repos.length >= 2 && !excluded.has(t.canonicalTitle.toLowerCase()),
+      (t) => t.repos.length >= 2 && !excluded.has(t.canonicalTitle.toLowerCase()) && !skipped.has(t.canonicalTitle.toLowerCase()),
     );
 
     this.logger.log(
