@@ -55,9 +55,9 @@
         <button class="ua-btn ua-view" (click)="openProfile()" [disabled]="!profileUrl">
           <span class="material-icons">visibility</span> View profile
         </button>
-        <button class="ua-btn ua-refresh" (click)="refreshFromGitHub()" [disabled]="refreshing || (isGuest$ | async)">
-          <span class="material-icons" [class.spinning]="refreshing">sync</span>
-          {{ refreshing ? 'Refreshing…' : 'Refresh from GitHub' }}
+        <button class="ua-btn ua-refresh" (click)="refreshFromGitHub()" [disabled]="refreshing || previewing || (isGuest$ | async)">
+          <span class="material-icons" [class.spinning]="refreshing || previewing">sync</span>
+          {{ refreshing ? 'Refreshing…' : previewing ? 'Scanning…' : 'Refresh from GitHub' }}
         </button>
       </div>
     </section>
@@ -181,6 +181,32 @@
 
     </ng-container>
   </main>
+
+  <!-- GITHUB IMPORT PREVIEW MODAL -->
+  <div class="badge-modal-overlay" *ngIf="showImportPreview" (click)="cancelImport()">
+    <div class="badge-modal import-preview-modal" (click)="$event.stopPropagation()">
+      <div class="badge-modal-head">
+        <span class="badge-modal-title">Import from GitHub</span>
+        <button class="badge-modal-close" (click)="cancelImport()">
+          <span class="material-icons" style="font-size:1.1rem">close</span>
+        </button>
+      </div>
+      <p class="import-preview-hint">Uncheck skills you don't want to import this time. They'll show up again next sync.</p>
+      <div class="import-preview-list">
+        <label class="import-preview-item" *ngFor="let skill of previewSkills">
+          <input type="checkbox" [(ngModel)]="skill.selected" />
+          <span class="import-skill-name">{{ skill.title }}</span>
+          <span class="import-skill-repos">{{ skill.repoCount }} repo{{ skill.repoCount === 1 ? '' : 's' }}</span>
+        </label>
+      </div>
+      <div class="dialog-footer">
+        <button class="btn-secondary" (click)="cancelImport()">Cancel</button>
+        <button class="btn-primary" (click)="confirmImport()" [disabled]="selectedPreviewCount === 0">
+          Import {{ selectedPreviewCount }}
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- BADGE PREVIEW MODAL -->
   <div class="badge-modal-overlay" *ngIf="showBadgeModal" (click)="closeBadgeModal()">

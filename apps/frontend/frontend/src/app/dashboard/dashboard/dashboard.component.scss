@@ -151,6 +151,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+  flex-basis: 100%;
 }
 
 .ua-btn {
@@ -778,3 +779,14 @@
   margin: 0;
   text-align: center;
 }
+
+.import-preview-modal { max-width: 420px; width: 90vw; }
+.import-preview-hint { font-size: 0.8rem; color: var(--text-subtle); margin: 0 0 0.75rem; line-height: 1.4; }
+.import-preview-list { display: flex; flex-direction: column; gap: 0.15rem; max-height: 320px; overflow-y: auto; margin-bottom: 1rem; }
+.import-preview-item {
+  display: flex; align-items: center; gap: 0.6rem; padding: 0.45rem 0.5rem; border-radius: 6px; cursor: pointer; transition: background 0.1s;
+  &:hover { background: var(--surface-raised, rgba(255,255,255,0.04)); }
+  input[type="checkbox"] { width: 15px; height: 15px; accent-color: var(--accent); cursor: pointer; flex-shrink: 0; }
+}
+.import-skill-name { flex: 1; font-size: 0.88rem; font-weight: 500; }
+.import-skill-repos { font-size: 0.75rem; color: var(--text-subtle); }

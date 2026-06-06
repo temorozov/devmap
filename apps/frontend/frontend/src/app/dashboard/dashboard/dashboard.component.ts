@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { forkJoin, of, switchMap } from 'rxjs';
-import { TreesService, Tree } from '../../trees.service';
+import { TreesService, Tree, GuestScanSkill } from '../../trees.service';
 import { NodesService, SkillNode } from '../../nodes.service';
 import { AuthService } from '../../auth.service';
 import { DialogService } from '../../shared/services/dialog.service';
@@ -222,7 +222,11 @@ export class DashboardComponent implements OnInit {
 
   loading = true;
   refreshing = false;
+  previewing = false;
   clearing = false;
+
+  showImportPreview = false;
+  previewSkills: Array<GuestScanSkill & { selected: boolean }> = [];
   tree: Tree | null = null;
   rootId: string | null = null;
   groups: StackGroup[] = [];
@@ -354,13 +358,44 @@ export class DashboardComponent implements OnInit {
 
   // ── GitHub refresh (manual, replaces the old webhook auto-sync) ──────────
   refreshFromGitHub() {
+    this.previewing = true;
+    this.cdr.markForCheck();
+    this.treesService.previewGitHub().subscribe({
+      next: (skills) => {
+        this.previewing = false;
+        if (!skills.length) { this.doSync(); return; }
+        this.previewSkills = skills.map((s) => ({ ...s, selected: true }));
+        this.showImportPreview = true;
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.previewing = false;
+        this.dialogService.alert('GitHub refresh failed. Make sure your GitHub account is connected.');
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  confirmImport() {
+    const skip = this.previewSkills.filter((s) => !s.selected).map((s) => s.title);
+    this.showImportPreview = false;
+    this.doSync(skip);
+  }
+
+  cancelImport() {
+    this.showImportPreview = false;
+    this.previewSkills = [];
+  }
+
+  get selectedPreviewCount(): number {
+    return this.previewSkills.filter((s) => s.selected).length;
+  }
+
+  private doSync(skip: string[] = []) {
     this.refreshing = true;
     this.cdr.markForCheck();
-    this.treesService.syncGitHub().subscribe({
-      next: () => {
-        this.refreshing = false;
-        this.loadStack();
-      },
+    this.treesService.syncGitHub(skip).subscribe({
+      next: () => { this.refreshing = false; this.loadStack(); },
       error: () => {
         this.refreshing = false;
         this.dialogService.alert('GitHub refresh failed. Make sure your GitHub account is connected.');
@@ -523,10 +558,6 @@ export class DashboardComponent implements OnInit {
         this.loadStack();
       },
     });
-    // If it came from GitHub, blacklist it so a future sync won't re-add it.
-    if (skill.source === 'github') {
-      this.treesService.excludeGithubSkill(skill.title).subscribe();
-    }
   }
 
   /** Remove every skill from the stack at once (keeps the empty map ready to refill). */

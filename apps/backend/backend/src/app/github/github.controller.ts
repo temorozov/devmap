@@ -13,10 +13,16 @@ export class GitHubController {
 
   constructor(private readonly syncService: GitHubSyncService) {}
 
+  @Get('preview')
+  @UseGuards(JwtAuthGuard)
+  previewSync(@Req() req: AuthenticatedRequest) {
+    return this.syncService.previewUserSync(req.user.id);
+  }
+
   @Post('sync')
   @UseGuards(JwtAuthGuard)
-  async syncDevMap(@Req() req: AuthenticatedRequest) {
-    return this.syncService.syncUserDevMap(req.user.id);
+  async syncDevMap(@Req() req: AuthenticatedRequest, @Body() body: { skip?: string[] }) {
+    return this.syncService.syncUserDevMap(req.user.id, body.skip ?? []);
   }
 
   @Get('scan/:username')

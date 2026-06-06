@@ -59,10 +59,14 @@ export class TreesService {
     return this.http.get<PublicProfile>(`${this.apiUrl}/profile/${handle}`);
   }
 
-  syncGitHub() {
+  previewGitHub() {
+    return this.http.get<GuestScanSkill[]>(`${appRuntimeConfig.apiUrl}/github/preview`);
+  }
+
+  syncGitHub(skip: string[] = []) {
     return this.http.post<{ nodeCount: number; verifiedCount: number; newSkills: string[] }>(
       `${appRuntimeConfig.apiUrl}/github/sync`,
-      {},
+      { skip },
     );
   }
 
