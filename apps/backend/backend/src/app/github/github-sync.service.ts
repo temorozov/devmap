@@ -389,6 +389,18 @@ export class GitHubSyncService {
     return u?.githubAccessToken ?? '';
   }
 
+  async previewUserSync(userId: string): Promise<GuestScanSkill[]> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user?.githubAccessToken || !user.githubUsername) {
+      throw new NotFoundException('GitHub account not connected or token missing.');
+    }
+    const allDetected = await this.github.detectTechnologies(user.githubAccessToken, user.githubUsername);
+    const excluded = new Set((user.excludedSkills ?? []).map((s) => s.toLowerCase()));
+    return allDetected
+      .filter((t) => t.repos.length >= 2 && !excluded.has(t.canonicalTitle.toLowerCase()))
+      .map((t) => ({ title: t.canonicalTitle, category: t.category, icon: t.icon ?? '', repoCount: t.repos.length }));
+  }
+
   /** Blacklist a skill title so future GitHub syncs never re-add it. */
   async excludeSkill(userId: string, title: string): Promise<{ excludedSkills: string[] }> {
     const clean = title.trim();
