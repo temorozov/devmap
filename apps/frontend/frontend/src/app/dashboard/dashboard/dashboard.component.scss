@@ -256,6 +256,22 @@
   flex-wrap: wrap;
 }
 
+.select-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.auto-tag {
+  position: absolute;
+  right: 2rem;
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--green);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
 .add-input,
 .add-select {
   padding: 0.55rem 0.75rem;
@@ -360,12 +376,14 @@
 
   &.is-manual {
     cursor: pointer;
-    color: var(--green);
-
     &:hover {
       background: var(--green-dim, rgba(63, 185, 80, 0.12));
     }
   }
+
+  &.level-exposure  { color: #8b949e; }
+  &.level-comfortable { color: #58a6ff; }
+  &.level-strong    { color: #3fb950; }
 }
 
 .chip-repos {

@@ -97,13 +97,17 @@
             class="add-input"
             type="text"
             placeholder="e.g. Rust, Kubernetes, Figma…"
-            [(ngModel)]="newTitle"
+            [ngModel]="newTitle"
+            (ngModelChange)="onNameChange($event)"
             name="newTitle"
             autocomplete="off"
           />
-          <select class="add-select" [(ngModel)]="newCategory" name="newCategory">
-            <option *ngFor="let c of categories" [value]="c.key">{{ c.label }}</option>
-          </select>
+          <div class="select-wrap">
+            <select class="add-select" [(ngModel)]="newCategory" name="newCategory">
+              <option *ngFor="let c of categories" [value]="c.key">{{ c.label }}</option>
+            </select>
+            <span class="auto-tag" *ngIf="categoryAutoDetected">✓ auto</span>
+          </div>
           <button class="ua-btn ua-primary" type="submit" [disabled]="!newTitle.trim() || adding">
             <span class="material-icons">add</span> Add
           </button>
@@ -132,6 +136,9 @@
               <button
                 class="chip-level"
                 [class.is-manual]="skill.source !== 'github'"
+                [class.level-strong]="levelCssClass(skill) === 'level-strong'"
+                [class.level-comfortable]="levelCssClass(skill) === 'level-comfortable'"
+                [class.level-exposure]="levelCssClass(skill) === 'level-exposure'"
                 (click)="cycleLevel(skill)"
                 [title]="skill.source === 'github' ? (skill.repoCount + ' repo(s)') : 'Click to change level'"
               >

@@ -13,6 +13,27 @@ import { skillNodesToGraph, skillRepoCount } from '../../shared/components/skill
 const DEV_MAP_TITLE = 'My Dev Map';
 const STACK_ROOT_TITLE = 'Dev Skills';
 
+/** Order matters: mobile before frontend (React Native contains "react"). */
+const CATEGORY_PATTERNS: Array<[RegExp, string]> = [
+  [/react[\s.]?native|expo\b|flutter|swiftui|jetpack[\s.]?compose/i, 'mobile'],
+  [/^(javascript|typescript|python|go|golang|rust|java|kotlin|swift|c#|csharp|ruby|php|dart|elixir|scala|c\+\+|haskell|lua|perl|zig|shell|bash|clojure|ocaml|julia|groovy|assembly)$/i, 'language'],
+  [/\bangular\b|react\b|vue[\s.]?js|svelte|next[\s.]?js|nuxt|sveltekit|remix|astro|tailwind|vite\b|webpack\b|storybook/i, 'frontend'],
+  [/node[\s.]?js|express[\s.]?js?|fastify|nest[\s.]?js|hono\b|koa\b|trpc|apollo[\s.]?server|django|fastapi|flask|celery|gin\b|echo\b|fiber\b|spring[\s.]?boot|rails|laravel|phoenix|grpc/i, 'backend'],
+  [/postgres|mysql|mongodb|redis|sqlite|elasticsearch|supabase|firebase|dynamodb|cassandra|clickhouse/i, 'database'],
+  [/docker|kubernetes|k8s|helm\b|terraform|github[\s.]?actions|aws\b|gcp\b|azure|nginx|argocd|ansible|jenkins|gitlab[\s.]?ci/i, 'devops'],
+  [/jest\b|vitest|playwright|cypress|pytest|testing[\s.]?library|selenium|mocha\b|chai\b/i, 'testing'],
+  [/pytorch|tensorflow|keras|scikit|sklearn|pandas|numpy|jupyter|langchain|openai|hugging[\s.]?face|mlflow|torch\b/i, 'ml'],
+];
+
+function detectCategoryFromTitle(name: string): string | null {
+  const n = name.trim();
+  if (!n) return null;
+  for (const [pattern, category] of CATEGORY_PATTERNS) {
+    if (pattern.test(n)) return category;
+  }
+  return null;
+}
+
 /** Category metadata + the icon written onto a node so the profile can re-bucket it. */
 const CATEGORIES: Array<{ key: string; label: string; icon: string; nodeIcon: string }> = [
   { key: 'language', label: 'Languages', icon: 'code', nodeIcon: 'code' },
@@ -75,6 +96,7 @@ export class DashboardComponent implements OnInit {
   // Add-skill form
   newTitle = '';
   newCategory = 'language';
+  categoryAutoDetected = false;
   adding = false;
 
   isGuest$ = this.authService.isGuest$;
@@ -207,6 +229,24 @@ export class DashboardComponent implements OnInit {
   }
 
   // ── Manual editing ──────────────────────────────────────────────────────
+  onNameChange(name: string) {
+    this.newTitle = name;
+    const detected = detectCategoryFromTitle(name);
+    if (detected) {
+      this.newCategory = detected;
+      this.categoryAutoDetected = true;
+    } else {
+      this.categoryAutoDetected = false;
+    }
+  }
+
+  levelCssClass(skill: StackSkill): string {
+    const label = this.levelLabel(skill);
+    if (label === 'core' || label === 'strong') return 'level-strong';
+    if (label === 'familiar' || label === 'comfortable') return 'level-comfortable';
+    return 'level-exposure';
+  }
+
   addSkill() {
     const title = this.newTitle.trim();
     if (!title || this.adding) return;
