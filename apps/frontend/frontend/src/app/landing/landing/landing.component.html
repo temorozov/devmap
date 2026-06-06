@@ -38,14 +38,14 @@
       <div class="hero-copy">
         <div class="hero-eyebrow">
           <span class="eyebrow-dot"></span>
-          GitHub-verified developer portfolio
+          <span class="eyebrow-mono">devmap.sh/u/</span>you
         </div>
 
-        <h1 class="hero-h1">Your skills,<br>proven by code.</h1>
+        <h1 class="hero-h1">Your whole stack,<br><span class="h1-accent">in one link.</span></h1>
 
         <p class="hero-sub">
-          Connect GitHub. DevMap scans your repos and builds a verified skill map —
-          showing what you've actually shipped, not what you claim.
+          DevMap turns the tools you actually use into a living, interactive skill map.
+          Pull a draft from GitHub, curate it your way, and share it anywhere.
         </p>
 
         <div class="hero-actions">
@@ -59,43 +59,43 @@
               Connect GitHub — free
             </ng-container>
           </a>
-          <a class="hero-cta-secondary" [routerLink]="demoTreeUrl">
-            See an example map
-            <span class="material-icons" style="font-size:1rem">arrow_forward</span>
+          <a class="hero-cta-secondary" routerLink="/explore">
+            <span class="material-icons" style="font-size:1rem">travel_explore</span>
+            Explore other devs
           </a>
         </div>
 
         <div class="hero-proof">
           <span class="proof-item">
-            <span class="material-icons proof-icon">lock</span>
-            Read-only access
+            <span class="material-icons proof-icon">edit</span>
+            Fully editable
           </span>
           <span class="proof-sep">·</span>
           <span class="proof-item">
-            <span class="material-icons proof-icon">flash_on</span>
-            Scans in &lt;30s
+            <span class="material-icons proof-icon">bolt</span>
+            Draft in &lt;30s
           </span>
           <span class="proof-sep">·</span>
           <span class="proof-item">
-            <span class="material-icons proof-icon">share</span>
+            <span class="material-icons proof-icon">public</span>
             Public at /u/yourhandle
           </span>
         </div>
 
-        <!-- Mobile-only: verified skill chip preview -->
+        <!-- Mobile-only: stack chip preview -->
         <div class="hero-mobile-preview" aria-hidden="true">
           <div class="mobile-preview-label">
-            <span class="material-icons" style="font-size:0.75rem;color:var(--green)">verified</span>
-            Detected from your repos
+            <span class="material-icons" style="font-size:0.75rem;color:var(--green)">hub</span>
+            Your stack
           </div>
           <div class="mobile-chips">
             <span class="mchip mchip-green">TypeScript</span>
             <span class="mchip mchip-green">React</span>
-            <span class="mchip mchip-green">Docker</span>
+            <span class="mchip mchip-blue">Docker</span>
             <span class="mchip mchip-green">Node.js</span>
-            <span class="mchip mchip-green">PostgreSQL</span>
-            <span class="mchip mchip-dim">Go</span>
-            <span class="mchip mchip-dim">Rust</span>
+            <span class="mchip mchip-blue">PostgreSQL</span>
+            <span class="mchip mchip-purple">Go</span>
+            <span class="mchip mchip-purple">Rust</span>
           </div>
         </div>
       </div>
@@ -121,8 +121,8 @@
     <div class="section-inner">
       <div class="section-head">
         <span class="sec-kicker"><span class="sk-num">01</span> · HOW IT WORKS</span>
-        <h2>Verified in 30 seconds</h2>
-        <p>No forms, no self-reporting. Your repos speak for themselves.</p>
+        <h2>From repos to a shareable map in three steps</h2>
+        <p>Start from your GitHub, then make it yours. No forms, no résumé busywork.</p>
       </div>
 
       <div class="steps">
@@ -132,8 +132,8 @@
             <div class="step-icon-wrap">
               <svg class="step-gh-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg>
             </div>
-            <h3>Connect GitHub</h3>
-            <p>One click. We request read-only access to your public repos — nothing is written back.</p>
+            <h3>Pull a draft</h3>
+            <p>Connect GitHub and we read your repos to draft a starting stack — or begin from a blank canvas.</p>
           </div>
         </div>
 
@@ -145,10 +145,10 @@
           <div class="step-num">2</div>
           <div class="step-body">
             <div class="step-icon-wrap">
-              <span class="material-icons step-icon">search</span>
+              <span class="material-icons step-icon">tune</span>
             </div>
-            <h3>We scan your repos</h3>
-            <p>DevMap reads your package.json, Dockerfiles, and CI workflows — detecting 50+ technologies automatically.</p>
+            <h3>Curate it</h3>
+            <p>Add, remove, and set your level on every skill. It's your map — keep what matters, drop the noise.</p>
           </div>
         </div>
 
@@ -160,90 +160,86 @@
           <div class="step-num">3</div>
           <div class="step-body">
             <div class="step-icon-wrap">
-              <span class="material-icons step-icon">verified</span>
+              <span class="material-icons step-icon">ios_share</span>
             </div>
-            <h3>Skills appear verified</h3>
-            <p>Each skill links back to the repos that prove it. Share the URL and let your code do the talking.</p>
+            <h3>Share one link</h3>
+            <p>Your map lives at /u/yourhandle. Drop it in your bio, résumé, or repo README — no login to view.</p>
           </div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- PROOF SECTION: Skill detail mockup -->
+  <!-- SHOWCASE: real stack-editor preview -->
   <section class="proof-section">
     <div class="section-inner proof-inner">
       <div class="proof-copy">
-        <span class="sec-kicker"><span class="sk-num">02</span> · EVIDENCE</span>
-        <h2>Every skill links to real evidence</h2>
+        <span class="sec-kicker"><span class="sk-num">02</span> · YOUR STACK, YOUR WAY</span>
+        <h2>A map you control, not a wall of badges</h2>
         <p class="proof-sub">
-          Verified skills show exactly which repos they come from — not a badge you clicked yourself.
+          GitHub gives you a head start. From there, every skill is yours to keep, cut, or level up —
+          grouped into a clean map recruiters and fellow devs can read in seconds.
         </p>
 
         <ul class="proof-bullets">
           <li>
-            <span class="material-icons proof-bullet-icon">verified</span>
+            <span class="material-icons proof-bullet-icon">tune</span>
             <div>
-              <strong>Code-verified, not self-reported</strong>
-              <span>Skills come from your actual package.json, Dockerfiles, and workflow files.</span>
+              <strong>Curated, not auto-locked</strong>
+              <span>The GitHub scan is a draft. You decide what stays and how it's grouped.</span>
             </div>
           </li>
           <li>
-            <span class="material-icons proof-bullet-icon">link</span>
+            <span class="material-icons proof-bullet-icon">signal_cellular_alt</span>
             <div>
-              <strong>Repo evidence attached</strong>
-              <span>Click any skill to see which repos prove it, with direct links.</span>
+              <strong>Levels you set yourself</strong>
+              <span>Mark each skill core, comfortable, or just exposure — honest by design.</span>
             </div>
           </li>
           <li>
-            <span class="material-icons proof-bullet-icon">person</span>
+            <span class="material-icons proof-bullet-icon">code</span>
             <div>
-              <strong>Shareable public profile</strong>
-              <span>Your map lives at /u/yourhandle — no login needed for viewers.</span>
+              <strong>One link &amp; a README badge</strong>
+              <span>Share /u/yourhandle anywhere, or embed a live badge straight in a repo.</span>
             </div>
           </li>
         </ul>
       </div>
 
-      <!-- Skill detail card mockup -->
-      <div class="proof-panel" aria-hidden="true">
-        <div class="pp-header">
-          <span class="pp-title">Skill detail</span>
-          <span class="material-icons pp-close">close</span>
-        </div>
-
-        <div class="pp-skill-row">
-          <div class="pp-skill-icon">
-            <span class="material-icons">web</span>
+      <!-- Stack editor preview mockup (mirrors the real dashboard) -->
+      <div class="stack-preview" aria-hidden="true">
+        <div class="sp-header">
+          <div class="sp-avatar">A</div>
+          <div class="sp-meta">
+            <div class="sp-handle">&#64;alexdev</div>
+            <div class="sp-sub">14 skills in your stack</div>
           </div>
-          <div class="pp-skill-info">
-            <div class="pp-skill-name">React</div>
-            <div class="pp-verified-badge">
-              <span class="material-icons" style="font-size:0.8rem">verified</span>
-              Verified by GitHub
-            </div>
-          </div>
+          <span class="sp-share"><span class="material-icons">ios_share</span></span>
         </div>
 
-        <div class="pp-block">
-          <div class="pp-block-label">CATEGORY</div>
-          <div class="pp-block-val">Frontend</div>
-        </div>
-
-        <div class="pp-block">
-          <div class="pp-block-label">EVIDENCE</div>
-          <div class="pp-block-val">Detected in 8 repos</div>
-          <div class="pp-repos">
-            <span class="pp-repo">my-portfolio</span>
-            <span class="pp-repo">saas-app</span>
-            <span class="pp-repo">react-dashboard</span>
-            <span class="pp-repo">+5 more</span>
+        <div class="sp-group">
+          <div class="sp-group-head"><span class="material-icons">code</span> Languages</div>
+          <div class="sp-chips">
+            <span class="sp-chip"><b>TypeScript</b><i class="lv lv-strong">strong</i></span>
+            <span class="sp-chip"><b>Python</b><i class="lv lv-mid">comfortable</i></span>
+            <span class="sp-chip sp-add">Go<i class="lv lv-low">exposure</i></span>
           </div>
         </div>
 
-        <div class="pp-block">
-          <div class="pp-block-label">LAST SEEN</div>
-          <div class="pp-block-val pp-mono">3 days ago</div>
+        <div class="sp-group">
+          <div class="sp-group-head"><span class="material-icons">web</span> Frontend</div>
+          <div class="sp-chips">
+            <span class="sp-chip"><b>React</b><i class="lv lv-strong">strong</i></span>
+            <span class="sp-chip"><b>Next.js</b><i class="lv lv-mid">comfortable</i></span>
+          </div>
+        </div>
+
+        <div class="sp-group">
+          <div class="sp-group-head"><span class="material-icons">cloud</span> DevOps</div>
+          <div class="sp-chips">
+            <span class="sp-chip"><b>Docker</b><i class="lv lv-strong">strong</i></span>
+            <span class="sp-chip sp-add">Kubernetes<i class="lv lv-low">exposure</i></span>
+          </div>
         </div>
       </div>
     </div>
@@ -254,40 +250,40 @@
     <div class="section-inner">
       <div class="section-head">
         <span class="sec-kicker"><span class="sk-num">03</span> · WHY DEVMAP</span>
-        <h2>Why it's more than a resume</h2>
+        <h2>More than a list of technologies</h2>
       </div>
 
       <div class="feat-grid">
         <div class="feat-card">
-          <div class="feat-icon feat-icon-green">
-            <span class="material-icons">verified</span>
+          <div class="feat-icon feat-icon-purple">
+            <span class="material-icons">hub</span>
           </div>
-          <h3>Code-verified, not self-reported</h3>
-          <p>Every skill shows which repos contain it. Credible because it's automatic, not because you said so.</p>
+          <h3>An interactive skill map</h3>
+          <p>Skills become a live, force-directed graph — sized by usage, grouped by category, connected by what builds on what.</p>
+        </div>
+
+        <div class="feat-card">
+          <div class="feat-icon feat-icon-green">
+            <span class="material-icons">rocket_launch</span>
+          </div>
+          <h3>A head start from GitHub</h3>
+          <p>Connect once and we draft your stack from your repos — then it's fully yours to edit. Refresh whenever you like.</p>
         </div>
 
         <div class="feat-card">
           <div class="feat-icon feat-icon-blue">
-            <span class="material-icons">share</span>
+            <span class="material-icons">public</span>
           </div>
-          <h3>Public profile to share</h3>
-          <p>/u/yourhandle is a living portfolio page that updates each time you sync — link it anywhere.</p>
-        </div>
-
-        <div class="feat-card">
-          <div class="feat-icon feat-icon-purple">
-            <span class="material-icons">auto_awesome</span>
-          </div>
-          <h3>Visual skill map</h3>
-          <p>Skills are organized into an interactive map — grouped by category, with connections between related skills.</p>
+          <h3>A profile worth sharing</h3>
+          <p>/u/yourhandle is a clean, fast public page — no login needed for anyone you send it to.</p>
         </div>
 
         <div class="feat-card">
           <div class="feat-icon feat-icon-orange">
-            <span class="material-icons">sync</span>
+            <span class="material-icons">code</span>
           </div>
-          <h3>Stays current automatically</h3>
-          <p>Re-sync any time. New repos, new deps — your map reflects where you are today.</p>
+          <h3>A badge for your README</h3>
+          <p>Embed a live DevMap badge in any repo so your stack travels with your work.</p>
         </div>
       </div>
     </div>
@@ -296,8 +292,8 @@
   <!-- FINAL CTA -->
   <section class="final-cta">
     <div class="final-inner">
-      <h2>Let your repos speak.</h2>
-      <p>Connect GitHub. Get your verified dev map in under a minute. Share it, use it for job applications, or keep it for yourself.</p>
+      <h2>Show what you build.</h2>
+      <p>Map your stack and share it in one link — free. Start from GitHub or a blank canvas, and make it exactly yours.</p>
       <a class="hero-cta-primary" [routerLink]="authEntryRoute">
         <ng-container *ngIf="isLoggedIn">
           <span class="material-icons" style="font-size:1.1rem">dashboard</span>
@@ -324,7 +320,7 @@
         </svg>
         DevMap
       </a>
-      <span class="footer-copy">GitHub-verified developer skill maps</span>
+      <span class="footer-copy">Show your dev stack, beautifully.</span>
       <nav class="footer-links">
         <a routerLink="/explore" class="footer-link">Explore</a>
         <a routerLink="/login" class="footer-link">Sign in</a>

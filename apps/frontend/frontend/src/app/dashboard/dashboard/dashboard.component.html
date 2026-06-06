@@ -84,8 +84,15 @@
       <!-- MAP -->
       <section class="stack-map" *ngIf="hasGraph">
         <span class="section-kicker"><span class="sk-dot">◆</span> SKILL MAP</span>
-        <div class="map-stage">
-          <app-skill-graph [nodes]="graphNodes"></app-skill-graph>
+        <div class="graph-frame">
+          <div class="graph-frame-bar">
+            <span class="gf-dot"></span><span class="gf-dot"></span><span class="gf-dot"></span>
+            <span class="gf-path">devmap.sh/u/{{ (handle$ | async) || (githubUsername$ | async) || 'you' }}</span>
+            <span class="gf-live"><i></i>live</span>
+          </div>
+          <div class="graph-frame-stage">
+            <app-skill-graph [nodes]="graphNodes"></app-skill-graph>
+          </div>
         </div>
       </section>
 
@@ -102,21 +109,33 @@
             name="newTitle"
             autocomplete="off"
           />
-          <div class="select-wrap">
-            <select class="add-select" [(ngModel)]="newCategory" name="newCategory">
+          <div class="select-wrap" [class.is-multi]="pendingCount > 1">
+            <select class="add-select" [(ngModel)]="newCategory" name="newCategory" [disabled]="pendingCount > 1">
               <option *ngFor="let c of categories" [value]="c.key">{{ c.label }}</option>
             </select>
-            <span class="auto-tag" *ngIf="categoryAutoDetected">✓ auto</span>
+            <span class="auto-tag" *ngIf="categoryAutoDetected && pendingCount <= 1">✓ auto</span>
+            <span class="auto-tag" *ngIf="pendingCount > 1">auto · {{ pendingCount }}</span>
           </div>
-          <button class="ua-btn ua-primary" type="submit" [disabled]="!newTitle.trim() || adding">
-            <span class="material-icons">add</span> Add
+          <button class="ua-btn ua-primary" type="submit" [disabled]="!pendingCount || adding">
+            <span class="material-icons">add</span>
+            {{ pendingCount > 1 ? 'Add ' + pendingCount : 'Add' }}
           </button>
         </form>
+        <p class="add-hint">
+          <span class="material-icons">lightbulb</span>
+          Paste a comma-separated list to add several at once — each is sorted into a category automatically.
+        </p>
       </section>
 
       <!-- STACK -->
       <section class="stack-list" *ngIf="totalSkills > 0">
-        <span class="section-kicker"><span class="sk-dot">◆</span> STACK · {{ totalSkills }}</span>
+        <div class="stack-list-head">
+          <span class="section-kicker"><span class="sk-dot">◆</span> STACK · {{ totalSkills }}</span>
+          <button class="clear-all" (click)="clearStack()" [disabled]="clearing">
+            <span class="material-icons">{{ clearing ? 'hourglass_empty' : 'delete_sweep' }}</span>
+            {{ clearing ? 'Clearing…' : 'Clear all' }}
+          </button>
+        </div>
 
         <div class="stack-group" *ngFor="let group of groups; trackBy: trackByGroup">
           <div class="group-head">
@@ -135,12 +154,11 @@
 
               <button
                 class="chip-level"
-                [class.is-manual]="skill.source !== 'github'"
                 [class.level-strong]="levelCssClass(skill) === 'level-strong'"
                 [class.level-comfortable]="levelCssClass(skill) === 'level-comfortable'"
                 [class.level-exposure]="levelCssClass(skill) === 'level-exposure'"
                 (click)="cycleLevel(skill)"
-                [title]="skill.source === 'github' ? (skill.repoCount + ' repo(s)') : 'Click to change level'"
+                title="Click to change your level"
               >
                 {{ levelLabel(skill) }}
                 <span class="chip-repos" *ngIf="skill.source === 'github' && skill.repoCount > 0">· {{ skill.repoCount }}</span>

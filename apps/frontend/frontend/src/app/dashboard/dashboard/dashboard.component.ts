@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit, inject }
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
-import { of, switchMap } from 'rxjs';
+import { forkJoin, of, switchMap } from 'rxjs';
 import { TreesService, Tree } from '../../trees.service';
 import { NodesService, SkillNode } from '../../nodes.service';
 import { AuthService } from '../../auth.service';
@@ -85,6 +85,7 @@ export class DashboardComponent implements OnInit {
 
   loading = true;
   refreshing = false;
+  clearing = false;
   tree: Tree | null = null;
   rootId: string | null = null;
   groups: StackGroup[] = [];
@@ -229,9 +230,32 @@ export class DashboardComponent implements OnInit {
   }
 
   // ── Manual editing ──────────────────────────────────────────────────────
+  /** Split a raw input into distinct skill titles ("Figma, Kubernetes" → two). */
+  private parseTitles(raw: string): string[] {
+    const seen = new Set<string>();
+    return raw
+      .split(/[,\n]+/)
+      .map((t) => t.trim())
+      .filter((t) => {
+        if (!t) return false;
+        const key = t.toLowerCase();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+  }
+
+  /** How many skills the current input will add (drives the button label). */
+  get pendingCount(): number {
+    return this.parseTitles(this.newTitle).length;
+  }
+
   onNameChange(name: string) {
     this.newTitle = name;
-    const detected = detectCategoryFromTitle(name);
+    const titles = this.parseTitles(name);
+    // The category picker only applies when a single skill is entered; a
+    // comma-separated batch auto-detects each skill independently.
+    const detected = titles.length === 1 ? detectCategoryFromTitle(titles[0]) : null;
     if (detected) {
       this.newCategory = detected;
       this.categoryAutoDetected = true;
@@ -248,30 +272,37 @@ export class DashboardComponent implements OnInit {
   }
 
   addSkill() {
-    const title = this.newTitle.trim();
-    if (!title || this.adding) return;
-    const meta = CATEGORY_BY_KEY.get(this.newCategory) ?? CATEGORIES[0];
+    const titles = this.parseTitles(this.newTitle);
+    if (!titles.length || this.adding) return;
     this.adding = true;
     this.cdr.markForCheck();
 
     this.ensureRoot()
       .pipe(
         switchMap(({ treeId, rootId }) =>
-          this.nodesService.createNode({
-            treeId,
-            parentId: rootId,
-            title,
-            icon: meta.nodeIcon,
-            positionX: 0,
-            positionY: 0,
-            level: 1,
-            maxLevel: 3,
-          }),
+          forkJoin(
+            titles.map((title) => {
+              // Auto-bucket each skill; fall back to the picked category.
+              const key = detectCategoryFromTitle(title) ?? this.newCategory;
+              const meta = CATEGORY_BY_KEY.get(key) ?? CATEGORIES[0];
+              return this.nodesService.createNode({
+                treeId,
+                parentId: rootId,
+                title,
+                icon: meta.nodeIcon,
+                positionX: 0,
+                positionY: 0,
+                level: 1,
+                maxLevel: 3,
+              });
+            }),
+          ),
         ),
       )
       .subscribe({
         next: () => {
           this.newTitle = '';
+          this.categoryAutoDetected = false;
           this.adding = false;
           this.loadStack();
         },
@@ -310,34 +341,57 @@ export class DashboardComponent implements OnInit {
       );
   }
 
-  async removeSkill(skill: StackSkill) {
-    if (!(await this.dialogService.confirm(`Remove ${skill.title} from your stack?`))) return;
+  /** Instant removal — no confirmation, removal is cheap and reversible by re-adding. */
+  removeSkill(skill: StackSkill) {
+    // Optimistic: drop it from the UI immediately, then persist.
+    this.groups = this.groups
+      .map((g) => ({ ...g, skills: g.skills.filter((s) => s.id !== skill.id) }))
+      .filter((g) => g.skills.length > 0);
+    this.graphNodes = this.graphNodes.filter((n) => n.id !== skill.id);
+    this.cdr.markForCheck();
     this.nodesService.deleteNode(skill.id).subscribe({
-      next: () => {
-        this.groups = this.groups
-          .map((g) => ({ ...g, skills: g.skills.filter((s) => s.id !== skill.id) }))
-          .filter((g) => g.skills.length > 0);
-        this.graphNodes = this.graphNodes.filter((n) => n.id !== skill.id);
-        this.cdr.markForCheck();
+      error: () => {
+        this.dialogService.alert('Could not remove skill.');
+        this.loadStack();
       },
-      error: () => this.dialogService.alert('Could not remove skill.'),
     });
   }
 
-  /** Cycle a manually-added skill through proficiency levels 1 → 2 → 3. */
+  /** Remove every skill from the stack at once (keeps the empty map ready to refill). */
+  async clearStack() {
+    if (!this.totalSkills || this.clearing) return;
+    if (!(await this.dialogService.confirm(`Remove all ${this.totalSkills} skills from your stack?`))) return;
+    const ids = this.groups.flatMap((g) => g.skills.map((s) => s.id));
+    this.clearing = true;
+    this.cdr.markForCheck();
+    forkJoin(ids.map((id) => this.nodesService.deleteNode(id))).subscribe({
+      next: () => {
+        this.clearing = false;
+        this.loadStack();
+      },
+      error: () => {
+        this.clearing = false;
+        this.dialogService.alert('Could not clear the stack.');
+        this.loadStack();
+      },
+    });
+  }
+
+  /** Cycle any skill through proficiency levels 1 → 2 → 3; recolours its map node live. */
   cycleLevel(skill: StackSkill) {
-    if (skill.source === 'github') return; // github tiers are derived from repos
     const level = (skill.level % 3) + 1;
     this.nodesService.updateNode(skill.id, { level }).subscribe({
       next: () => {
         skill.level = level;
+        const tier: SkillGraphNode['tier'] = level >= 3 ? 'core' : level >= 2 ? 'familiar' : 'exposure';
+        // New array reference so the graph's OnPush change detection re-runs.
+        this.graphNodes = this.graphNodes.map((n) => (n.id === skill.id ? { ...n, tier } : n));
         this.cdr.markForCheck();
       },
     });
   }
 
   levelLabel(skill: StackSkill): string {
-    if (skill.source === 'github') return skill.tier;
     return ['', 'beginner', 'comfortable', 'strong'][skill.level] ?? 'beginner';
   }
 

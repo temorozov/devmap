@@ -8,10 +8,15 @@ export function skillRepoCount(node: Pick<SkillNode, 'evidence'>): number {
   return meta ? ((meta['repoCount'] as number) ?? 0) : ev.filter((e) => !e['_meta']).length;
 }
 
-function tierFor(node: Pick<SkillNode, 'verified' | 'evidence'>): SkillTier {
-  if (!node.verified) return 'exposure';
-  const r = skillRepoCount(node);
-  return r >= 5 ? 'core' : r >= 2 ? 'familiar' : 'exposure';
+/**
+ * Proficiency tier (drives node colour). Level is the single source of truth so
+ * a user editing a skill — github-synced or manual — recolours it consistently.
+ * GitHub sync seeds level from repo count (capped at 3), so synced skills still
+ * start out sensibly coloured before any manual tweak.
+ */
+function tierFor(node: Pick<SkillNode, 'level'>): SkillTier {
+  const lvl = node.level ?? 1;
+  return lvl >= 3 ? 'core' : lvl >= 2 ? 'familiar' : 'exposure';
 }
 
 /**

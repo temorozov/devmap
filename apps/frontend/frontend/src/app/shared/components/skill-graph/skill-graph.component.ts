@@ -89,6 +89,8 @@ export class SkillGraphComponent implements AfterViewInit, OnChanges, OnDestroy 
   private resizeObs: ResizeObserver | null = null;
   /** Signature of the current node set; guards against unstable @Input arrays. */
   private sig = '';
+  /** Topology signature (ids + edges) — distinguishes a recolour from a rebuild. */
+  private topo = '';
 
   // pointer interaction
   private dragNode: SimNode | null = null;
@@ -100,6 +102,7 @@ export class SkillGraphComponent implements AfterViewInit, OnChanges, OnDestroy 
   ngAfterViewInit(): void {
     this.measure();
     this.sig = this.signatureOf(this.nodes);
+    this.topo = this.topologyOf(this.nodes);
     this.build();
     this.resizeObs = new ResizeObserver(() => this.measure());
     this.resizeObs.observe(this.hostRef.nativeElement);
@@ -114,13 +117,42 @@ export class SkillGraphComponent implements AfterViewInit, OnChanges, OnDestroy 
     const next = this.signatureOf(this.nodes);
     if (next === this.sig) return;
     this.sig = next;
-    this.build();
+    // Same nodes & edges, only tier/size changed (e.g. a level edit): patch the
+    // existing nodes in place so positions don't re-randomise ("explode").
+    const nextTopo = this.topologyOf(this.nodes);
+    if (nextTopo === this.topo) {
+      this.patch();
+    } else {
+      this.topo = nextTopo;
+      this.build();
+    }
   }
 
   private signatureOf(nodes: SkillGraphNode[]): string {
     return nodes
       .map((n) => `${n.id}:${n.tier}:${n.repos}:${(n.deps ?? []).join('.')}`)
       .join('|');
+  }
+
+  /** Identity of the graph shape — node ids and their edges, order-independent. */
+  private topologyOf(nodes: SkillGraphNode[]): string {
+    return nodes
+      .map((n) => `${n.id}:${(n.deps ?? []).join('.')}`)
+      .sort()
+      .join('|');
+  }
+
+  /** Recolour / resize nodes without disturbing their current positions. */
+  private patch(): void {
+    const byId = new Map(this.nodes.map((n) => [n.id, n]));
+    for (const s of this.sim) {
+      const n = byId.get(s.id);
+      if (!n) continue;
+      s.tier = n.tier;
+      s.repos = n.repos;
+      s.r = this.radiusFor(n.repos);
+    }
+    this.cdr.markForCheck();
   }
 
   ngOnDestroy(): void {
