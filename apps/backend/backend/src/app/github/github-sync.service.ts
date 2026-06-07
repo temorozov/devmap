@@ -54,11 +54,17 @@ export class GitHubSyncService {
 
     const allDetected = await this.github.detectTechnologies(user.githubAccessToken, user.githubUsername);
 
-    // Cut the noise: keep skills seen in 2+ repos (matches the guest-scan threshold).
-    // Per-sync skips come from the preview modal (user unchecks skills they don't want this time).
+    // Cut the noise: keep skills seen in 2+ repos (matches the guest-scan threshold),
+    // drop anything the user permanently excluded (so webhook-triggered re-syncs
+    // don't silently bring back skills they removed), and honor this sync's
+    // one-off skips from the preview modal.
+    const excluded = new Set((user.excludedSkills ?? []).map((s) => s.toLowerCase()));
     const skipped = new Set(skip.map((s) => s.toLowerCase()));
     const detectedTechs = allDetected.filter(
-      (t) => t.repos.length >= 2 && !skipped.has(t.canonicalTitle.toLowerCase()),
+      (t) =>
+        t.repos.length >= 2 &&
+        !excluded.has(t.canonicalTitle.toLowerCase()) &&
+        !skipped.has(t.canonicalTitle.toLowerCase()),
     );
 
     this.logger.log(

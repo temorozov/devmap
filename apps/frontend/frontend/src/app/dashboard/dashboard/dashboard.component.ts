@@ -377,8 +377,13 @@ export class DashboardComponent implements OnInit {
   }
 
   confirmImport() {
+    const selected = this.previewSkills.filter((s) => s.selected).map((s) => s.title);
     const skip = this.previewSkills.filter((s) => !s.selected).map((s) => s.title);
     this.showImportPreview = false;
+    // Persist the choice so a later webhook-triggered re-sync respects it too —
+    // unchecking here previously only skipped this one sync.
+    for (const title of skip) this.treesService.excludeGithubSkill(title).subscribe();
+    for (const title of selected) this.treesService.allowGithubSkill(title).subscribe();
     this.doSync(skip);
   }
 
