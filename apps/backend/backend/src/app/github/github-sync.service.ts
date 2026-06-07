@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
+import { ConflictException, Injectable, Logger, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import axios from 'axios';
 import { PrismaService } from '../prisma/prisma.service';
 import { GitHubService, GITHUB_USER_NOT_FOUND } from './github.service';
@@ -27,6 +27,11 @@ export interface GuestScanResult {
 export class GitHubSyncService {
   private readonly logger = new Logger(GitHubSyncService.name);
   private readonly guestScanCache = new Map<string, { data: GuestScanResult; at: number }>();
+  // Guards against overlapping syncs for the same user (e.g. several push webhooks
+  // firing close together, or a webhook racing a manual refresh): each sync deletes
+  // and recreates 'github' nodes in its own transaction, so two run concurrently
+  // can each miss the other's rows and leave duplicate nodes behind.
+  private readonly syncsInProgress = new Set<string>();
 
   constructor(
     private readonly prisma: PrismaService,
@@ -35,6 +40,19 @@ export class GitHubSyncService {
   ) {}
 
   async syncUserDevMap(userId: string, skip: string[] = []): Promise<{ nodeCount: number; verifiedCount: number; newSkills: string[] }> {
+    if (this.syncsInProgress.has(userId)) {
+      this.logger.warn(`Sync already in progress for user ${userId} — skipping overlapping run`);
+      throw new ConflictException('A GitHub sync is already running for this account. Try again in a moment.');
+    }
+    this.syncsInProgress.add(userId);
+    try {
+      return await this.runSync(userId, skip);
+    } finally {
+      this.syncsInProgress.delete(userId);
+    }
+  }
+
+  private async runSync(userId: string, skip: string[]): Promise<{ nodeCount: number; verifiedCount: number; newSkills: string[] }> {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user?.githubAccessToken || !user.githubUsername) {
       throw new NotFoundException('GitHub account not connected or token missing.');
@@ -195,7 +213,16 @@ export class GitHubSyncService {
     }
 
     this.logger.log(`Webhook-triggered sync for repo: ${repoFullName}, userId: ${webhook.userId}`);
-    await this.syncUserDevMap(webhook.userId);
+    try {
+      await this.syncUserDevMap(webhook.userId);
+    } catch (err: unknown) {
+      if (err instanceof ConflictException) {
+        // Another sync (manual or another push) is already covering this user — fine to skip.
+        this.logger.log(`Skipped webhook sync for ${repoFullName}: ${err.message}`);
+        return;
+      }
+      throw err;
+    }
   }
 
   private extractRepoFullNames(techs: DetectedTech[]): Set<string> {
