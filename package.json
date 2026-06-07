@@ -1,7 +1,7 @@
 {
   "name": "@devmap/source",
   "version": "0.0.0",
-  "license": "MIT",
+  "license": "UNLICENSED",
   "scripts": {
     "dev": "./scripts/dev-fast.sh",
     "dev:down": "./scripts/dev-down.sh",
