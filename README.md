@@ -29,8 +29,8 @@ Add the skills the scan missed, drop the ones that don't represent you anymore, 
 
 Your public profile at `/u/handle` pairs a clean user card with an interactive skill map and your stack grouped by category, plus an OG preview that looks right when someone shares it on Slack or Twitter.
 
-![Public profile page](docs/screenshots/profile.png)
-*A public DevMap profile end to end: card, skill map, and stack grouped by category.*
+![Public profile page](docs/screenshots/bottom-profile-page.png)
+*The skill map and stack, grouped by category, on a public DevMap profile.*
 
 ### 4. Drop a badge in your README
 
