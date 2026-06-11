@@ -113,15 +113,59 @@ export class GitHubSyncService {
     const positions = computeTreeLayout(layoutInput.map((n) => ({ parentIndex: n.parentIndex })));
 
     await this.prisma.$transaction(async (tx) => {
-      // Delete existing verified/github nodes to re-sync cleanly
-      await tx.node.deleteMany({ where: { treeId, source: 'github' } });
+      const githubNodes = await tx.node.findMany({
+        where: { treeId, source: 'github' },
+        select: { id: true },
+      });
+      const githubNodeIds = githubNodes.map((n) => n.id);
 
-      const idMap = new Map<string, string>();
+      // Keep the structural root out of the GitHub-delete sweep, otherwise any
+      // manual nodes attached to it can be turned into orphans.
+      let root = await tx.node.findFirst({
+        where: { treeId, parentId: null },
+        orderBy: { createdAt: 'asc' },
+      });
+      if (root) {
+        if (root.source === 'github') {
+          root = await tx.node.update({
+            where: { id: root.id },
+            data: { source: 'manual' },
+          });
+        }
+      } else {
+        root = await tx.node.create({
+          data: {
+            treeId,
+            title: DEV_MAP_TITLE,
+            icon: 'account_tree',
+            positionX: 0,
+            positionY: 0,
+            level: 0,
+            maxLevel: 3,
+            progress: 0,
+            verified: false,
+            source: 'manual',
+          },
+        });
+      }
 
-      // Reuse an existing manual root so we never end up with two parentId=null nodes.
-      const existingRoot = await tx.node.findFirst({ where: { treeId, parentId: null } });
-      if (existingRoot) {
-        idMap.set('Dev Skills', existingRoot.id);
+      const idMap = new Map<string, string>([['Dev Skills', root.id]]);
+
+      if (githubNodeIds.length > 0) {
+        await tx.node.updateMany({
+          where: {
+            treeId,
+            source: { not: 'github' },
+            parentId: { in: githubNodeIds },
+          },
+          data: {
+            parentId: root.id,
+          },
+        });
+
+        // Delete existing GitHub nodes only after manual descendants are
+        // attached somewhere safe.
+        await tx.node.deleteMany({ where: { treeId, source: 'github' } });
       }
 
       for (let i = 0; i < layoutInput.length; i++) {

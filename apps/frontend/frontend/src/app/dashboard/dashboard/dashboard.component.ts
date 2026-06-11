@@ -588,7 +588,8 @@ export class DashboardComponent implements OnInit {
     try {
       // Delete leaves first, then work upward. The DB rejects removing a node
       // while any child still exists, so bulk clear must peel the tree level by
-      // level instead of firing the whole stack in parallel.
+      // level instead of firing the whole stack in parallel. Include roots too,
+      // otherwise structural/orphan nodes survive as "ghosts".
       for (const ids of this.skillIdsByDepthDescending()) {
         if (ids.length) await firstValueFrom(forkJoin(ids.map((id) => this.nodesService.deleteNode(id))));
       }
@@ -602,24 +603,24 @@ export class DashboardComponent implements OnInit {
   }
 
   /**
-   * Group skill ids from leaves upward so bulk deletion can safely remove
+   * Group node ids from leaves upward so bulk deletion can safely remove
    * children before their parents, regardless of API response order.
    */
   private skillIdsByDepthDescending(): string[][] {
-    const skills = this.currentNodes.filter((node) => node.parentId);
-    if (!skills.length) return [];
+    const nodes = this.currentNodes;
+    if (!nodes.length) return [];
 
-    const parentById = new Map(skills.map((node) => [node.id, node.parentId as string]));
-    const childCount = new Map<string, number>(skills.map((node) => [node.id, 0]));
+    const parentById = new Map(nodes.map((node) => [node.id, node.parentId ?? null]));
+    const childCount = new Map<string, number>(nodes.map((node) => [node.id, 0]));
 
-    for (const node of skills) {
+    for (const node of nodes) {
       const parentId = node.parentId;
       if (!parentId || !childCount.has(parentId)) continue;
       childCount.set(parentId, (childCount.get(parentId) ?? 0) + 1);
     }
 
-    const remaining = new Set(skills.map((node) => node.id));
-    const orderedIds = skills.map((node) => node.id);
+    const remaining = new Set(nodes.map((node) => node.id));
+    const orderedIds = nodes.map((node) => node.id);
     const layers: string[][] = [];
 
     while (remaining.size) {

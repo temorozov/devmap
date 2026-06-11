@@ -72,6 +72,6 @@ describe('DashboardComponent', () => {
 
     await component.clearStack();
 
-    expect(deleted).toEqual(['nest', 'ng', 'aio', 'ts', 'n8n']);
+    expect(deleted).toEqual(['nest', 'ng', 'aio', 'ts', 'n8n', 'root']);
   });
 });
