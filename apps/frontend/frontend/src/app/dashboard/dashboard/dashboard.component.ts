@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit, inject }
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
-import { forkJoin, of, switchMap } from 'rxjs';
+import { firstValueFrom, forkJoin, of, switchMap } from 'rxjs';
 import { TreesService, Tree, GuestScanSkill } from '../../trees.service';
 import { NodesService, SkillNode } from '../../nodes.service';
 import { AuthService } from '../../auth.service';
@@ -227,6 +227,9 @@ export class DashboardComponent implements OnInit {
 
   showImportPreview = false;
   previewSkills: Array<GuestScanSkill & { selected: boolean }> = [];
+
+  /** Raw nodes from the last load — kept around so bulk deletes can respect parent/child order. */
+  private currentNodes: SkillNode[] = [];
   tree: Tree | null = null;
   rootId: string | null = null;
   groups: StackGroup[] = [];
@@ -309,6 +312,7 @@ export class DashboardComponent implements OnInit {
   }
 
   private applyNodes(nodes: SkillNode[]) {
+    this.currentNodes = nodes;
     this.rootId = nodes.find((n) => !n.parentId)?.id ?? null;
     this.graphNodes = skillNodesToGraph(nodes);
     this.groups = this.buildGroups(nodes);
@@ -330,7 +334,9 @@ export class DashboardComponent implements OnInit {
             ? 'familiar'
             : 'exposure'
         : 'exposure';
-      byKey.get(key)!.skills.push({
+      const group = byKey.get(key);
+      if (!group) continue;
+      group.skills.push({
         id: node.id,
         title: node.title,
         source: (node.source as StackSkill['source']) ?? 'manual',
@@ -577,20 +583,65 @@ export class DashboardComponent implements OnInit {
   async clearStack() {
     if (!this.totalSkills || this.clearing) return;
     if (!(await this.dialogService.confirm(`Remove all ${this.totalSkills} skills from your stack?`))) return;
-    const ids = this.groups.flatMap((g) => g.skills.map((s) => s.id));
     this.clearing = true;
     this.cdr.markForCheck();
-    forkJoin(ids.map((id) => this.nodesService.deleteNode(id))).subscribe({
-      next: () => {
-        this.clearing = false;
-        this.loadStack();
-      },
-      error: () => {
-        this.clearing = false;
-        this.dialogService.alert('Could not clear the stack.');
-        this.loadStack();
-      },
-    });
+    try {
+      // Delete leaves first, then work upward. The DB rejects removing a node
+      // while any child still exists, so bulk clear must peel the tree level by
+      // level instead of firing the whole stack in parallel.
+      for (const ids of this.skillIdsByDepthDescending()) {
+        if (ids.length) await firstValueFrom(forkJoin(ids.map((id) => this.nodesService.deleteNode(id))));
+      }
+      this.clearing = false;
+      this.loadStack();
+    } catch {
+      this.clearing = false;
+      this.dialogService.alert('Could not clear the stack.');
+      this.loadStack();
+    }
+  }
+
+  /**
+   * Group skill ids from leaves upward so bulk deletion can safely remove
+   * children before their parents, regardless of API response order.
+   */
+  private skillIdsByDepthDescending(): string[][] {
+    const skills = this.currentNodes.filter((node) => node.parentId);
+    if (!skills.length) return [];
+
+    const parentById = new Map(skills.map((node) => [node.id, node.parentId as string]));
+    const childCount = new Map<string, number>(skills.map((node) => [node.id, 0]));
+
+    for (const node of skills) {
+      const parentId = node.parentId;
+      if (!parentId || !childCount.has(parentId)) continue;
+      childCount.set(parentId, (childCount.get(parentId) ?? 0) + 1);
+    }
+
+    const remaining = new Set(skills.map((node) => node.id));
+    const orderedIds = skills.map((node) => node.id);
+    const layers: string[][] = [];
+
+    while (remaining.size) {
+      const layer = orderedIds.filter((id) => remaining.has(id) && (childCount.get(id) ?? 0) === 0);
+
+      if (!layer.length) {
+        // Defensive fallback for a corrupted cycle or orphaned subgraph:
+        // delete whatever remains in a deterministic order rather than spin.
+        layers.push([...remaining]);
+        break;
+      }
+
+      layers.push(layer);
+      for (const id of layer) {
+        remaining.delete(id);
+        const parentId = parentById.get(id);
+        if (!parentId || !remaining.has(parentId)) continue;
+        childCount.set(parentId, Math.max(0, (childCount.get(parentId) ?? 0) - 1));
+      }
+    }
+
+    return layers;
   }
 
   /** Cycle any skill through proficiency levels 1 → 2 → 3; recolours its map node live. */
