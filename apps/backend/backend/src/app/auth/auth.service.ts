@@ -3,6 +3,11 @@ import { JwtService } from '@nestjs/jwt';
 import { Prisma, User } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
+function isAutoSyncedHandle(user: User): boolean {
+    if (!user.handle || !user.githubUsername) return true;
+    return user.handle.toLowerCase() === user.githubUsername.toLowerCase();
+}
+
 @Injectable()
 export class AuthService {
     constructor(
@@ -16,6 +21,12 @@ export class AuthService {
         createData: Prisma.UserCreateInput,
     ): Promise<User> {
         let user = await findByProvider();
+        if (user) {
+            user = await this.prisma.user.update({
+                where: { id: user.id },
+                data: providerUpdate(user),
+            });
+        }
 
         if (!user && createData.email) {
             user = await this.prisma.user.findUnique({ where: { email: createData.email as string } });
@@ -48,7 +59,7 @@ export class AuthService {
                 githubUsername: profile.githubUsername,
                 githubAccessToken: profile.githubAccessToken,
                 name: existingUser.name || profile.name,
-                handle: existingUser.handle || profile.githubUsername || undefined,
+                handle: isAutoSyncedHandle(existingUser) ? profile.githubUsername : existingUser.handle,
             }),
             {
                 githubId: profile.githubId,
