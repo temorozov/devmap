@@ -48,11 +48,11 @@ export const SKILL_TAXONOMY: TaxonomyEntry[] = [
   { canonicalTitle: 'Julia',      category: 'language', icon: 'code', aliases: ['julia'] },
 
   // ── Frontend frameworks ────────────────────────────────────────────────────
-  { canonicalTitle: 'React',    category: 'frontend', icon: 'web', aliases: ['react', 'react-dom', 'react-scripts'], prerequisites: ['JavaScript'] },
+  { canonicalTitle: 'React',    category: 'frontend', icon: 'web', aliases: ['react', 'react-dom', 'react-scripts'], prerequisites: ['TypeScript', 'JavaScript'] },
   { canonicalTitle: 'Vue.js',   category: 'frontend', icon: 'web', aliases: ['vue', '@vue/core', '@vue/runtime-dom'], prerequisites: ['JavaScript'] },
   { canonicalTitle: 'Angular',  category: 'frontend', icon: 'web', aliases: ['@angular/core', '@angular/common', 'angular'], prerequisites: ['TypeScript'] },
   { canonicalTitle: 'Svelte',   category: 'frontend', icon: 'web', aliases: ['svelte'], prerequisites: ['JavaScript'] },
-  { canonicalTitle: 'Next.js',  category: 'frontend', icon: 'web', aliases: ['next', 'nextjs', 'next.js'], prerequisites: ['React'] },
+  { canonicalTitle: 'Next.js',  category: 'frontend', icon: 'web', aliases: ['next', 'nextjs', 'next.js'], prerequisites: ['React', 'TypeScript'] },
   { canonicalTitle: 'Nuxt',     category: 'frontend', icon: 'web', aliases: ['nuxt', 'nuxtjs', '@nuxt/core', '@nuxt/kit'], prerequisites: ['Vue.js'] },
   { canonicalTitle: 'SvelteKit', category: 'frontend', icon: 'web', aliases: ['@sveltejs/kit', 'sveltekit'], prerequisites: ['Svelte'] },
   { canonicalTitle: 'Remix',    category: 'frontend', icon: 'web', aliases: ['@remix-run/react', '@remix-run/node', 'remix'], prerequisites: ['React'] },
@@ -82,6 +82,7 @@ export const SKILL_TAXONOMY: TaxonomyEntry[] = [
   { canonicalTitle: 'Django',     category: 'backend', icon: 'dns', aliases: ['django'], prerequisites: ['Python'] },
   { canonicalTitle: 'Flask',      category: 'backend', icon: 'dns', aliases: ['flask'], prerequisites: ['Python'] },
   { canonicalTitle: 'Celery',     category: 'backend', icon: 'dns', aliases: ['celery'], prerequisites: ['Python'] },
+  { canonicalTitle: 'aiogram',    category: 'backend', icon: 'smart_toy', aliases: ['aiogram'], prerequisites: ['Python'] },
 
   // ── Go backend ────────────────────────────────────────────────────────────
   { canonicalTitle: 'Gin',  category: 'backend', icon: 'dns', aliases: ['github.com/gin-gonic/gin', 'gin-gonic/gin'], prerequisites: ['Go'] },

@@ -233,6 +233,7 @@ export class GitHubService {
       for (const lib of lines) {
         this.addTech(lib, repo, githubUsername, techMap, filename);
       }
+      this.addTech('Python', repo, githubUsername, techMap, filename);
       return;
     }
 
