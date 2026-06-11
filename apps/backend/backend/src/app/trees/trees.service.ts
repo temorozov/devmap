@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AiService } from './ai.service';
 import { mapToSkill, SKILL_TAXONOMY } from '../github/skill-taxonomy';
 import { GitHubService, GITHUB_USER_NOT_FOUND } from '../github/github.service';
+import { collectConnectedSkills } from '../github/skill-closure.util';
 import { buildSkillCardSvg } from './skill-card-svg';
 import { randomBytes } from 'crypto';
 
@@ -308,7 +309,7 @@ export class TreesService {
             throw new ServiceUnavailableException('Could not scan GitHub right now. Please try again in a moment.');
         }
 
-        const skills = detected.filter(d => d.repos.length >= 2).map(d => d.canonicalTitle);
+        const skills = collectConnectedSkills(detected).map(d => d.canonicalTitle);
         this.externalScanCache.set(key, { skills, at: Date.now() });
         return skills;
     }

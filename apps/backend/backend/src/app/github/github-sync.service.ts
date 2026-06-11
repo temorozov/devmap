@@ -5,6 +5,7 @@ import { GitHubService, GITHUB_USER_NOT_FOUND } from './github.service';
 import { EmailService } from '../email/email.service';
 import { computeTreeLayout } from './tree-layout.util';
 import { DetectedTech } from './github.types';
+import { collectConnectedSkills } from './skill-closure.util';
 import { Prisma } from '@prisma/client';
 
 const DEV_MAP_TITLE = 'My Dev Map';
@@ -72,21 +73,20 @@ export class GitHubSyncService {
 
     const allDetected = await this.github.detectTechnologies(user.githubAccessToken, user.githubUsername);
 
-    // Cut the noise: keep skills seen in 2+ repos (matches the guest-scan threshold),
-    // drop anything the user permanently excluded (so webhook-triggered re-syncs
+    // Cut the noise: keep skills seen in 2+ repos, plus any connected
+    // prerequisite chain needed to keep the map rooted correctly. Then drop
+    // anything the user permanently excluded (so webhook-triggered re-syncs
     // don't silently bring back skills they removed), and honor this sync's
     // one-off skips from the preview modal.
     const excluded = new Set((user.excludedSkills ?? []).map((s) => s.toLowerCase()));
     const skipped = new Set(skip.map((s) => s.toLowerCase()));
-    const detectedTechs = allDetected.filter(
-      (t) =>
-        t.repos.length >= 2 &&
-        !excluded.has(t.canonicalTitle.toLowerCase()) &&
-        !skipped.has(t.canonicalTitle.toLowerCase()),
+    const visibleDetected = allDetected.filter(
+      (t) => !excluded.has(t.canonicalTitle.toLowerCase()) && !skipped.has(t.canonicalTitle.toLowerCase()),
     );
+    const detectedTechs = collectConnectedSkills(visibleDetected);
 
     this.logger.log(
-      `Detected ${allDetected.length} technologies for user ${userId}, kept ${detectedTechs.length} after 2+ repo & blacklist filter`,
+      `Detected ${allDetected.length} technologies for user ${userId}, kept ${detectedTechs.length} after connected-component filter`,
     );
 
     // Upsert the dev map tree
@@ -404,8 +404,7 @@ export class GitHubSyncService {
       this.logger.warn(`Guest scan failed for @${username}: ${err instanceof Error ? err.message : String(err)}`);
       throw new ServiceUnavailableException('Could not scan GitHub right now. Please try again in a moment.');
     }
-    const skills: GuestScanSkill[] = detected
-      .filter((d) => d.repos.length >= 2)
+    const skills: GuestScanSkill[] = collectConnectedSkills(detected)
       .map((d) => ({ title: d.canonicalTitle, category: d.category, icon: d.icon, repoCount: d.repos.length }));
     const data: GuestScanResult = { handle: username, skills, scannedAt: new Date().toISOString() };
     this.guestScanCache.set(key, { data, at: Date.now() });
@@ -426,8 +425,7 @@ export class GitHubSyncService {
       throw new NotFoundException('GitHub account not connected or token missing.');
     }
     const allDetected = await this.github.detectTechnologies(user.githubAccessToken, user.githubUsername);
-    return allDetected
-      .filter((t) => t.repos.length >= 2)
+    return collectConnectedSkills(allDetected)
       .map((t) => ({ title: t.canonicalTitle, category: t.category, icon: t.icon ?? '', repoCount: t.repos.length }));
   }
 
